@@ -246,9 +246,12 @@ for iter = 1:Op.maxIter
         
         t_back   = tic;
         [diverge, Vx, Vxx, l, L, dV] = back_pass(cx,cu,cxx,cxu,cuu,fx,fu,fxx,fxu,fuu,lambda,Op.regType,Op.lims,u);
+        % l is the feedforward term (42), 
+        % L is the time-variant feedback(42)
         trace(iter).time_backward = toc(t_back);
         
         if diverge
+            % maybe not step 13 in Algorithm
             if verbosity > 2
                 fprintf('Cholesky failed at timestep %d.\n',diverge);
             end
@@ -263,6 +266,7 @@ for iter = 1:Op.maxIter
     end
 
     % check for termination due to small gradient
+    % another exit criteria than Schwarting
     g_norm         = mean(max(abs(l) ./ (abs(u)+1),[],1));
     trace(iter).grad_norm = g_norm;
     if g_norm < Op.tolGrad && lambda < 1e-5
@@ -280,8 +284,10 @@ for iter = 1:Op.maxIter
         t_fwd = tic;
         if Op.parallel  % parallel line-search
             [xnew,unew,costnew] = forward_pass(x0 ,u, L, x(:,1:N), l, Op.Alpha, DYNCST,Op.lims,Op.diffFn);
+            % now we have 10 candidates of new traj
             Dcost               = sum(cost(:)) - sum(costnew,2);
             [dcost, w]          = max(Dcost);
+            % find the one with greatest cost reduction
             alpha               = Op.Alpha(w);
             expected            = -alpha*(dV(1) + alpha*dV(2));
             if expected > 0
@@ -336,7 +342,7 @@ for iter = 1:Op.maxIter
                 iter, sum(cost(:)), dcost, expected, g_norm, log10(lambda));
             last_head = last_head+1;
         end
-        
+        % maybe step 13 in Algorithm
         % decrease lambda
         dlambda   = min(dlambda / Op.lambdaFactor, 1/Op.lambdaFactor);
         lambda    = lambda * dlambda * (lambda > Op.lambdaMin);
@@ -442,7 +448,8 @@ function [xnew,unew,cnew] = forward_pass(x0,u,L,x,du,Alpha,DYNCST,lims,diff)
 % parallel forward-pass (rollout)
 % internally time is on the 3rd dimension, 
 % to facillitate vectorized dynamics calls
-
+% Alpha is a series of possible step length, 
+% it is multiplied with du(:,i) in parallel
 n        = size(x0,1);
 K        = length(Alpha);
 K1       = ones(1,K); % useful for expansion
@@ -457,6 +464,7 @@ for i = 1:N
     unew(:,:,i) = u(:,i*K1);
     
     if ~isempty(du)
+        % feedforward control term should not be too agressive, Alpha < 1
         unew(:,:,i) = unew(:,:,i) + du(:,i)*Alpha;
     end    
     
@@ -466,10 +474,11 @@ for i = 1:N
         else
             dx          = xnew(:,:,i) - x(:,i*K1);
         end
-        unew(:,:,i) = unew(:,:,i) + L(:,:,i)*dx;
+        unew(:,:,i) = unew(:,:,i) + L(:,:,i)*dx; % with feedback
     end
     
     if ~isempty(lims)
+        % add u upper and lower bound again
         unew(:,:,i) = min(lims(:,2*K1), max(lims(:,1*K1), unew(:,:,i)));
     end
 
@@ -511,38 +520,38 @@ Vxx(:,:,N)  = cxx(:,:,N);
 diverge  = 0;
 for i = N-1:-1:1
     
-    Qu  = cu(:,i)      + fu(:,:,i)'*Vx(:,i+1);
-    Qx  = cx(:,i)      + fx(:,:,i)'*Vx(:,i+1);
-    Qux = cxu(:,:,i)'  + fu(:,:,i)'*Vxx(:,:,i+1)*fx(:,:,i);
+    Qu  = cu(:,i)      + fu(:,:,i)'*Vx(:,i+1);              %(23)
+    Qx  = cx(:,i)      + fx(:,:,i)'*Vx(:,i+1);              %(23)
+    Qux = cxu(:,:,i)'  + fu(:,:,i)'*Vxx(:,:,i+1)*fx(:,:,i); %(24)
     if ~isempty(fxu)
         fxuVx = vectens(Vx(:,i+1),fxu(:,:,:,i));
         Qux   = Qux + fxuVx;
     end
     
-    Quu = cuu(:,:,i)   + fu(:,:,i)'*Vxx(:,:,i+1)*fu(:,:,i);
+    Quu = cuu(:,:,i)   + fu(:,:,i)'*Vxx(:,:,i+1)*fu(:,:,i); %(24)
     if ~isempty(fuu)
         fuuVx = vectens(Vx(:,i+1),fuu(:,:,:,i));
         Quu   = Quu + fuuVx;
     end
     
-    Qxx = cxx(:,:,i)   + fx(:,:,i)'*Vxx(:,:,i+1)*fx(:,:,i);
+    Qxx = cxx(:,:,i)   + fx(:,:,i)'*Vxx(:,:,i+1)*fx(:,:,i); %(24)
     if ~isempty(fxx)
         Qxx = Qxx + vectens(Vx(:,i+1),fxx(:,:,:,i));
     end
     
-    Vxx_reg = (Vxx(:,:,i+1) + lambda*eye(n)*(regType == 2));
+    Vxx_reg = (Vxx(:,:,i+1) + lambda*eye(n)*(regType == 2));    %(48)
     
     Qux_reg = cxu(:,:,i)'   + fu(:,:,i)'*Vxx_reg*fx(:,:,i);
     if ~isempty(fxu)
         Qux_reg = Qux_reg + fxuVx;
     end
-    
+    % regType == 1 doesnt follow (48)
     QuuF = cuu(:,:,i)  + fu(:,:,i)'*Vxx_reg*fu(:,:,i) + lambda*eye(m)*(regType == 1);
     
     if ~isempty(fuu)
         QuuF = QuuF + fuuVx;
     end
-    
+    % usually we go to else
     if nargin < 13 || isempty(lims) || lims(1,1) > lims(1,2)
         % no control limits: Cholesky decomposition, check for non-PD
         [R,d] = chol(QuuF);
@@ -561,6 +570,9 @@ for i = N-1:-1:1
         upper = lims(:,2)-u(:,i);
         
         [k_i,result,R,free] = boxQP(QuuF,Qu,lower,upper,k(:,min(i+1,N-1)));
+        % R*R'=Quu (actually QuuF)
+        % k_i=-Quu\Qu
+        %(38)(42)
         if result < 1
             diverge  = i;
             return;
@@ -568,16 +580,17 @@ for i = N-1:-1:1
         
         K_i    = zeros(m,n);
         if any(free)
-            Lfree        = -R\(R'\Qux_reg(free,:));
+            Lfree        = -R\(R'\Qux_reg(free,:)); %=-(R*R')^(-1)*Qux=-Quu^(-1)*Qux
+            %(38)(42)
             K_i(free,:)   = Lfree;
         end
         
     end
     
     % update cost-to-go approximation
-    dV          = dV + [k_i'*Qu  .5*k_i'*Quu*k_i];
-    Vx(:,i)     = Qx  + K_i'*Quu*k_i + K_i'*Qu  + Qux'*k_i;
-    Vxx(:,:,i)  = Qxx + K_i'*Quu*K_i + K_i'*Qux + Qux'*K_i;
+    dV          = dV + [k_i'*Qu  .5*k_i'*Quu*k_i];              %(43)
+    Vx(:,i)     = Qx  + K_i'*Quu*k_i + K_i'*Qu  + Qux'*k_i;     %(44)
+    Vxx(:,:,i)  = Qxx + K_i'*Quu*K_i + K_i'*Qux + Qux'*K_i;     %(45)
     Vxx(:,:,i)  = .5*(Vxx(:,:,i) + Vxx(:,:,i)');
     
     % save controls/gains

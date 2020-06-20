@@ -2,3 +2,5 @@
 *.m~
 *.jpg
 *.jpeg
+*.asv
+/SingleHomotopy

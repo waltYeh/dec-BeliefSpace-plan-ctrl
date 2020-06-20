@@ -12,7 +12,7 @@ DYNAMIC_OBS = 0;
 
 dt = 0.1; % time step
 
-load(mapPath); % load map
+load(mapPath); % load map from .mat into workspace as a struct map
 
 mm = TwoDPointRobot(dt); % motion model
 

@@ -14,7 +14,7 @@ function main(fname)
 fprintf('\n A demonstration of the iLQG algorithm for Belief Space Planning \n')
 
 % Whether or not to store data to file
-CREATE_OUTPUT_DIRECTORY = 0; % set to 1 for writing output
+CREATE_OUTPUT_DIRECTORY = 1; % set to 1 for writing output
 
 % number of sims to run
 NUM_SIMS = 1;
@@ -44,7 +44,7 @@ if isunix ==1
         baseDirectory = ['/Users/',username(1:end-1),'/Documents/MATLAB/TRO/SingleHomotopy/'];
     end
 else
-    baseDirectory = ['F:\HauptOrdner\Abschluss\belief space\github_ws\bsp-ilqg\SingleHomotopy/'];
+    baseDirectory = ['/home/',username(1:end-1),'/MATLAB/TRO/SingleHomotopy/'];
 end
 
 % Create new directory

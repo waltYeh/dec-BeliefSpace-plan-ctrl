@@ -46,7 +46,7 @@ else
 
     % dynamics second derivatives
     if full_DDP
-        xu_Jcst = @(xu) finite_difference(xu_dyn, xu);
+        xu_Jcst = @(xu) finiteDifference(xu_dyn, xu);
         JJ      = finiteDifference(xu_Jcst, [b; u]);
         JJ      = reshape(JJ, [4 6 size(J)]);
         JJ      = 0.5*(JJ + permute(JJ,[1 3 2 4])); %symmetrize

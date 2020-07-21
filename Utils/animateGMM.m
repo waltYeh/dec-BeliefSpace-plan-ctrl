@@ -24,7 +24,7 @@ function [failed, b_f] = animateGMM(b0, nSteps, motionModel, obsModel)
 %     u_man = [u(end-shared_uDim+1);u(end)]
     
 % stDim = motionModel.stDim;
-comp_sel = 1;
+comp_sel =1;
 use_bad_man_speed = true;
 
 mu = cell(components_amount,1);
@@ -84,7 +84,7 @@ for k = 1:nSteps
         b((i_comp-1)*component_bDim+component_stDim+1:(i_comp-1)*component_bDim+component_stDim+component_stDim*component_stDim)=sig{i_comp};
         b((i_comp)*component_bDim)=weight(i_comp);
     end
-    v_ball = [-0.2;-1.5];
+    v_ball = [-0.3;-0.7];
     v_rest = [0.0;0.0];
     v_aid_man = [0.0;0.0];
     u = [v_ball;v_rest;v_aid_man];
@@ -154,8 +154,11 @@ for k = 1:nSteps
         HPH = H*P_prd*H';
     %     S = H*P_prd*H' + M*R*M';
         K = (P_prd*H')/(HPH + M*obsModel.R_est*M');
+        
+        weight_adjust = [weight(i_comp),weight(i_comp),1,1]';
+%         K=weight_adjust.*K;
         P = (eye(motionModel.stDim) - K*H)*P_prd;
-        x = x_prd + K*(z - z_prd);
+        x = x_prd + weight_adjust.*K*(z - z_prd);
         z_mu{i_comp} = z_prd;
         z_sig{i_comp} = HPH;
         mu{i_comp} = x;
@@ -211,18 +214,24 @@ for k = 1:nSteps
 %     rh = fill(mu{comp_sel}(3) + robotDisk(1,:),{comp_sel}(4) + robotDisk(2,:),'b');
 %     drawResult(plotFn,b,motionModel.stDim);
 %     drawnow;
-figure(1)
-plot(x_save(1,k),x_save(2,k),'.')
-hold on
-axis equal
-plot(x_save(3,k),x_save(4,k),'+')
-plot(mu_save{1}(1,k),mu_save{1}(2,k),'bo')
-plot(mu_save{2}(1,k),mu_save{2}(2,k),'ro')
-figure(2)
-time_line = 0:motionModel.dt:motionModel.dt*(nSteps);
-plot([motionModel.dt*(k-1),motionModel.dt*(k)],[weight_save{1}(k),weight_save{1}(k+1)],'-ob',[motionModel.dt*(k-1),motionModel.dt*(k)],[weight_save{2}(k),weight_save{2}(k+1)],'-ok')
-hold on
-pause(0.02);
+    figure(1)
+    plot(x_save(1,k),x_save(2,k),'.')
+    hold on
+    axis equal
+    plot(x_save(3,k),x_save(4,k),'+')
+    plot(mu_save{1}(3,k),mu_save{1}(4,k),'bo')
+    plot(mu_save{1}(1,k),mu_save{1}(2,k),'bo')
+    plot(mu_save{2}(1,k),mu_save{2}(2,k),'ro')
+    
+    pointsToPlot = drawResultGMM([mu_save{1}(:,k); sig_save{1}(:,k)], motionModel.stDim);
+    plot(pointsToPlot(1,:),pointsToPlot(2,:),'b')
+    pointsToPlot = drawResultGMM([mu_save{2}(:,k); sig_save{2}(:,k)], motionModel.stDim);
+    plot(pointsToPlot(1,:),pointsToPlot(2,:),'r')
+    figure(2)
+%     time_line = 0:motionModel.dt:motionModel.dt*(nSteps);
+    plot([motionModel.dt*(k-1),motionModel.dt*(k)],[weight_save{1}(k),weight_save{1}(k+1)],'-ob',[motionModel.dt*(k-1),motionModel.dt*(k)],[weight_save{2}(k),weight_save{2}(k+1)],'-ok')
+    hold on
+    pause(0.02);
 end
 % figure(1)
 % plot(x_save(1,:),x_save(2,:),'.')

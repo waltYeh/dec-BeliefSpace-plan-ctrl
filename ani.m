@@ -1,5 +1,6 @@
 addpath(genpath('./'));
 clear
+close all
 t0 = 0;
 dt = 0.05;
 tf = 6.0;

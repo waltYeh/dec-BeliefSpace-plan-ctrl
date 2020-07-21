@@ -19,7 +19,7 @@ classdef HumanReactionModel < ObservationModelBase
         R_speed = diag([0.01, 0.01]);
 
         R_est = diag([0.1, 0.1, 0.001, 0.001]);
-        R_w = diag([10,0.5,2, 2]);
+        R_w = diag([10,5,2, 2]);
     end
     
     methods

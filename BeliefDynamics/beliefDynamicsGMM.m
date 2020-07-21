@@ -116,14 +116,14 @@ function b_next = updateGMM(b, u, motionModel, obsModel)
     component_alone_uDim = motionModel.ctDim - shared_uDim;
     
     components_amount = length(b)/component_bDim;
-    u_man = [u(end-shared_uDim+1);u(end)]
+    u_man = [u(end-shared_uDim+1);u(end)];
     
     b_next = b;
     for i=1:components_amount
         b_component = b((i-1)*component_bDim + 1 : i*component_bDim - 1,1);
         u_component = [u((i-1)*component_alone_uDim+1 : i*component_alone_uDim);
             u_man];
-        b_next_component = updateSingleComponentGMM(b_component, u_component, motionModel, obsModel)
+        b_next_component = updateSingleComponentGMM(b_component, u_component, motionModel, obsModel);
         b_next((i-1)*component_bDim + 1 : i*component_bDim - 1,1) = b_next_component;
         % the weight of each component remains unchanged
     end

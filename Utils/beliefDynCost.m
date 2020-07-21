@@ -29,7 +29,7 @@ function [g,c,gb,gu,gbb,gbu,guu,cb,cu,cbb,cbu,cuu] = beliefDynCost(b,u,xf,L,full
 
 beliefDim = size(b,1);
 ctDim = motionModel.ctDim;
-
+% if only two outputs g and c are needed
 if nargout == 2
     g = beliefDynamics(b, u, motionModel, obsModel);
     c = costFunction(b, u, xf, L, motionModel.stDim, collisionChecker);

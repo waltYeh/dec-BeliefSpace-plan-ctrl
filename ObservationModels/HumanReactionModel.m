@@ -15,7 +15,11 @@ classdef HumanReactionModel < ObservationModelBase
     
     properties
 %         sigma_b = diag([0.02,0.02,20.0,20.0]); 
-        R = diag([0.1, 0.1, 0.001, 0.001]);
+        R_true = diag([0.1, 0.1, 0.001, 0.001]);
+        R_speed = diag([0.01, 0.01]);
+
+        R_est = diag([0.1, 0.1, 0.001, 0.001]);
+        R_w = diag([10,0.5,2, 2]);
     end
     
     methods
@@ -56,6 +60,12 @@ classdef HumanReactionModel < ObservationModelBase
                     direction;
                     x_man;
                     y_man];
+            elseif nargin > 2 && strcmp('truenoise',varargin{1}) == 1 
+                v = obj.computeObservationNoiseTrue();
+                z = [speed_chase;
+                    direction;
+                    x_man;
+                    y_man] + v;
             else                
                 error('unknown inputs')                
             end
@@ -137,13 +147,20 @@ classdef HumanReactionModel < ObservationModelBase
 %             noise_std = repmat(obj.sigma_b,size(z,1),1);
 %             
 %             R = diag(noise_std.^2);
-            R = obj.R;
+            R = obj.R_true;
             
         end                                                      
         
+        function v = computeObservationNoiseTrue(obj)
+            
+            noise_std = chol(obj.R_true)';
+            
+            v = noise_std*randn(obj.obsNoiseDim,1);
+        end
+        
         function v = computeObservationNoise(obj)
             
-            noise_std = repmat(obj.sigma_b,size(obj.obsNoiseDim,1),1);
+            noise_std = repmat(obj.R_est,size(obj.obsNoiseDim,1),1);
             
             v = randn(size(obj.obsNoiseDim,1),1).*noise_std;
         end

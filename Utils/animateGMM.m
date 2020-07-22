@@ -1,4 +1,4 @@
-function [failed, b_f] = animateGMM(fig_xy, fig_w, b0, b_nom, u_nom, L, nSteps, motionModel, obsModel)
+function [failed, b_f] = animateGMM(fig_xy, fig_w, b0, b_nom, u_nom, L, nSteps, motionModel, obsModel,lims)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Animate the robot's motion from start to goal
 %
@@ -68,8 +68,11 @@ for k = 1:nSteps-1
     v_aid_man = [0.0;0.0];
     u = [v_ball;v_rest;v_aid_man];
     if ~isempty(u_nom)
-        u = u_nom(:,k) + 0.1*L(:,:,k)*(b - b_nom(:,k));
+        u = u_nom(:,k) + 0.3*L(:,:,k)*(b - b_nom(:,k));
         % dim is 6
+        for i_u = 1:length(u)
+            u(i_u)=min(lims(i_u,2), max(lims(i_u,1), u(i_u)));
+        end
     end
     %% update physical part
 %     processNoise = motionModel.generateProcessNoise(x_true,u);
@@ -100,7 +103,7 @@ for k = 1:nSteps-1
             v_man = [-1.1;1.]*0.94^(k*motionModel.dt*20)*0.3;
         end
     else
-        if k*motionModel.dt>0.3
+        if k*motionModel.dt>0.5
             v_man=[0;0];
         end
     end
@@ -221,6 +224,20 @@ for k = 1:nSteps-1
     plot(pointsToPlot(1,:),pointsToPlot(2,:),'b')
     pointsToPlot = drawResultGMM([mu_save{2}(:,k); sig_save{2}(:,k)], motionModel.stDim);
     plot(pointsToPlot(1,:),pointsToPlot(2,:),'r')
+%     [x_nom, P_nom, w_nom] = b2xPw(b_nom(:,k), component_stDim, components_amount);
+%     plot(x_save(1,k),x_save(2,k),'.')
+%     hold on
+%     axis equal
+%     plot(x_nom{1}(3),x_nom{1}(4),'b+')
+%     plot(x_nom{2}(3),x_nom{2}(4),'r+')
+% %     plot(mu_save{1}(3,k),mu_save{1}(4,k),'bo')
+%     plot(x_nom{1}(1),x_nom{1}(2),'bo')
+%     plot(x_nom{2}(1),x_nom{2}(2),'ro')
+%     
+%     pointsToPlot = drawResultGMM(b_nom(1:20,k), motionModel.stDim);
+%     plot(pointsToPlot(1,:),pointsToPlot(2,:),'b')
+%     pointsToPlot = drawResultGMM(b_nom(22:41,k), motionModel.stDim);
+%     plot(pointsToPlot(1,:),pointsToPlot(2,:),'r')
     figure(fig_w)
 %     
     plot([motionModel.dt*(k-1),motionModel.dt*(k)],[weight_save{1}(k),weight_save{1}(k+1)],'-ob',[motionModel.dt*(k-1),motionModel.dt*(k)],[weight_save{2}(k),weight_save{2}(k+1)],'-ok')

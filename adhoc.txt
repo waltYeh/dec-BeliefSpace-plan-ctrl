@@ -1,0 +1,11 @@
+Ad-hoc Maßnahmen
+1. When human does not output enough speed/effort:
+a) do not update wish-weight
+animateGMM.m in weight update: if abs(z(1))<0.25, weight = last_w;
+b) the observation update of target position should be reduced
+animateGMM.m in ekf: weight_adjust = [z_ratio*weight(i_comp)...
+2. When one of the wish-weight is low
+a) the observation update of target position should be reduced
+animateGMM.m in ekf: weight_adjust = [z_ratio*weight(i_comp)...
+3. belief has too much noise, affecting feedback control
+feedback K * 0.3

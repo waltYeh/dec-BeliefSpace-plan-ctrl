@@ -49,7 +49,8 @@ classdef HumanMind < MotionModelBase
             
             vx_manpower = speed_chase * cos(direction);
             vy_manpower = speed_chase * sin(direction);
-
+            vx_manpower = 0;
+            vy_manpower = 0;
             x_next=[x_target+ux_target*obj.dt;
                 y_target+uy_target*obj.dt;
                 x_man+(vx_manpower + ux_wheelchair)*obj.dt;
@@ -105,10 +106,11 @@ classdef HumanMind < MotionModelBase
             df4_dx2=dv_dx2*sin_th+d_sin_dx2*speed_chase;
             df4_dx3=dv_dx3*sin_th+d_sin_dx3*speed_chase;
             df4_dx4=dv_dx4*sin_th+d_sin_dx4*speed_chase;
-            A = [1,0,0,0;
-                0,1,0,0;
-                df3_dx1, df3_dx2, df3_dx3 + 1, df3_dx4;
-                df4_dx1, df4_dx2, df4_dx3, df4_dx4 + 1];
+%             A = [1,0,0,0;
+%                 0,1,0,0;
+%                 df3_dx1, df3_dx2, df3_dx3 + 1, df3_dx4;
+%                 df4_dx1, df4_dx2, df4_dx3, df4_dx4 + 1];
+            A = eye(4);
         end
         
         function B = getControlJacobian(obj,x,u,w) % control Jacobian

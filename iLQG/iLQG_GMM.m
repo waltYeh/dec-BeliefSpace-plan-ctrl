@@ -343,7 +343,7 @@ for iter = 1:Op.maxIter
         x              = xnew;
         cost           = costnew;
         flgChange      = 1;
-        drawResult(Op.plotFn,x,2);
+%         drawResult(Op.plotFn,x,2);
 %         Op.plotFn(x);
         
         % terminate ?
@@ -496,7 +496,7 @@ end
 %         weight(i_comp,i)=w(i_comp);
 %     end
 % end
-% figure(8)
+% figure(11)
 % hold on
 % for i_comp = 1:components_amount
 %     plot(mu{i_comp}(1,:),mu{i_comp}(2,:),'.')

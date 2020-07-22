@@ -51,9 +51,10 @@ ctrlDim = size(u,1);
 [x, P, w] = b2xPw(b, stDim, 2);
 
 Q_t = 10*eye(stDim); % penalize uncertainty
-R_t = diag([0.2, 0.1, 0.2, 0.2,0.1,0.1]); % penalize control effort
+R_t = diag([0.2, 1.0, 0.2, 0.2,0.1,0.1]); % penalize control effort
 Q_t_err = 1.0*eye(2);
-Q_l = 100*L*eye(2); % penalize terminal error
+Q_l = 10*L*eye(2); % penalize terminal error
+Qcov_t = 10*eye(4);
 Qcov_l = 10*L*eye(4); % penalize terminal covar
 w_cc = 1.0; % penalize collision
 
@@ -80,11 +81,11 @@ for i_comp=1:components_amount
 
       sc = delta_x'*Q_l*delta_x;
 %         delta_x
-%       ic = trace(P{i_comp}*Qcov_l*P{i_comp});
+      ic = trace(P{i_comp}*Qcov_l*P{i_comp});
 
     else
       sc = delta_x'*Q_t_err*delta_x;
-%       ic = trace(P{i_comp}*Q_t*P{i_comp});
+      ic = trace(P{i_comp}*Qcov_t*P{i_comp});
 
       uc = u'*R_t*u;
 

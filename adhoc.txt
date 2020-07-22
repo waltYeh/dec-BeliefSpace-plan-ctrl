@@ -9,3 +9,22 @@ a) the observation update of target position should be reduced
 animateGMM.m in ekf: weight_adjust = [z_ratio*weight(i_comp)...
 3. belief has too much noise, affecting feedback control
 feedback K * 0.3
+
+Corrected
+1. Turnpike
+Add state error cost for every time step
+2. Control variables out of constraints
+do constraints after feedback of belief
+3. Automatic stop before arrival
+Do not predict human good man behavior in belief-dyn for iLQG
+
+Remaining Problem
+1. Not sensitive to covariance cost. Covariance change as respond to human behavior is not obvious!
+
+Explainations
+1. in equal weight planning case, the human wish is recognized, but there is large overshoot. After planning with large wish A, the opposite behavior from wish B is recognized, but the assistant still pushes the plattform towards the goal A.
+When b changes greately, the lin-quadr is no more accurate because b is no more in the neighborhood. So there can be unexpected behaviors. Replanning is needed.
+2. The run without human intervention is the most accurate.
+The belief-dynamics used in planning does not assume human good man behavior, which means no human intervention at all.
+3. Overshoot if human gives an effort at the beginning
+The belief-dynamics used in planning does not assume human good man behavior. If we assume such behavior, the plattform cannot reach the target if human leave at any moment. So maybe a replanning with a different model is needed when the human effort disappears.

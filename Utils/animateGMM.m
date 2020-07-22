@@ -1,4 +1,4 @@
-function [failed, b_f] = animateGMM(fig_xy, fig_w, b0, b_nom, u_nom, L, nSteps, motionModel, obsModel,lims)
+function [failed, b_f] = animateGMM(fig_xy, fig_w, b0, b_nom, u_nom, L, nSteps, motionModel, obsModel,lims, show_mode)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Animate the robot's motion from start to goal
 %
@@ -15,6 +15,55 @@ function [failed, b_f] = animateGMM(fig_xy, fig_w, b0, b_nom, u_nom, L, nSteps, 
 % failed: 0 for no collision, 1 for collision, 2 for dynamic obstacle
 % detected
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% larger, less overshoot; smaller, less b-noise affects assist
+P_feedback = 0.3;
+% longer, clear wish, shorter, less overshoot
+t_human_withdraw = 0.5;
+comp_sel =1;
+use_bad_man_speed = false;
+EQUAL_WEIGHT_BALANCING = 1;
+EQUAL_WEIGHT_TO_BALL_FEEDBACK = 2;
+EQUAL_WEIGHT_TO_REST_FEEDBACK = 3;
+BALL_WISH_WITHOUT_HUMAN_INPUT = 4;
+BALL_WISH_WITH_HUMAN_INPUT = 5;
+BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT = 6;
+REST_WISH_WITHOUT_HUMAN_INPUT = 7;
+REST_WISH_WITH_HUMAN_INPUT = 8;
+REST_WISH_WITH_OPPOSITE_HUMAN_INPUT = 9;
+CHANGE_WISHES = 10;
+% show_mode = EQUAL_WEIGHT_BALANCING;
+switch show_mode
+    case EQUAL_WEIGHT_BALANCING
+        t_human_withdraw = 0.0;
+    case EQUAL_WEIGHT_TO_BALL_FEEDBACK
+        t_human_withdraw = 0.3;
+        comp_sel =1;
+    case EQUAL_WEIGHT_TO_REST_FEEDBACK
+        t_human_withdraw = 0.3;
+        comp_sel =2;        
+    case BALL_WISH_WITHOUT_HUMAN_INPUT
+        t_human_withdraw = 0.0;
+    case BALL_WISH_WITH_HUMAN_INPUT
+        t_human_withdraw = 0.7;
+        comp_sel =1;
+    case BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT
+        t_human_withdraw = 0.5;
+        comp_sel =2;
+    case REST_WISH_WITHOUT_HUMAN_INPUT
+        t_human_withdraw = 0.0;
+    case REST_WISH_WITH_HUMAN_INPUT
+        t_human_withdraw = 0.7;
+        comp_sel =2;
+    case REST_WISH_WITH_OPPOSITE_HUMAN_INPUT
+        t_human_withdraw = 0.5;
+        comp_sel =1;
+    case CHANGE_WISHES
+        t_human_withdraw = 5;
+        comp_sel =1;
+        use_bad_man_speed = true;
+end
+
+%%
 component_stDim = motionModel.stDim;
 component_bDim = component_stDim + component_stDim^2 + 1;
 shared_uDim = 2;
@@ -24,8 +73,8 @@ components_amount = length(b0)/component_bDim;
 %     u_man = [u(end-shared_uDim+1);u(end)]
     
 % stDim = motionModel.stDim;
-comp_sel =1;
-use_bad_man_speed = false;
+
+
 
 % mu = cell(components_amount,1);
 % sig = cell(components_amount,1);
@@ -68,7 +117,7 @@ for k = 1:nSteps-1
     v_aid_man = [0.0;0.0];
     u = [v_ball;v_rest;v_aid_man];
     if ~isempty(u_nom)
-        u = u_nom(:,k) + 0.3*L(:,:,k)*(b - b_nom(:,k));
+        u = u_nom(:,k) + P_feedback*L(:,:,k)*(b - b_nom(:,k));
         % dim is 6
         for i_u = 1:length(u)
             u(i_u)=min(lims(i_u,2), max(lims(i_u,1), u(i_u)));
@@ -94,7 +143,7 @@ for k = 1:nSteps-1
                 v_man=[0.15;0.5]*0.94^((k-nSteps/6)*motionModel.dt*20)*6;
             end
             if k*motionModel.dt>2.6
-                v_man=[-0.9;0.2]*0.94^((k-nSteps/3)*motionModel.dt*20)*6;
+                v_man=[-0.9;0.1]*0.94^((k-nSteps/3)*motionModel.dt*20)*6;
             end
             if k*motionModel.dt>4.5
                 v_man=[0.45;-1.4]*0.94^((k-nSteps/3*2)*motionModel.dt*20)*6;
@@ -103,7 +152,7 @@ for k = 1:nSteps-1
             v_man = [-1.1;1.]*0.94^(k*motionModel.dt*20)*0.3;
         end
     else
-        if k*motionModel.dt>0.5
+        if k*motionModel.dt>t_human_withdraw
             v_man=[0;0];
         end
     end
@@ -245,33 +294,48 @@ for k = 1:nSteps-1
 %     time_line = 0:motionModel.dt:motionModel.dt*(nSteps);
     figure(10)
     subplot(2,2,1)
-    hold on
     plot(motionModel.dt*(k-1),u(5),'b.',motionModel.dt*(k-1),u(6),'r.')
+    hold on
     subplot(2,2,2)
-    hold on
     plot(motionModel.dt*(k-1),v_man(1),'b.',motionModel.dt*(k-1),v_man(2),'r.')
+    hold on
     subplot(2,2,3)
-    hold on
     plot(motionModel.dt*(k-1),u(1),'b.',motionModel.dt*(k-1),u(2),'r.')
-    subplot(2,2,4)
     hold on
+    subplot(2,2,4)
     plot(motionModel.dt*(k-1),u(3),'b.',motionModel.dt*(k-1),u(4),'r.')
-    
+    hold on
     pause(0.02);
 end
 figure(10)
 subplot(2,2,1)
-title('assist')
+title('Unterstützung Plattform')
+xlabel('t(s)')
+ylabel('vel(m/s)')
+legend('x','y')
 grid
+hold off
 subplot(2,2,2)
-title('man himself')
+title('Mensch selbst')
+xlabel('t(s)')
+ylabel('vel(m/s)')
+legend('x','y')
 grid
+hold off
 subplot(2,2,3)
-title('ball')
+title('Bewegung des Ziels A')
+xlabel('t(s)')
+ylabel('vel(m/s)')
+legend('x','y')
 grid
+hold off
 subplot(2,2,4)
-title('rest')
+title('Bewegung des Ziels B')
+xlabel('t(s)')
+ylabel('vel(m/s)')
+legend('x','y')
 grid
+hold off
 % figure(1)
 % plot(x_save(1,:),x_save(2,:),'.')
 % hold on
@@ -287,7 +351,15 @@ grid
 % drawnow;
 % failed = 0;
 figure(fig_xy)
+title('Bewegungen von Plattform, Ziel A und Ziel B')
+xlabel('x(m)')
+ylabel('y(m)')
+legend('wahre Ziele','Plattform','Ziel A im Filter','Ziel B im Filter')
 hold off
 figure(fig_w)
+title('Gewicht der Wünsche')
+xlabel('t(s)')
+ylabel('Gewicht')
+legend('A','B')
 hold off
 end

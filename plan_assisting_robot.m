@@ -15,13 +15,52 @@ clear
 %         % Nothing to do
 %     end
 % end
+EQUAL_WEIGHT_BALANCING = 1;
+EQUAL_WEIGHT_TO_BALL_FEEDBACK = 2;
+EQUAL_WEIGHT_TO_REST_FEEDBACK = 3;
+BALL_WISH_WITHOUT_HUMAN_INPUT = 4;
+BALL_WISH_WITH_HUMAN_INPUT = 5;
+BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT = 6;
+REST_WISH_WITHOUT_HUMAN_INPUT = 7;
+REST_WISH_WITH_HUMAN_INPUT = 8;
+REST_WISH_WITH_OPPOSITE_HUMAN_INPUT = 9;
+show_mode = EQUAL_WEIGHT_BALANCING;
+switch show_mode
+    case EQUAL_WEIGHT_BALANCING
+        weight_1 = 0.5;
+        weight_2 = 0.5;
+    case EQUAL_WEIGHT_TO_BALL_FEEDBACK
+        weight_1 = 0.5;
+        weight_2 = 0.5;
+    case EQUAL_WEIGHT_TO_REST_FEEDBACK
+        weight_1 = 0.5;
+        weight_2 = 0.5;        
+    case BALL_WISH_WITHOUT_HUMAN_INPUT
+        weight_1 = 0.95;
+        weight_2 = 0.05;
+    case BALL_WISH_WITH_HUMAN_INPUT
+        weight_1 = 0.95;
+        weight_2 = 0.05;
+    case BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT
+        weight_1 = 0.95;
+        weight_2 = 0.05;
+    case REST_WISH_WITHOUT_HUMAN_INPUT
+        weight_1 = 0.05;
+        weight_2 = 0.95;
+    case REST_WISH_WITH_HUMAN_INPUT
+        weight_1 = 0.05;
+        weight_2 = 0.95;
+    case REST_WISH_WITH_OPPOSITE_HUMAN_INPUT
+        weight_1 = 0.05;
+        weight_2 = 0.95;
+end
 %% tuned parameters
 mu_1 = [8.5, 4.0, 5.0, 0.0]';
 mu_2 = [3, 2.0, 5.0, 0.0]';
 sig_1 = diag([0.01, 0.01, 0.01, 0.01]);%sigma
 sig_2 = diag([0.01, 0.01, 0.01, 0.01]);
-weight_1 = 0.9;
-weight_2 = 0.1;
+% weight_1 = 0.9;
+% weight_2 = 0.1;
 dt = 0.05;
 tf = 2.0;
 %% 
@@ -73,7 +112,7 @@ assignin('base', 'mm', mm)
 assignin('base', 'om', om)
 assignin('base', 'lims', Op.lims)
 lims = Op.lims;
-[didCollide, b_f] = animateGMM(5,6,b0, b, u_opt, L_opt, size(b,2), mm, om,lims);
+[didCollide, b_f] = animateGMM(5,6,b0, b, u_opt, L_opt, size(b,2), mm, om,lims, show_mode);
 
 results.collision{1} = didCollide;
 

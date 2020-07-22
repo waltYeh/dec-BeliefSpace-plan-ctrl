@@ -1,4 +1,4 @@
-function [failed, b_f] = animateGMM(b0, b_nom, u_nom, L, nSteps, motionModel, obsModel)
+function [failed, b_f] = animateGMM(fig_xy, fig_w, b0, b_nom, u_nom, L, nSteps, motionModel, obsModel)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Animate the robot's motion from start to goal
 %
@@ -25,7 +25,7 @@ components_amount = length(b0)/component_bDim;
     
 % stDim = motionModel.stDim;
 comp_sel =1;
-use_bad_man_speed = true;
+use_bad_man_speed = false;
 
 % mu = cell(components_amount,1);
 % sig = cell(components_amount,1);
@@ -68,12 +68,14 @@ for k = 1:nSteps-1
     v_aid_man = [0.0;0.0];
     u = [v_ball;v_rest;v_aid_man];
     if ~isempty(u_nom)
-        u = u_nom(:,k) + L(:,:,k)*(b - b_nom(:,k));
+        u = u_nom(:,k) + 0.1*L(:,:,k)*(b - b_nom(:,k));
+        % dim is 6
     end
     %% update physical part
 %     processNoise = motionModel.generateProcessNoise(x_true,u);
     zeroProcessNoise = zeros(4,1);
     % here we only use the input of comp_sel, drop the other target
+    % u_for_true includes one target and the assist
     u_for_true = [u((comp_sel-1)*components_amount + 1:comp_sel*components_amount);u(end-1:end)];
     x_next_no_spec_human_motion = motionModel.evolve(x_true,u_for_true,zeroProcessNoise);
         
@@ -97,16 +99,21 @@ for k = 1:nSteps-1
         elseif comp_sel ==2
             v_man = [-1.1;1.]*0.94^(k*motionModel.dt*20)*0.3;
         end
+    else
+        if k*motionModel.dt>0.3
+            v_man=[0;0];
+        end
     end
     last_human_pos = x_true(3:4);
     x_true(1:2) = x_next_no_spec_human_motion(1:2);
-    x_true(3:4) = last_human_pos + motionModel.dt*v_man;
+    x_true(3:4) = last_human_pos + motionModel.dt*v_man + motionModel.dt*u_for_true(3:4);
     
         % Get observation model jacobians
     z = obsModel.getObservation(x_true,'truenoise'); % true observation
     %truely observed output is not the one modeled by ekf
     speed_man = norm(v_man);
     direction_man = atan2(v_man(2),v_man(1));
+    %very problematic when human gives no more output
     z(1:2)=[speed_man;direction_man] + chol(obsModel.R_speed)' * randn(2,1);
     
     %% now do the machine part
@@ -135,8 +142,11 @@ for k = 1:nSteps-1
         HPH = H*P_prd*H';
     %     S = H*P_prd*H' + M*R*M';
         K = (P_prd*H')/(HPH + M*obsModel.R_est*M');
-        
-        weight_adjust = [weight(i_comp),weight(i_comp),1,1]';
+        z_ratio = 1;
+        if abs(z(1))<1
+            z_ratio = abs(z(1));
+        end
+        weight_adjust = [z_ratio*weight(i_comp),z_ratio*weight(i_comp),1,1]';
 %         K=weight_adjust.*K;
         P = (eye(motionModel.stDim) - K*H)*P_prd;
         x = x_prd + weight_adjust.*K*(z - z_prd);
@@ -147,6 +157,7 @@ for k = 1:nSteps-1
     end
     
     last_w = weight;
+
     for i_comp = 1 : components_amount
         weight(i_comp) = last_w(i_comp)*getLikelihood(z - z_mu{i_comp}, z_sig{i_comp} + obsModel.R_w);
     end
@@ -161,7 +172,9 @@ for k = 1:nSteps-1
     for i_comp = 1 : components_amount
         weight(i_comp) = 0.99*weight(i_comp)+0.01*0.5;
     end
-    
+    if abs(z(1))<0.25
+        weight = last_w;
+    end
 %% now for save
     for i_comp = 1 : components_amount
         mu_save{i_comp}(:,k+1) = mu{i_comp};
@@ -195,12 +208,12 @@ for k = 1:nSteps-1
 %     rh = fill(mu{comp_sel}(3) + robotDisk(1,:),{comp_sel}(4) + robotDisk(2,:),'b');
 %     drawResult(plotFn,b,motionModel.stDim);
 %     drawnow;
-    figure(7)
+    figure(fig_xy)
     plot(x_save(1,k),x_save(2,k),'.')
     hold on
     axis equal
     plot(x_save(3,k),x_save(4,k),'+')
-    plot(mu_save{1}(3,k),mu_save{1}(4,k),'bo')
+%     plot(mu_save{1}(3,k),mu_save{1}(4,k),'bo')
     plot(mu_save{1}(1,k),mu_save{1}(2,k),'bo')
     plot(mu_save{2}(1,k),mu_save{2}(2,k),'ro')
     
@@ -208,12 +221,40 @@ for k = 1:nSteps-1
     plot(pointsToPlot(1,:),pointsToPlot(2,:),'b')
     pointsToPlot = drawResultGMM([mu_save{2}(:,k); sig_save{2}(:,k)], motionModel.stDim);
     plot(pointsToPlot(1,:),pointsToPlot(2,:),'r')
-    figure(8)
-%     time_line = 0:motionModel.dt:motionModel.dt*(nSteps);
+    figure(fig_w)
+%     
     plot([motionModel.dt*(k-1),motionModel.dt*(k)],[weight_save{1}(k),weight_save{1}(k+1)],'-ob',[motionModel.dt*(k-1),motionModel.dt*(k)],[weight_save{2}(k),weight_save{2}(k+1)],'-ok')
     hold on
+%     time_line = 0:motionModel.dt:motionModel.dt*(nSteps);
+    figure(10)
+    subplot(2,2,1)
+    hold on
+    plot(motionModel.dt*(k-1),u(5),'b.',motionModel.dt*(k-1),u(6),'r.')
+    subplot(2,2,2)
+    hold on
+    plot(motionModel.dt*(k-1),v_man(1),'b.',motionModel.dt*(k-1),v_man(2),'r.')
+    subplot(2,2,3)
+    hold on
+    plot(motionModel.dt*(k-1),u(1),'b.',motionModel.dt*(k-1),u(2),'r.')
+    subplot(2,2,4)
+    hold on
+    plot(motionModel.dt*(k-1),u(3),'b.',motionModel.dt*(k-1),u(4),'r.')
+    
     pause(0.02);
 end
+figure(10)
+subplot(2,2,1)
+title('assist')
+grid
+subplot(2,2,2)
+title('man himself')
+grid
+subplot(2,2,3)
+title('ball')
+grid
+subplot(2,2,4)
+title('rest')
+grid
 % figure(1)
 % plot(x_save(1,:),x_save(2,:),'.')
 % hold on
@@ -223,13 +264,13 @@ end
 % figure(2)
 % time_line = 0:motionModel.dt:motionModel.dt*(nSteps);
 % plot(time_line,weight_save{1},'b',time_line,weight_save{2},'k')
-
+    
 % figure(figh);
 % plot(roboTraj(1,:),roboTraj(2,:),'g', 'LineWidth',2);
 % drawnow;
 % failed = 0;
-figure(7)
+figure(fig_xy)
 hold off
-figure(8)
+figure(fig_w)
 hold off
 end

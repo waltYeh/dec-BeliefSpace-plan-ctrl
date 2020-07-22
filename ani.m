@@ -3,7 +3,7 @@ addpath(genpath('./'));
 % close all
 t0 = 0;
 dt = 0.05;
-tf = 1.0;
+tf = 2.0;
 tspan = t0 : dt : tf;
 nSteps = length(tspan);
 
@@ -19,4 +19,4 @@ weight_1 = 0.6;
 weight_2 = 0.4;
 b0=[mu_1;sig_1(:);weight_1;mu_2;sig_2(:);weight_2];
 
-[failed, b_f] = animateGMM(b0, [],[],[], nSteps, motionModel, obsModel);
+[failed, b_f] = animateGMM(7,8,b0, [],[],[], nSteps, motionModel, obsModel);

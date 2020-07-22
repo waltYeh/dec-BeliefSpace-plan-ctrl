@@ -99,16 +99,6 @@ function [x, u, L, Vx, Vxx, cost, trace, stop, totaTime, totalIterations] = iLQG
 %         see below for details.
 %
 % timing - timing information
-%
-%
-%
-% BIBTeX:
-%
-% @INPROCEEDINGS{
-% author={Tassa, Y. and Mansard, N. and Todorov, E.},
-% booktitle={Robotics and Automation (ICRA), 2014 IEEE International Conference on},
-% title={Control-Limited Differential Dynamic Programming},
-% year={2014}, month={May}, doi={10.1109/ICRA.2014.6907001}}
 
 %---------------------- user-adjustable parameters ------------------------
 defaults = {'lims',           [],...            control limits
@@ -170,7 +160,7 @@ trace(1).iter = 1;
 trace(1).lambda = lambda;
 trace(1).dlambda = dlambda;
 
-% --- initial trajectory
+% --- initial belief state given
 if size(x0,2) == 1
     diverge = true;
     for alpha = Op.Alpha
@@ -446,6 +436,7 @@ end
 
 % [x,un,cost]  = forward_pass(x0(:,1),alpha*u,[],[],[],1,DYNCST,Op.lims,[]);
 function [xnew,unew,cnew] = forward_pass(x0,u,L,x,du,Alpha,DYNCST,lims,diff)
+% l (Schwarting j_k^i) is taken into the function as the argument du
 % parallel forward-pass (rollout)
 % internally time is on the 3rd dimension, 
 % to facillitate vectorized dynamics calls

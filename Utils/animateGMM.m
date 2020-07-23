@@ -173,8 +173,7 @@ for k = 1:nSteps-1
     z_sig = cell(components_amount);
     for i_comp = 1:components_amount
         %u = [v_ball;v_rest;v_aid_man];
-        u_for_comp = [u((i_comp-1)*components_amount + 1:i_comp*components_amount);u(end-1:end)];
-            % Get motion model jacobians and predict pose
+u_for_comp = [u((i_comp-1)*component_alone_uDim + 1:i_comp*component_alone_uDim);u(end-shared_uDim+1:end)];            % Get motion model jacobians and predict pose
     %     zeroProcessNoise = motionModel.generateProcessNoise(mu{i_comp},u_for_comp); % process noise
         zeroProcessNoise = zeros(motionModel.stDim,1);
         x_prd = motionModel.evolve(mu{i_comp},u_for_comp,zeroProcessNoise); % predict robot pose

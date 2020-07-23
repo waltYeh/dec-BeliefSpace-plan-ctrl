@@ -3,13 +3,14 @@ addpath(genpath('./'));
 % close all
 t0 = 0;
 dt = 0.05;
-tf = 7.0;
+tf = 2.0;
 tspan = t0 : dt : tf;
 nSteps = length(tspan);
 
 motionModel = HumanMind(dt); % motion model
 
 obsModel = HumanReactionModel(); % observation model
+agent=AgentPlattform(dt,nSteps);
 
 mu_1 = [8.5, 4.0, 5.0, 0.0]';
 mu_2 = [3, 2.0, 5.0, 0.0]';

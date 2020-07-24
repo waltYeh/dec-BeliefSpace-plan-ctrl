@@ -1,10 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Demo for a 2D belief space planning scenario with a
-% point robot whose body is modeled as a disk
-% and it can sense beacons in the world.
+% Demo for a 2D belief space planning scenario 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function receding_horizon_agent()
-
 addpath(genpath('./'));
 clear
 % FigList = findall(groot, 'Type', 'figure');
@@ -88,7 +85,6 @@ u_guess = zeros(6,horizonSteps-1);
 u_guess(1,:)=-3.3;
 u_guess(2,:)=-1.3;
 
-full_DDP = false;
 agents = cell(2,1);
 agents{1} = AgentPlattform(dt,horizonSteps);
 agents{2} = AgentPlattform(dt,horizonSteps);
@@ -99,10 +95,10 @@ Op.lims  = [-0.0 0.0;
     -0.0  0.0;
     -2.0 2.0;
     -2.0 2.0];
-
+%% these are old codes remained
 Op.plot = -1; % plot the derivatives as well
 
-%% prepare and install trajectory visualization callback
+% prepare and install trajectory visualization callback
 line_handle = line([0 0],[0 0],'color','r','linewidth',2);
 plotFn = @(x) set(line_handle,'Xdata',x(1,:),'Ydata',x(2,:));
 Op.plotFn = plotFn;
@@ -110,16 +106,18 @@ Op.plotFn = plotFn;
 %% === run the optimization
 
 for i_sim = 1:simulation_steps
-    [b_nom,u_nom,L_opt,Vx,Vxx,cost]= agents{1}.iLQG_GMM(b0{1}, u_guess, Op);
-%     [b_nom2,u_nom2,L_opt2,Vx2,Vxx2,cost2]= agent2.iLQG_GMM(b0, u_guess, Op);
+    [b_nom1,u_nom1,L_opt1,Vx1,Vxx1,cost1] = agents{1}.iLQG_GMM(b0{1}, u_guess, Op);
+    agents{1}.updatePolicy(b_nom1,u_nom1,L_opt1);
+%     [b_nom2,u_nom2,L_opt2,Vx2,Vxx2,cost2] = agents{2}.iLQG_GMM(b0{2}, u_guess, Op);
+%     agents{2}.updatePolicy(b_nom2,u_nom2,L_opt2);
     if i_sim < 2
         show_mode = EQUAL_WEIGHT_TO_BALL_FEEDBACK;
     else
         show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
     end
     time_past = (i_sim-1) * mpc_update_period;
-    agents{1}.updatePolicy(b_nom,u_nom,L_opt);
-    [~, b0, x_true_final] = animateMultiagent(agents,b0, update_steps,time_past, show_mode);
+    
+    [~, b0, x_true_final] = animateMultiagent(agents, b0, update_steps,time_past, show_mode);
     b0{1}(1:2) = x_true_final(1:2);
 end
 

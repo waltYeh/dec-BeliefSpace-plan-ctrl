@@ -10,6 +10,7 @@ classdef AgentBase < handle
 %         eta_u; % A coefficient, which makes the control noise intensity proportional to the control signal       
 %         zeroNoise;
 %         ctrlLim; % control limits
+        component_stDim;
         u_lims;
         P_feedback;
     end

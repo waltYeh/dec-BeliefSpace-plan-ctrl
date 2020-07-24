@@ -10,19 +10,24 @@ classdef AgentPlattform < AgentBase
 %         eta_u; % A coefficient, which makes the control noise intensity proportional to the control signal       
 %         zeroNoise;
 %         ctrlLim; % control limits
+        component_stDim = 4;
+        %component_stDim + component_stDim^2 + 1
+        component_bDim = 21;
+        components_amount = 2;
+        shared_uDim = 2;
         u_lims = [-0.0 0.0;
             -4.0 4.0;
             -0.0  0.0;
             -0.0  0.0;
             -2.0 2.0;
             -2.0 2.0];
+        % larger, less overshoot; smaller, less b-noise affects assist
         P_feedback = 0.3;
     end
     
     properties
 %         dt = 0.05; % delta_t for time discretization
 %         motionModel = HumanMind(dt); % motion model
-
 %         obsModel = HumanReactionModel(); % observation model
         policyHorizon;
         b_nom;

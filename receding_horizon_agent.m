@@ -81,7 +81,7 @@ simulation_steps = simulation_time/mpc_update_period;
 
 %% Setup start and goal/target state
 
-b0=[mu_1;sig_1(:);weight_1;mu_2;sig_2(:);weight_2];
+b0={[mu_1;sig_1(:);weight_1;mu_2;sig_2(:);weight_2];[mu_1;sig_1(:);weight_1;mu_2;sig_2(:);weight_2]};
 
 u_guess = zeros(6,horizonSteps-1);
 % initial guess, less iterations needed if given well
@@ -89,9 +89,9 @@ u_guess(1,:)=-3.3;
 u_guess(2,:)=-1.3;
 
 full_DDP = false;
-
-agent1 = AgentPlattform(dt,horizonSteps);
-agent2 = AgentPlattform(dt,horizonSteps);
+agents = cell(2,1);
+agents{1} = AgentPlattform(dt,horizonSteps);
+agents{2} = AgentPlattform(dt,horizonSteps);
 % control constraints are optional
 Op.lims  = [-0.0 0.0;
     -4.0 4.0;
@@ -110,7 +110,7 @@ Op.plotFn = plotFn;
 %% === run the optimization
 
 for i_sim = 1:simulation_steps
-    [b_nom,u_nom,L_opt,Vx,Vxx,cost]= agent1.iLQG_GMM(b0, u_guess, Op);
+    [b_nom,u_nom,L_opt,Vx,Vxx,cost]= agents{1}.iLQG_GMM(b0{1}, u_guess, Op);
 %     [b_nom2,u_nom2,L_opt2,Vx2,Vxx2,cost2]= agent2.iLQG_GMM(b0, u_guess, Op);
     if i_sim < 2
         show_mode = EQUAL_WEIGHT_TO_BALL_FEEDBACK;
@@ -118,9 +118,9 @@ for i_sim = 1:simulation_steps
         show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
     end
     time_past = (i_sim-1) * mpc_update_period;
-    agent1.updatePolicy(b_nom,u_nom,L_opt);
-    [~, b0, x_true_final] = animateMultiagent({agent1},b0, update_steps,time_past, show_mode);
-    b0(1:2) = x_true_final(1:2);
+    agents{1}.updatePolicy(b_nom,u_nom,L_opt);
+    [~, b0, x_true_final] = animateMultiagent(agents,b0, update_steps,time_past, show_mode);
+    b0{1}(1:2) = x_true_final(1:2);
 end
 
 end

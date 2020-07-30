@@ -13,7 +13,7 @@ function b_next = beliefDynamicsSimpleAgent(b, u, motionModel, obsModel)
 %   b_next: Updated belief vector
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-horizon = size(b,3);
+horizon = size(b,2);
 % this horizon is used for finiteDifference
 
 b_next = zeros(size(b));

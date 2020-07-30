@@ -165,7 +165,7 @@ trace(1).dlambda = dlambda;
 % if size(x0,3) == 1
     diverge = true;
     for alpha = Op.Alpha
-        [x,un,cost]  = forward_pass(D,idx,x0,alpha*u,[],[],[],1,DYNCST,Op.lims,[]);
+        [x,un,cost]  = forward_pass(D,idx,x0,alpha*u,[],[],[],[],1,DYNCST,Op.lims,[]);
 %         drawResult(Op.plotFn,x(:,:,1),2);
 %         saveas(gcf,'iLQG-initialguess.jpg');
 %         pause(3);
@@ -237,7 +237,7 @@ for iter = 1:Op.maxIter
     while ~backPassDone
         
         t_back   = tic;
-        [diverge, Vx, Vxx, l, L, dV] = back_pass(c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,fx,fu,fxx,fxu,fuu,lambda,Op.regType,Op.lims,u);
+        [diverge, Vx, Vxx, l, L, dV, Ku] = back_pass(D,idx,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,fx,fu,fxx,fxu,fuu,lambda,Op.regType,Op.lims,u);
         % l is the feedforward term (42), 
         % L is the time-variant feedback(42)
         trace(iter).time_backward = toc(t_back);
@@ -259,7 +259,7 @@ for iter = 1:Op.maxIter
 
     % check for termination due to small gradient
     % another exit criteria than Schwarting
-    g_norm         = mean(max(abs(l) ./ (abs(u)+1),[],1));
+    g_norm         = mean(max(abs(l) ./ (squeeze(abs(u(idx,:,:)+1))),[],1));
     trace(iter).grad_norm = g_norm;
     if g_norm < Op.tolGrad && lambda < 1e-5
         dlambda   = min(dlambda / Op.lambdaFactor, 1/Op.lambdaFactor);
@@ -275,9 +275,9 @@ for iter = 1:Op.maxIter
     if backPassDone
         t_fwd = tic;
         if Op.parallel  % parallel line-search
-            [xnew,unew,costnew] = forward_pass(D,idx,x0 ,u, L, x(:,1:N), l, Op.Alpha, DYNCST,Op.lims,Op.diffFn);
+            [xnew,unew,costnew] = forward_pass(D,idx,x0 ,u, L, x(:,:,1:N), l, Ku, Op.Alpha, DYNCST,Op.lims,Op.diffFn);
             % now we have 10 candidates of new traj
-            Dcost               = sum(cost(:)) - sum(costnew,2);
+            Dcost               = sum(cost(:)) - sum(squeeze(costnew),1);
             [dcost, w]          = max(Dcost);
             % find the one with greatest cost reduction
             alpha               = Op.Alpha(w);
@@ -290,13 +290,13 @@ for iter = 1:Op.maxIter
             end
             if (z > Op.zMin)
                 fwdPassDone = 1;
-                costnew     = costnew(:,:,w);
-                xnew        = xnew(:,:,w);
-                unew        = unew(:,:,w);
+                costnew     = costnew(:,:,:,w);
+                xnew        = xnew(:,:,:,w);
+                unew        = unew(:,:,:,w);
             end
         else            % serial backtracking line-search
             for alpha = Op.Alpha
-                [xnew,unew,costnew]   = forward_pass(D,idx,x0 ,u+l*alpha, L, x(:,1:N),[],1,DYNCST,Op.lims,Op.diffFn);
+                [xnew,unew,costnew]   = forward_pass(D,idx,x0 ,u+l*alpha, L, x(:,:,1:N),[],Ku,1,DYNCST,Op.lims,Op.diffFn);
                 dcost    = sum(cost(:)) - sum(costnew(:));
                 expected = -alpha*(dV(1) + alpha*dV(2));
                 if expected > 0
@@ -382,18 +382,18 @@ for iter = 1:Op.maxIter
     trace(iter).improvement = dcost;
     trace(iter).cost        = sum(cost(:));
     trace(iter).reduc_ratio = z;
-    stop = graphics(Op.plot,x,u,cost,L,Vx,Vxx,fx,fxx,fu,fuu,trace(1:iter),0);
+%     stop = graphics(Op.plot,x,u,cost,L,Vx,Vxx,fx,fxx,fu,fuu,trace(1:iter),0);
 end
 
 % save lambda/dlambda
 trace(iter).lambda      = lambda;
 trace(iter).dlambda     = dlambda;
 
-if stop
-    if verbosity > 0
-        fprintf('\nEXIT: Terminated by user\n');
-    end
-end
+% if stop
+%     if verbosity > 0
+%         fprintf('\nEXIT: Terminated by user\n');
+%     end
+% end
 
 if iter == Op.maxIter
     if verbosity > 0
@@ -430,13 +430,13 @@ if ~isempty(iter)
     totaTime = total_t;
     trace    = trace(~isnan([trace.iter]));
 %     timing   = [diff_t back_t fwd_t total_t-diff_t-back_t-fwd_t];
-    graphics(Op.plot,x,u,cost,L,Vx,Vxx,fx,fxx,fu,fuu,trace,2); % draw legend
+%     graphics(Op.plot,x,u,cost,L,Vx,Vxx,fx,fxx,fu,fuu,trace,2); % draw legend
 else
     error('Failure: no iterations completed, something is wrong.')
 end
 
 % [x,un,cost]  = forward_pass(x0(:,1),alpha*u,[],[],[],1,DYNCST,Op.lims,[]);
-function [xnew,unew,cnew] = forward_pass(D,idx,x0,u,L,x,du,Alpha,DYNCST,lims,diff)
+function [xnew,unew,cnew] = forward_pass(D,idx,x0,u,L,x,du,Ku,Alpha,DYNCST,lims,diff)
 % l (Schwarting j_k^i) is taken into the function as the argument du
 % parallel forward-pass (rollout)
 % internally time is on the 3rd dimension, 
@@ -459,29 +459,34 @@ for k = 1:N
     
     if ~isempty(du)
         % feedforward control term should not be too agressive, Alpha < 1
-        unew(:,:,k) = unew(:,:,k) + du(:,k)*Alpha;
+        unew(idx,:,:,k) = squeeze(unew(idx,:,:,k)) + du(:,k)*Alpha;
     end    
     
     if ~isempty(L)
         if ~isempty(diff)
             dx = diff(xnew(:,:,k), x(:,k*K1));
         else
-            dx          = xnew(:,:,k) - x(:,k*K1);
+            dx          = xnew(idx,:,:,k) - x(idx,:,k*K1);
         end
-        unew(:,:,k) = unew(:,:,k) + L(:,:,k)*dx; % with feedback
+        unew(idx,:,:,k) = squeeze(unew(idx,:,:,k)) + L(:,:,k)*squeeze(dx); % with feedback
     end
     
     if ~isempty(lims)
         % add u upper and lower bound again
         for i=1:size(D.Nodes,1)
-            unew(i,:,:,k) = min(transpose(lims(:,2*K1)), max(transpose(lims(:,1*K1)), unew(i,:,:,k)));
+            unew_ik = squeeze(unew(i,:,:,k));
+            size_unew = size(unew_ik);
+            if size_unew(2)==m_u
+                unew_ik = transpose(unew_ik);
+            end
+            unew(i,:,:,k) = min(lims(:,2*K1), max(lims(:,1*K1), unew_ik));
         end
     end
 
     [xnew(:,:,:,k+1), cnew(:,:,:,k)]  = DYNCST(D,idx,xnew(:,:,:,k), unew(:,:,:,k), k*K1);
 %     
 end
-[~, cnew(:,:,:,N+1)] = DYNCST(D,idx,xnew(:,:,:,N+1),nan(m_u,K,1),k);
+[~, cnew(:,:,:,N+1)] = DYNCST(D,idx,xnew(:,:,:,N+1),nan(n_agent,m_u,K,1),k);
 
 % components_amount = 2;
 % horiz = N+1;
@@ -527,24 +532,25 @@ cnew = permute(cnew, [1 2 4 3]);
 
 
 
-function [diverge, Vx, Vxx, k, K, dV] = back_pass(c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,cx,cu,cxx,cxu,cuu,fx,fu,fxx,fxu,fuu,lambda,regType,lims,u)
+function [diverge, Vx, Vxx, k, K, dV, Ku] = back_pass(D,idx,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,fx,fu,fxx,fxu,fuu,lambda,regType,lims,u)
 % Perform the Ricatti-Mayne backward pass
-
+% cx=0;cu=0;cxx=0;cxu=0;cuu=0;
 % tensor multiplication for DDP terms
 vectens = @(a,b) permute(sum(bsxfun(@times,a,b),1), [3 2 1]);
 
-N  = size(cx,2);
-n  = numel(cx)/N;
-m  = numel(cu)/N;
+N  = size(c_bi,2);
+n  = numel(c_bi)/N;
+m  = numel(c_ui)/N;
 
-cx    = reshape(cx,  [n N]);
-cu    = reshape(cu,  [m N]);
-cxx   = reshape(cxx, [n n N]);
-cxu   = reshape(cxu, [n m N]);
-cuu   = reshape(cuu, [m m N]);
-
+cx    = reshape(c_bi,  [n N]);
+cu    = reshape(c_ui,  [m N]);
+cxx   = reshape(c_bi_bi, [n n N]);
+cxu   = reshape(c_bi_ui, [n m N]);
+cuu   = reshape(c_ui_ui, [m m N]);
+cuuj = c_ui_uj;
 k     = zeros(m,N-1);
 K     = zeros(m,n,N-1);
+Ku     = zeros(size(D.Nodes,1),m,m,N-1);
 Vx    = zeros(n,N);
 Vxx   = zeros(n,n,N);
 dV    = [0 0];
@@ -588,24 +594,24 @@ for i = N-1:-1:1
         QuuF = QuuF + fuuVx;
     end
     % usually we go to else
-    if nargin < 13 || isempty(lims) || lims(1,1) > lims(1,2)
-        % no control limits: Cholesky decomposition, check for non-PD
-        [R,d] = chol(QuuF);
-        if d ~= 0
-            diverge  = i;
-            return;
-        end
-        
-        % find control law
-        kK = -R\(R'\[Qu Qux_reg]);
-        k_i = kK(:,1);
-        K_i = kK(:,2:n+1);
-        
-    else        % solve Quadratic Program
-        lower = lims(:,1)-u(:,i);
-        upper = lims(:,2)-u(:,i);
-        % 0.5*x'*H*x + x'*g  s.t. lower<=x<=upper
-        [k_i,result,R,free] = boxQP(QuuF,Qu,lower,upper,k(:,min(i+1,N-1)));
+%     if nargin < 13 || isempty(lims) || lims(1,1) > lims(1,2)
+%         % no control limits: Cholesky decomposition, check for non-PD
+%         [R,d] = chol(QuuF);
+%         if d ~= 0
+%             diverge  = i;
+%             return;
+%         end
+%         
+%         % find control law
+%         kK = -R\(R'\[Qu Qux_reg]);
+%         k_i = kK(:,1);
+%         K_i = kK(:,2:n+1);
+%         
+%     else        % solve Quadratic Program
+%         lower = lims(:,1)-u(idx,:,i);
+%         upper = lims(:,2)-u(:,i);
+%         % 0.5*x'*H*x + x'*g  s.t. lower<=x<=upper
+%         [k_i,result,R,free] = boxQP(QuuF,Qu,lower,upper,k(:,min(i+1,N-1)));
 %         % R*R'=Quu (actually QuuF)
 %         % k_i=-Quu\Qu
 %         %(38)(42)
@@ -614,10 +620,14 @@ for i = N-1:-1:1
 %             return;
 %         end
 %         
-        K_i    = zeros(m,n);
-        K2_i=-QuuF\(cxu(:,:,i)+fx(:,:,i)'*Vxx_reg*fu(:,:,i))';
+%         K_i    = zeros(m,n);
+    K2_i=-QuuF\(cxu(:,:,i)+fx(:,:,i)'*Vxx_reg*fu(:,:,i))';
 %         Vb_gu_plus_cu = cu(:,i)      + fu(:,:,i)'*(Vx(:,i+1) + Vxx(:,i+1)*);
-        k2_i = -QuuF\Qu;
+    k2_i = -QuuF\Qu;
+    incoming_nbrs_idces = predecessors(D,idx);
+    for j = incoming_nbrs_idces
+        Ku(j,:,:,i) = -QuuF\squeeze(c_ui_uj(j,:,:,i));
+    end
 %         if any(free)
 %             Lfree        = -R\(R'\Qux_reg(free,:)); %=-(R*R')^(-1)*Qux=-Quu^(-1)*Qux
 %             %(38)(42)
@@ -625,7 +635,7 @@ for i = N-1:-1:1
 %             
 %         end
         
-    end
+%     end
     
     % update cost-to-go approximation
     dV          = dV + [k2_i'*Qu  .5*k2_i'*Quu*k2_i];              %(43)
@@ -638,6 +648,7 @@ for i = N-1:-1:1
 	k(:,i)      = k2_i;
 %     K(:,:,i)    = K_i;
     K(:,:,i)    = K2_i;
+%     Ku(:,:,i) = Ku_i_agent_j
 end% end of for (horizon)
 
 

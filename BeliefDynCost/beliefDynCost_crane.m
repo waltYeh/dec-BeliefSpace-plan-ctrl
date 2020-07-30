@@ -35,13 +35,28 @@ incoming_nbrs_idces = predecessors(D,idx);
 % neighbors_amount = round(beliefDim/(motionModel.stDim*(motionModel.stDim+1)));
 % ctDim = motionModel.ctDim;% 4, only for one component
 % if only two outputs g and c are needed
-g=zeros(size(D.Nodes,1),beliefDim);
+size_paral = size(b,3);
+g=zeros(size(D.Nodes,1),beliefDim,size_paral);
 if nargout == 2
     for j = incoming_nbrs_idces
         % the belief of agent idx about agent i
-        g(j,:) = beliefDynamicsSimpleAgent(transpose(b(j,:,:)), transpose(u(j,:,:)), motionModel, obsModel);
+        bj=squeeze(b(j,:,:));
+        uj=squeeze(u(j,:,:));
+        size_bj = size(bj);
+        if size_bj(1) ~= beliefDim
+            bj = transpose(bj);
+            uj = transpose(uj);
+        end
+        g(j,:,:) = beliefDynamicsSimpleAgent(bj, uj, motionModel, obsModel);
     end
-    g(idx,:) = beliefDynamicsSimpleAgent(transpose(b(idx,:,:)), transpose(u(idx,:,:)), motionModel, obsModel);
+    bidx=squeeze(b(idx,:,:));
+    uidx=squeeze(u(idx,:,:));
+    size_bidx = size(bidx);
+    if size_bidx(1) ~= beliefDim
+        bidx = transpose(bidx);
+        uidx = transpose(uidx);
+    end
+    g(idx,:,:) = beliefDynamicsSimpleAgent(bidx, uidx, motionModel, obsModel);
     c = costAgentFormation(D, idx,b, u, horizonSteps, motionModel.stDim);
 else
     % belief state and control indices

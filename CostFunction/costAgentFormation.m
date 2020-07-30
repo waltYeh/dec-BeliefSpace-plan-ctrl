@@ -16,12 +16,12 @@ function c = costAgentFormation(D, idx, b, u, horizon, stDim)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 c = zeros(1,size(b,3));
-if size(b,3)>1  
-% size is n_b * 1 * ((n_b+n_u+1)horizon) for deri before backward path
-% size of u is n_u * 1 * ((n_b+n_u+1)horizon) with NaN at the end of
-% horizons
-    keyboard
-end
+% if size(b,3)>1  
+% % size is n_b * 1 * ((n_b+n_u+1)horizon) for deri before backward path
+% % size of u is n_u * 1 * ((n_b+n_u+1)horizon) with NaN at the end of
+% % horizons
+%     keyboard
+% end
 % size is n_agent * n_b for forward path
 % incoming_nbrs_idces = predecessors(D,idx);
 for j=1:size(b,3)

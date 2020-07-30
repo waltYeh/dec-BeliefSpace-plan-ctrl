@@ -109,8 +109,8 @@ agents{4} = AgentCrane(dt,horizonSteps,4);
 
 u_guess = zeros(size(D.Nodes,1),size(D.Nodes,1),2,horizonSteps-1);
 % initial guess, less iterations needed if given well
-% u_guess(1,:)=-3.3;
-% u_guess(2,:)=-1.3;
+u_guess(1,1,1,:)=-3.3;
+u_guess(1,1,2,:)=-1.3;
 b0=zeros(size(D.Nodes,1),size(D.Nodes,1),size(mu_1,1)+size(sig_1(:),1));
 for i=1:size(D.Nodes,1)
     b0(i,1,:) = [mu_1;sig_1(:)];

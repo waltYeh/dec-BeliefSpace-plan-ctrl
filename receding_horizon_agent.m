@@ -52,10 +52,14 @@ switch show_mode
         weight_2 = 0.95;
 end
 %% tuned parameters
-mu_1 = [8.5, 4.0, 5.0, 0.0]';
-mu_2 = [3, 2.0, 5.0, 0.0]';
-sig_1 = diag([0.01, 0.01, 0.01, 0.01]);%sigma
-sig_2 = diag([0.01, 0.01, 0.01, 0.01]);
+mu_1 = [0, 4.0]';
+mu_2 = [1, 3.0]';
+mu_3 = [-1, 2.8]';
+mu_4 = [0.1, 2.0]';
+sig_1 = diag([0.01, 0.01]);%sigma
+sig_2 = diag([0.01, 0.01]);
+sig_3 = diag([0.01, 0.01]);%sigma
+sig_4 = diag([0.01, 0.01]);
 % weight_1 = 0.9;
 % weight_2 = 0.1;
 dt = 0.05;
@@ -76,25 +80,49 @@ simulation_steps = simulation_time/mpc_update_period;
 
 % om = HumanReactionModel(); % observation model
 
+
+
+sd = [2 2 3 1];%edges start from
+td = [1 3 4 3];%edges go to
+nom_formation_1=[0.4,0.4;
+    -0.4,-0.4;
+    -0.4,-0.4;
+    -0.8,-0.8];%-- formation
+nom_formation_2=[-0.5,0.6;
+    -1,0;
+    0.5,-0.6;
+    -0.5,-0.6];%z formation
+q_formation=[1;1;1;1];
+rij_control = [0.3;0.3;0.3;0.3];%control cost of node sd in opt of td
+rii_control = [0.8;0.8;0.8;0.8];
+EdgeTable = table([sd' td'],nom_formation_1,nom_formation_2,q_formation,rij_control,'VariableNames',{'EndNodes' 'nom_formation_1' 'nom_formation_2' 'q_formation' 'rij_control'});
+NodeTable = table(rii_control,'VariableNames',{'rii_control'});
+D = digraph(EdgeTable,NodeTable);
+
+agents = cell(size(D.Nodes,1),1);
+agents{1} = AgentCrane(dt,horizonSteps,1);
+agents{2} = AgentPlattform(dt,horizonSteps);
+agents{3} = AgentCrane(dt,horizonSteps,3);
+agents{4} = AgentCrane(dt,horizonSteps,4);
+
 %% Setup start and goal/target state
 
-b0={[mu_1;sig_1(:);weight_1;mu_2;sig_2(:);weight_2];[mu_1;sig_1(:);weight_1;mu_2;sig_2(:);weight_2]};
-
-u_guess = zeros(6,horizonSteps-1);
+u_guess = zeros(size(D.Nodes,1),size(D.Nodes,1),2,horizonSteps-1);
 % initial guess, less iterations needed if given well
-u_guess(1,:)=-3.3;
-u_guess(2,:)=-1.3;
+% u_guess(1,:)=-3.3;
+% u_guess(2,:)=-1.3;
+b0=zeros(size(D.Nodes,1),size(D.Nodes,1),size(mu_1,1)+size(sig_1(:),1));
+for i=1:size(D.Nodes,1)
+    b0(i,1,:) = [mu_1;sig_1(:)];
+    b0(i,2,:) = [mu_2;sig_2(:)];
+    b0(i,3,:) = [mu_3;sig_3(:)];
+    b0(i,4,:) = [mu_4;sig_4(:)];
+end
+% b0={[mu_1;sig_1(:);weight_1;mu_2;sig_2(:);weight_2];[mu_1;sig_1(:);weight_1;mu_2;sig_2(:);weight_2]};
 
-agents = cell(2,1);
-agents{1} = AgentPlattform(dt,horizonSteps);
-agents{2} = AgentPlattform(dt,horizonSteps);
 % control constraints are optional
-Op.lims  = [-0.0 0.0;
-    -4.0 4.0;
-    -0.0  0.0;
-    -0.0  0.0;
-    -2.0 2.0;
-    -2.0 2.0];
+Op.lims  = [-4.0 4.0;
+    -4.0 4.0];
 %% these are old codes remained
 Op.plot = -1; % plot the derivatives as well
 
@@ -106,7 +134,7 @@ Op.plotFn = plotFn;
 %% === run the optimization
 
 for i_sim = 1:simulation_steps
-    [b_nom1,u_nom1,L_opt1,Vx1,Vxx1,cost1] = agents{1}.iLQG_GMM(b0{1}, u_guess, Op);
+    [b_nom1,u_nom1,L_opt1,Vx1,Vxx1,cost1] = agents{1}.iLQG_agent(D,squeeze(b0(1,:,:)), squeeze(u_guess(1,:,:,:)), Op);
     agents{1}.updatePolicy(b_nom1,u_nom1,L_opt1);
 %     [b_nom2,u_nom2,L_opt2,Vx2,Vxx2,cost2] = agents{2}.iLQG_GMM(b0{2}, u_guess, Op);
 %     agents{2}.updatePolicy(b_nom2,u_nom2,L_opt2);
@@ -122,5 +150,3 @@ for i_sim = 1:simulation_steps
 end
 
 end
-
-

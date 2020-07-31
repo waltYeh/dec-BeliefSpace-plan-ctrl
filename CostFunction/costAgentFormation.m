@@ -58,11 +58,11 @@ function cost = evaluateCost(D, idx, b, u, stDim, L)
 %   c: cost estimate
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % cost = 0;
-incoming_nbrs_idces = predecessors(D,idx);
+incoming_nbrs_idces = predecessors(D,idx)';
 
 final = isnan(u(idx,1,:));
 % u(:,final)  = 0;
-for j = [idx; incoming_nbrs_idces]
+for j = [idx, incoming_nbrs_idces]
     u(j,:,final)  = 0;
 end
 x_idx = transpose(b(idx,1:stDim,1));
@@ -118,11 +118,11 @@ else
             P(:,d) = b(j,d*stDim+1:(d+1)*stDim, 1);
         end
 %         RowIdx = ismember(D.Edges.EndNodes, [j,idx],'rows');
-        uc = uc + 0.5*rij_control*(transpose(u(j))'*transpose(u(j)));
+        uc = uc + 0.5*rij_control*(transpose(u(j,:))'*transpose(u(j,:)));
         formation_error = x_idx-x-(D.Edges.nom_formation_2(edge_row,:))';
         sc = sc + 0.5*q_formation*(formation_error'*formation_error);
     end
-    uc = uc + 0.5*rii_control*(transpose(u(idx))'*transpose(u(idx)));
+    uc = uc + 0.5*rii_control*(transpose(u(idx,:))'*transpose(u(idx,:)));
 end
 
 w_cc = 1.0;

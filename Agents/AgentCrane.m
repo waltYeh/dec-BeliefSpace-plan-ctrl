@@ -10,12 +10,12 @@ classdef AgentCrane < AgentBase
 %         eta_u; % A coefficient, which makes the control noise intensity proportional to the control signal       
 %         zeroNoise;
 %         ctrlLim; % control limits
-        component_stDim = 4;
+        component_stDim = 2;
         %component_stDim + component_stDim^2 + 1
-        component_bDim = 21;
+        component_bDim = 6;
         components_amount = 1;
         shared_uDim = 0;
-        u_lims = [-0.0 0.0;
+        u_lims = [-4.0 4.0;
             -4.0 4.0];
         % larger, less overshoot; smaller, less b-noise affects assist
         P_feedback = 0.3;
@@ -47,16 +47,17 @@ classdef AgentCrane < AgentBase
             [b_nom,u_nom,L_opt,Vx,Vxx,cost,~,~,tt, nIter]= iLQG_multiagent(D,obj.digraph_idx,obj.dyn_cst, b0, u_guess, Op);
         end
         function updatePolicy(obj, b_n,u_n,L)
-            obj.policyHorizon = size(b_n,2);
+            obj.policyHorizon = size(b_n,3);
             obj.b_nom = b_n;
             obj.u_nom = u_n;
             obj.L_opt = L;
             obj.ctrl_ptr = 1;
         end
         function u = getNextControl(obj, b)
-            u = obj.u_nom(:,obj.ctrl_ptr) + obj.P_feedback*obj.L_opt(:,:,obj.ctrl_ptr)*(b - obj.b_nom(:,obj.ctrl_ptr));
+            diff_b = (b - obj.b_nom(:,:,obj.ctrl_ptr));
+            u = obj.u_nom(obj.digraph_idx,:,obj.ctrl_ptr)' + obj.P_feedback*obj.L_opt(:,:,obj.ctrl_ptr)*diff_b(obj.digraph_idx,:)';
             % dim is 6
-            for i_u = 1:size(obj.u_nom,1)
+            for i_u = 1:size(obj.u_nom,2)
                 u(i_u)=min(obj.u_lims(i_u,2), max(obj.u_lims(i_u,1), u(i_u)));
             end
             obj.ctrl_ptr = obj.ctrl_ptr + 1;
@@ -67,7 +68,10 @@ classdef AgentCrane < AgentBase
         function [b_next,mu,sig,weight] = getNextEstimation(obj,b,u,z)
             component_alone_uDim = obj.motionModel.ctDim - obj.shared_uDim;
 %             components_amount = length(b)/component_bDim;
-            [mu, sig, weight] = b2xPw(b, obj.component_stDim, obj.components_amount);
+%             [mu, sig, weight] = b2xPw(b, obj.component_stDim, obj.components_amount);
+            mu=cell(1);
+            sig=cell(1);
+            [mu{1}, sig{1}] = b2xP(b, obj.component_stDim);
             z_mu = cell(obj.components_amount);
             z_sig = cell(obj.components_amount);
             for i_comp = 1:obj.components_amount
@@ -93,40 +97,45 @@ classdef AgentCrane < AgentBase
                 HPH = H*P_prd*H';
             %     S = H*P_prd*H' + M*R*M';
                 K = (P_prd*H')/(HPH + M*obj.obsModel.R_est*M');
-                z_ratio = 1;
-                if abs(z(1))<1
-                    z_ratio = abs(z(1));
-                end
-                weight_adjust = [z_ratio*weight(i_comp),z_ratio*weight(i_comp),1,1]';
+%                 z_ratio = 1;
+%                 if abs(z(1))<1
+%                     z_ratio = abs(z(1));
+%                 end
+%                 weight_adjust = [z_ratio*weight(i_comp),z_ratio*weight(i_comp),1,1]';
         %         K=weight_adjust.*K;
                 P = (eye(obj.motionModel.stDim) - K*H)*P_prd;
-                x = x_prd + weight_adjust.*K*(z - z_prd);
+                x = x_prd + K*(z - z_prd);
                 z_mu{i_comp} = z_prd;
                 z_sig{i_comp} = HPH;
                 mu{i_comp} = x;
                 sig{i_comp} = P;
             end
+            if obj.components_amount> 1
+                last_w = weight;
 
-            last_w = weight;
-
-            for i_comp = 1 : obj.components_amount
-                weight(i_comp) = last_w(i_comp)*getLikelihood(z - z_mu{i_comp}, z_sig{i_comp} + obj.obsModel.R_w);
-            end
-            sum_wk=sum(weight);
-            if (sum_wk > 0)
                 for i_comp = 1 : obj.components_amount
-                    weight(i_comp) = weight(i_comp) ./ sum_wk;
+                    weight(i_comp) = last_w(i_comp)*getLikelihood(z - z_mu{i_comp}, z_sig{i_comp} + obj.obsModel.R_w);
                 end
+                sum_wk=sum(weight);
+                if (sum_wk > 0)
+                    for i_comp = 1 : obj.components_amount
+                        weight(i_comp) = weight(i_comp) ./ sum_wk;
+                    end
+                else
+                    weight = last_w;
+                end
+                for i_comp = 1 : obj.components_amount
+                    weight(i_comp) = 0.99*weight(i_comp)+0.01*(1 / obj.components_amount);
+                end
+                if abs(z(1))<0.25
+                    weight = last_w;
+                end
+                b_next = xPw2b(mu, sig, weight, obj.component_stDim, obj.components_amount);
             else
-                weight = last_w;
+                b_next = [mu{1};sig{1}(:)];
+                weight = [];
             end
-            for i_comp = 1 : obj.components_amount
-                weight(i_comp) = 0.99*weight(i_comp)+0.01*(1 / obj.components_amount);
-            end
-            if abs(z(1))<0.25
-                weight = last_w;
-            end
-            b_next = xPw2b(mu, sig, weight, obj.component_stDim, obj.components_amount);
+            
         end
     end
 end

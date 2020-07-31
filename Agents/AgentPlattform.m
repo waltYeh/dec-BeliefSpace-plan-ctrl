@@ -66,17 +66,14 @@ classdef AgentPlattform < AgentBase
             end
         end
         function [b_next,mu,sig,weight] = getNextEstimation(obj,b,u,z)
-            component_stDim = obj.motionModel.stDim;
-            component_bDim = component_stDim + component_stDim^2 + 1;
-            shared_uDim = 2;
-            component_alone_uDim = obj.motionModel.ctDim - shared_uDim;
-            components_amount = length(b)/component_bDim;
-            [mu, sig, weight] = b2xPw(b, component_stDim, components_amount);
-            z_mu = cell(components_amount);
-            z_sig = cell(components_amount);
-            for i_comp = 1:components_amount
+component_alone_uDim = obj.motionModel.ctDim - obj.shared_uDim;
+%             components_amount = length(b)/component_bDim;
+            [mu, sig, weight] = b2xPw(b, obj.component_stDim, obj.components_amount);
+            z_mu = cell(obj.components_amount);
+            z_sig = cell(obj.components_amount);
+            for i_comp = 1:obj.components_amount
                 %u = [v_ball;v_rest;v_aid_man];
-                u_for_comp = [u((i_comp-1)*component_alone_uDim + 1:i_comp*component_alone_uDim);u(end-shared_uDim+1:end)];
+                u_for_comp = [u((i_comp-1)*component_alone_uDim + 1:i_comp*component_alone_uDim);u(end-obj.shared_uDim+1:end)];
                     % Get motion model jacobians and predict pose
             %     zeroProcessNoise = motionModel.generateProcessNoise(mu{i_comp},u_for_comp); % process noise
                 zeroProcessNoise = zeros(obj.motionModel.stDim,1);
@@ -113,24 +110,24 @@ classdef AgentPlattform < AgentBase
 
             last_w = weight;
 
-            for i_comp = 1 : components_amount
+            for i_comp = 1 : obj.components_amount
                 weight(i_comp) = last_w(i_comp)*getLikelihood(z - z_mu{i_comp}, z_sig{i_comp} + obj.obsModel.R_w);
             end
             sum_wk=sum(weight);
             if (sum_wk > 0)
-                for i_comp = 1 : components_amount
+                for i_comp = 1 : obj.components_amount
                     weight(i_comp) = weight(i_comp) ./ sum_wk;
                 end
             else
                 weight = last_w;
             end
-            for i_comp = 1 : components_amount
-                weight(i_comp) = 0.99*weight(i_comp)+0.01*(1 / components_amount);
+            for i_comp = 1 : obj.components_amount
+                weight(i_comp) = 0.99*weight(i_comp)+0.01*(1 / obj.components_amount);
             end
             if abs(z(1))<0.25
                 weight = last_w;
             end
-            b_next = xPw2b(mu, sig, weight, component_stDim, components_amount);
+            b_next = xPw2b(mu, sig, weight, obj.component_stDim, obj.components_amount);
         end
     end
 end

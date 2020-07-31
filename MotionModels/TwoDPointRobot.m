@@ -14,7 +14,8 @@ classdef TwoDPointRobot < MotionModelBase
         sigma_b_u = [0.0;0.0]; % A constant bias intensity (std dev) of the control noise
         eta_u = [0;0]; % A coefficient, which makes the control noise intensity proportional to the control signal       
         zeroNoise = [0;0]; 
-        ctrlLim = [-1.0 1.0;-1.0 1.0]; % max control for Vx and Vy
+        ctrlLim = [-4.0 4.0;-4.0 4.0]; % max control for Vx and Vy 
+        %this is no longer consistent with other lim definition
     end
     
     methods

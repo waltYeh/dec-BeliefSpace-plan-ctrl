@@ -15,7 +15,7 @@ function J = multiAgentFiniteDifference2(fun, D,idx,x, h)
 
 J=zeros(n_agent,n_bu,n_bu,K);
 % we consider dyn decoupled situation first
-incoming_nbrs_idces = predecessors(D,idx);
+% incoming_nbrs_idces = predecessors(D,idx);
 for j=idx%[idx,incoming_nbrs_idces]
         H = zeros(size(D.Nodes,1),n_bu,1+n_bu);
 

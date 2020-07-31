@@ -120,11 +120,11 @@ else
         
 %         E_j = table2array(D.Edges(RowIdx,:));
 %         RowIdx = ismember(D.Edges.EndNodes, [j,idx],'rows');
-        uc = uc + 0.5*rij_control*(transpose(u(j))'*transpose(u(j)));
+        uc = uc + 0.5*rij_control*(transpose(u(j,:))'*transpose(u(j,:)));
         formation_error = x_idx-x-(D.Edges.nom_formation_2(edge_row,:))';
         sc = sc + 0.5*q_formation*(formation_error'*formation_error);
     end
-    uc = uc + 0.5*rii_control*(transpose(u(idx))'*transpose(u(idx)));
+    uc = uc + 0.5*rii_control*(transpose(u(idx,:))'*transpose(u(idx,:)));
 end
 
 w_cc = 1.0;

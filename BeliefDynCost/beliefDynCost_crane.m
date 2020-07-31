@@ -31,7 +31,7 @@ beliefDim = size(b,2);
 ctrlDim = size(u,2);
 horizon =  size(b,3);
 % beliefDim = size(b,1);
-incoming_nbrs_idces = predecessors(D,idx);
+incoming_nbrs_idces = predecessors(D,idx)';
 % neighbors_amount = round(beliefDim/(motionModel.stDim*(motionModel.stDim+1)));
 % ctDim = motionModel.ctDim;% 4, only for one component
 % if only two outputs g and c are needed
@@ -40,6 +40,8 @@ g=zeros(size(D.Nodes,1),beliefDim,size_paral);
 if nargout == 2
     for j = incoming_nbrs_idces
         % the belief of agent idx about agent i
+        %the last ":" in the following is for the parallel computing, not
+        %affecting single computation
         bj=squeeze(b(j,:,:));
         uj=squeeze(u(j,:,:));
         size_bj = size(bj);

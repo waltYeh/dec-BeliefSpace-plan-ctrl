@@ -60,7 +60,12 @@ classdef TwoDSimpleObsModel < ObservationModelBase
             end
             
         end
-        
+        function v = computeObservationNoiseTrue(obj)
+            
+            noise_std = chol(obj.R_true)';
+            
+            v = noise_std*randn(obj.obsNoiseDim,1);
+        end
         function H = getObservationJacobian(obj,x, v)
             % Compute observation model jacobian w.r.t state
             % Inputs:

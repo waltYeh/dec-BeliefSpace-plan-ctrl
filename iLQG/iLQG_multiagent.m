@@ -165,6 +165,8 @@ trace(1).dlambda = dlambda;
 % if size(x0,3) == 1
     diverge = true;
     for alpha = Op.Alpha
+        % x, only nodes pointing towards me and myself is filled with
+        % belief state predictions
         [x,un,cost]  = forward_pass(D,idx,x0,alpha*u,[],[],[],[],1,DYNCST,Op.lims,[]);
 %         drawResult(Op.plotFn,x(:,:,1),2);
 %         saveas(gcf,'iLQG-initialguess.jpg');
@@ -188,7 +190,7 @@ trace(1).dlambda = dlambda;
 %     error('pre-rolled initial trajectory must be of correct length')
 % end
 
-trace(1).cost = sum(cost(:));
+trace(1).cost = sum(cost(:));%sum on 1x1x41 (horizon 41)
 
 % user plotting
 % drawResult(Op.plotFn,x,2);
@@ -466,7 +468,7 @@ for k = 1:N
         if ~isempty(diff)
             dx = diff(xnew(:,:,k), x(:,k*K1));
         else
-            dx          = xnew(idx,:,:,k) - x(idx,:,k*K1);
+            dx          = xnew(idx,:,:,k) - x(idx,:,k*K1);% both size 1x6x11
         end
         unew(idx,:,:,k) = squeeze(unew(idx,:,:,k)) + L(:,:,k)*squeeze(dx); % with feedback
     end
@@ -475,10 +477,10 @@ for k = 1:N
 %         u_real_all_agent = u;
         du_all_agent(:) = 0;
 %         dx          = xnew(idx,:,:,k) - x(idx,:,k*K1);
-        incoming_nbrs = predecessors(D,idx);
-        for j_agent=incoming_nbrs
-            unew(idx,:,:,k) = squeeze(unew(idx,:,:,k)) + squeeze(Ku(j_agent,:,:,k))'*transpose(squeeze(du_all_agent(j_agent,:,k)));
-        end
+        incoming_nbrs = predecessors(D,idx)';
+%         for j_agent=incoming_nbrs
+%             unew(idx,:,:,k) = squeeze(unew(idx,:,:,k)) + squeeze(Ku(j_agent,:,:,k))'*transpose(squeeze(du_all_agent(j_agent,:,k)));
+%         end
          % with feedback
     end
     if ~isempty(lims)
@@ -634,7 +636,7 @@ for i = N-1:-1:1
     K2_i=-QuuF\(cxu(:,:,i)+fx(:,:,i)'*Vxx_reg*fu(:,:,i))';
 %         Vb_gu_plus_cu = cu(:,i)      + fu(:,:,i)'*(Vx(:,i+1) + Vxx(:,i+1)*);
     k2_i = -QuuF\Qu;
-    incoming_nbrs_idces = predecessors(D,idx);
+    incoming_nbrs_idces = predecessors(D,idx)';
     for j = incoming_nbrs_idces
         Ku(j,:,:,i) = -QuuF\squeeze(c_ui_uj(j,:,:,i));
     end

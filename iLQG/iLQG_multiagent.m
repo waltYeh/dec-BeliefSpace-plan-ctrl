@@ -470,7 +470,17 @@ for k = 1:N
         end
         unew(idx,:,:,k) = squeeze(unew(idx,:,:,k)) + L(:,:,k)*squeeze(dx); % with feedback
     end
-    
+    if ~isempty(Ku)
+        du_all_agent = u;
+%         u_real_all_agent = u;
+        du_all_agent(:) = 0;
+%         dx          = xnew(idx,:,:,k) - x(idx,:,k*K1);
+        incoming_nbrs = predecessors(D,idx);
+        for j_agent=incoming_nbrs
+            unew(idx,:,:,k) = squeeze(unew(idx,:,:,k)) + squeeze(Ku(j_agent,:,:,k))'*transpose(squeeze(du_all_agent(j_agent,:,k)));
+        end
+         % with feedback
+    end
     if ~isempty(lims)
         % add u upper and lower bound again
         for i=1:size(D.Nodes,1)
@@ -487,7 +497,9 @@ for k = 1:N
 %     
 end
 [~, cnew(:,:,:,N+1)] = DYNCST(D,idx,xnew(:,:,:,N+1),nan(n_agent,m_u,K,1),k);
-
+xnew = permute(xnew, [1 2 4 3]);
+unew = permute(unew, [1 2 4 3]);
+cnew = permute(cnew, [1 2 4 3]);
 % components_amount = 2;
 % horiz = N+1;
 % mu = cell(components_amount,1);
@@ -525,9 +537,7 @@ end
 % hold off
 
 % put the time dimension in the columns
-xnew = permute(xnew, [1 2 4 3]);
-unew = permute(unew, [1 2 4 3]);
-cnew = permute(cnew, [1 2 4 3]);
+
 
 
 

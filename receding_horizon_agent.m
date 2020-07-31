@@ -95,10 +95,22 @@ nom_formation_2=[-0.5,0.6;
 q_formation=[1;1;1;1];
 rij_control = [0.3;0.3;0.3;0.3];%control cost of node sd in opt of td
 rii_control = [0.8;0.8;0.8;0.8];
-EdgeTable = table([sd' td'],nom_formation_1,nom_formation_2,q_formation,rij_control,'VariableNames',{'EndNodes' 'nom_formation_1' 'nom_formation_2' 'q_formation' 'rij_control'});
-NodeTable = table(rii_control,'VariableNames',{'rii_control'});
-D = digraph(EdgeTable,NodeTable);
+incoming_edges = zeros(4,4);
+EdgeTable = table([sd' td'],nom_formation_2,q_formation,rij_control,'VariableNames',{'EndNodes' 'nom_formation_2' 'q_formation' 'rij_control'});
 
+NodeTable = table(incoming_edges,rii_control,'VariableNames',{'incoming_edges' 'rii_control'});
+D = digraph(EdgeTable,NodeTable);
+for idx=1:4
+    incoming_nbrs_idces = predecessors(D,idx)';
+    for j = incoming_nbrs_idces
+        if isempty(j)
+            continue
+        end
+        RowIdx = ismember(D.Edges.EndNodes, [j,idx],'rows');
+        [rId, cId] = find( RowIdx ) ;
+        D.Nodes.incoming_edges(idx,j)=rId;
+    end
+end
 agents = cell(size(D.Nodes,1),1);
 agents{1} = AgentCrane(dt,horizonSteps,1);
 agents{2} = AgentPlattform(dt,horizonSteps);

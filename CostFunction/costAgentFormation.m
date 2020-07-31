@@ -57,7 +57,7 @@ function cost = evaluateCost(D, idx, b, u, stDim, L)
 % Outputs:
 %   c: cost estimate
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-cost = 0;
+% cost = 0;
 incoming_nbrs_idces = predecessors(D,idx);
 
 final = isnan(u(idx,1,:));
@@ -85,10 +85,15 @@ ic = 0;
 
 % control cost
 uc = 0;
-
+[eid,nid] = inedges(D,idx);
+rij_control = 0.3;
+q_formation = 1;
+rii_control = 0.8;
 if any(final)
     
-    for j = incoming_nbrs_idces
+    for j_nid = 1:length(nid)
+        j = nid(j_nid);
+        edge_row = eid(j_nid);
         x = transpose(b(j,1:stDim,1));
         P = zeros(stDim, stDim); % covariance matrix
     % Extract columns of principal sqrt of covariance matrix
@@ -96,13 +101,15 @@ if any(final)
         for d = 1:stDim
             P(:,d) = b(j,d*stDim+1:(d+1)*stDim, 1);
         end
-        RowIdx = ismember(D.Edges.EndNodes, [j,idx],'rows');
-        formation_error = x_idx-x-(D.Edges.nom_formation_2(RowIdx,:))';
-        sc = sc + L*0.5*D.Edges.q_formation(RowIdx)*(formation_error'*formation_error);
+%         RowIdx = ismember(D.Edges.EndNodes, [j,idx],'rows');
+        formation_error = x_idx-x-(D.Edges.nom_formation_2(edge_row,:))';
+        sc = sc + L*0.5*q_formation*(formation_error'*formation_error);
     end
   
 else
-    for j = incoming_nbrs_idces
+    for j_nid = 1:length(nid)
+        j = nid(j_nid);
+        edge_row = eid(j_nid);
         x = transpose(b(j,1:stDim,1));
         P = zeros(stDim, stDim); % covariance matrix
     % Extract columns of principal sqrt of covariance matrix
@@ -110,12 +117,12 @@ else
         for d = 1:stDim
             P(:,d) = b(j,d*stDim+1:(d+1)*stDim, 1);
         end
-        RowIdx = ismember(D.Edges.EndNodes, [j,idx],'rows');
-        uc = uc + 0.5*D.Edges.rij_control(RowIdx)*(transpose(u(j))'*transpose(u(j)));
-        formation_error = x_idx-x-(D.Edges.nom_formation_2(RowIdx,:))';
-        sc = sc + 0.5*D.Edges.q_formation(RowIdx)*(formation_error'*formation_error);
+%         RowIdx = ismember(D.Edges.EndNodes, [j,idx],'rows');
+        uc = uc + 0.5*rij_control*(transpose(u(j))'*transpose(u(j)));
+        formation_error = x_idx-x-(D.Edges.nom_formation_2(edge_row,:))';
+        sc = sc + 0.5*q_formation*(formation_error'*formation_error);
     end
-    uc = uc + 0.5*D.Nodes.rii_control(idx)*(transpose(u(idx))'*transpose(u(idx)));
+    uc = uc + 0.5*rii_control*(transpose(u(idx))'*transpose(u(idx)));
 end
 
 w_cc = 1.0;

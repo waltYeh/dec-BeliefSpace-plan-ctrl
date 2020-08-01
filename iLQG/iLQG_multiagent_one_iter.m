@@ -1,107 +1,8 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Copyright (c) 2015, Yuval Tassa
-% All rights reserved.
-% 
-% Redistribution and use in source and binary forms, with or without
-% modification, are permitted provided that the following conditions are
-% met:
-% 
-%     * Redistributions of source code must retain the above copyright
-%       notice, this list of conditions and the following disclaimer.
-%     * Redistributions in binary form must reproduce the above copyright
-%       notice, this list of conditions and the following disclaimer in
-%       the documentation and/or other materials provided with the distribution
-%     * Neither the name of the University of Washington nor the names
-%       of its contributors may be used to endorse or promote products derived
-%       from this software without specific prior written permission.
-% 
-% THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-% AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-% IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-% ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
-% LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-% CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-% SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-% INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-% CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-% ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-% POSSIBILITY OF SUCH DAMAGE.
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function [x, u, L, Vx, Vxx, cost,  ...
+    lambda, dlambda, finished] = iLQG_multiagent_one_iter(D,idx,DYNCST, x0, Op, iter,...
+    u_guess,lambda_last, dlambda_last, u_last,x_last, cost_last)
 
-function [x, u, L, Vx, Vxx, cost, trace, stop, totaTime, ...
-    totalIterations] = iLQG_multiagent(D,idx,DYNCST, x0, u0, Op)
-
-% iLQG - solve the deterministic finite-horizon optimal control problem.
-%
-%        minimize sum_i CST(x(:,i),u(:,i)) + CST(x(:,end))
-%            u
-%        s.t.  x(:,i+1) = DYN(x(:,i),u(:,i))
-%
-% Inputs
-% ======
-% DYNCST - A combined dynamics and cost function. It is called in
-% three different formats.
-%
-%  1) step:
-%   [xnew,c] = DYNCST(x,u,i) is called during the forward pass. 
-%   Here the state x and control u are vectors: size(x)==[n 1],  
-%   size(u)==[m 1]. The cost c and time index i are scalars.
-%   If Op.parallel==true (the default) then DYNCST(x,u,i) is be 
-%   assumed to accept vectorized inputs: size(x,2)==size(u,2)==K
-%  
-%  2) final:
-%   [~,cnew] = DYNCST(x,nan) is called at the end the forward pass to compute
-%   the final cost. The nans indicate that no controls are applied.
-%  
-%  3) derivatives:
-%   [~,~,fx,fu,fxx,fxu,fuu,cx,cu,cxx,cxu,cuu] = DYNCST(x,u,I) computes the
-%   derivatives along a trajectory. In this case size(x)==[n N+1] where N
-%   is the trajectory length. size(u)==[m N+1] with NaNs in the last column
-%   to indicate final-cost. The time indexes are I=(1:N).
-%   Dimensions match the variable names e.g. size(fxu)==[n n m N+1]
-%   note that the last temporal element N+1 is ignored for all tensors
-%   except cx and cxx, the final-cost derivatives.
-%
-% x0 - The initial state from which to solve the control problem. 
-% Should be a column vector. If a pre-rolled trajectory is available
-% then size(x0)==[n N+1] can be provided and Op.cost set accordingly.
-%
-% u0 - The initial control sequence. A matrix of size(u0)==[m N]
-% where m is the dimension of the control and N is the number of state
-% transitions. 
-%
-%
-% Op - optional parameters, see below
-%
-% Outputs
-% =======
-% x - the optimal state trajectory found by the algorithm.
-%     size(x)==[n N+1]
-%
-% u - the optimal open-loop control sequence.
-%     size(u)==[m N]
-%
-% L - the optimal closed loop control gains. These gains multiply the
-%     deviation of a simulated trajectory from the nominal trajectory x.
-%     size(L)==[m n N]
-%
-% Vx - the gradient of the cost-to-go. size(Vx)==[n N+1]
-%
-% Vxx - the Hessian of the cost-to-go. size(Vxx)==[n n N+1]
-%
-% cost - the costs along the trajectory. size(cost)==[1 N+1]
-%        the cost-to-go is V = fliplr(cumsum(fliplr(cost)))
-%
-% lambda - the final value of the regularization parameter
-%
-% trace - a trace of various convergence-related values. One row for each
-%         iteration, the columns of trace are
-%         [iter lambda alpha g_norm dcost z sum(cost) dlambda]
-%         see below for details.
-%
-% timing - timing information
-
-%---------------------- user-adjustable parameters ------------------------
+%     trace(iter).iter = iter; 
 defaults = {'lims',           [],...            control limits
             'parallel',       true,...          use parallel line-search?
             'Alpha',          10.^linspace(0,-3,11),... backtracking coefficients
@@ -121,22 +22,19 @@ defaults = {'lims',           [],...            control limits
             'plotFn',         @(x)0,...         user-defined graphics callback
             'cost',           [],...            initial cost for pre-rolled trajectory            
             };
-
-% --- initial sizes and controls
+        
 n   = size(x0, 2);          % dimension of belief state vector
-m   = size(u0, 2);          % dimension of control vector
-N   = size(u0, 3);          % number of state transitions time steps
-u   = u0;                   % initial control sequence
+m   = size(u_guess, 2);          % dimension of control vector
+N   = size(u_guess, 3);          % number of state transitions time steps
 
-% --- proccess options
-if nargin < 4
-    Op = struct();
-end
 Op  = setOpts(defaults,Op);
-
 verbosity = Op.print;
 
-switch numel(Op.lims)
+finished = false;
+
+if iter == 1
+    u = u_guess;
+    switch numel(Op.lims)
     case 0
     case 2*m
         % we are here, no change in fact
@@ -147,295 +45,172 @@ switch numel(Op.lims)
         Op.lims = Op.lims(:)*[-1 1];
     otherwise
         error('limits are of the wrong size')
-end
-
-lambda   = Op.lambda;
-dlambda  = Op.dlambda;
-
-% --- initialize trace data structure
-trace = struct('iter',nan,'lambda',nan,'dlambda',nan,'cost',nan,...
-        'alpha',nan,'grad_norm',nan,'improvement',nan,'reduc_ratio',nan,...
-        'time_derivs',nan,'time_forward',nan,'time_backward',nan);
-trace = repmat(trace,[min(Op.maxIter,1e6) 1]);
-trace(1).iter = 1;
-trace(1).lambda = lambda;
-trace(1).dlambda = dlambda;
-
-% --- initial belief state given
-% if size(x0,3) == 1
-    diverge = true;
+    end
+    lambda   = Op.lambda;
+    dlambda  = Op.dlambda;
     for alpha = Op.Alpha
         % x, only nodes pointing towards me and myself is filled with
         % belief state predictions
         [x,un,cost]  = forward_pass(D,idx,x0,alpha*u,[],[],[],[],1,DYNCST,Op.lims,[]);
-%         drawResult(Op.plotFn,x(:,:,1),2);
-%         saveas(gcf,'iLQG-initialguess.jpg');
-%         pause(3);
-        % simplistic divergence test
         if all(abs(x(:)) < 1e8)
             u = un;
-            diverge = false;
             break
         end
     end
-% elseif size(x0,3) == N+1 % pre-rolled initial forward pass
-%     x        = x0;
-%     diverge  = false;
-%     if isempty(Op.cost)
-%         error('pre-rolled initial trajectory requires cost')
-%     else
-%         cost     = Op.cost;
+%     trace(1).cost = sum(cost(:));
+else
+    cost = cost_last;
+    x = x_last;
+    u = u_last;
+    lambda = lambda_last; 
+    dlambda = dlambda_last; 
+end
+  
+%====== STEP 1: differentiate dynamics and cost along new trajectory
+%     if flgChange
+    t_diff = tic;
+    [~,~,fx,fu,fxx,fxu,fuu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj]   = DYNCST(D,idx,x, cat(3,u,nan(size(D.Nodes,1),m,1)), 1:N+1);
+%     trace(iter).time_derivs = toc(t_diff);
+%         flgChange   = 0;
 %     end
-% else
-%     error('pre-rolled initial trajectory must be of correct length')
-% end
 
-trace(1).cost = sum(cost(:));%sum on 1x1x41 (horizon 41)
+%====== STEP 2: backward pass, compute optimal control law and cost-to-go
+backPassDone   = 0;
+while ~backPassDone
 
-% user plotting
-% drawResult(Op.plotFn,x,2);
-% Op.plotFn(x);
+    t_back   = tic;
+    [diverge, Vx, Vxx, l, L, dV, Ku] = back_pass(D,idx,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,fx,fu,fxx,fxu,fuu,lambda,Op.regType,Op.lims,u);
+    % l is the feedforward term (42), 
+    % L is the time-variant feedback(42)
+%     trace(iter).time_backward = toc(t_back);
 
-if diverge
-    [Vx,Vxx, stop]  = deal(nan);
-    L        = zeros(m,n,N);
-    cost     = [];
-    trace    = trace(1);
+    if diverge
+        % maybe not step 13 in Algorithm
+
+        fprintf('Cholesky failed at timestep %d.\n',diverge);
+
+        dlambda   = max(dlambda * Op.lambdaFactor, Op.lambdaFactor);
+        lambda    = max(lambda * dlambda, Op.lambdaMin);
+        if lambda > Op.lambdaMax
+            break;
+        end
+        continue
+    end
+    backPassDone      = 1;
+end
+
+% check for termination due to small gradient
+% another exit criteria than Schwarting, but it hardly ever comes here
+g_norm         = mean(max(abs(l) ./ (squeeze(abs(u(idx,:,:)+1))),[],1));
+% trace(iter).grad_norm = g_norm;
+if g_norm < Op.tolGrad && lambda < 1e-5
+    dlambda   = min(dlambda / Op.lambdaFactor, 1/Op.lambdaFactor);
+    lambda    = lambda * dlambda * (lambda > Op.lambdaMin);
     if verbosity > 0
-        fprintf('\nEXIT: Initial control sequence caused divergence\n');
+        fprintf('\nSUCCESS: gradient norm < tolGrad\n');
     end
-    return
+    finished = true;
+    return;
 end
 
-% constants, timers, counters
-flgChange   = 1;
-stop        = 0;
-dcost       = 0;
-z           = 0;
-expected    = 0;
-print_head  = 6; % print headings every print_head lines
-last_head   = print_head;
-t_start     = tic;
-if verbosity > 0
-    fprintf('\n=========== begin iLQG ===========\n');
+%====== STEP 3: line-search to find new control sequence, trajectory, cost
+fwdPassDone  = 0;
+if backPassDone
+    t_fwd = tic;
+    if Op.parallel  % parallel line-search
+        [xnew,unew,costnew] = forward_pass(D,idx,x0 ,u, L, x(:,:,1:N), l, Ku, Op.Alpha, DYNCST,Op.lims,Op.diffFn);
+        % now we have 10 candidates of new traj
+        Dcost               = sum(cost(:)) - sum(squeeze(costnew),1);
+        [dcost, w]          = max(Dcost);
+        % find the one with greatest cost reduction
+        alpha               = Op.Alpha(w);
+        expected            = -alpha*(dV(1) + alpha*dV(2));
+        if expected > 0
+            z = dcost/expected;
+        else
+            z = sign(dcost);
+            warning('non-positive expected reduction: should not occur');
+        end
+        if (z > Op.zMin)
+            fwdPassDone = 1;
+            costnew     = costnew(:,:,:,w);
+            xnew        = xnew(:,:,:,w);
+            unew        = unew(:,:,:,w);
+        end
+    end
+    if ~fwdPassDone
+        alpha = nan; % signals failure of forward pass
+    end
+%     trace(iter).time_forward = toc(t_fwd);
 end
-% graphics(Op.plot,x,u,cost,zeros(m,n,N),[],[],[],[],[],[],trace,1);
-for iter = 1:Op.maxIter
-    if stop
-        break;
-    end
-    trace(iter).iter = iter;    
-    
-    %====== STEP 1: differentiate dynamics and cost along new trajectory
-    if flgChange
-        t_diff = tic;
-        [~,~,fx,fu,fxx,fxu,fuu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj]   = DYNCST(D,idx,x, cat(3,u,nan(size(D.Nodes,1),m,1)), 1:N+1);
-        trace(iter).time_derivs = toc(t_diff);
-        flgChange   = 0;
-    end
-    
-    %====== STEP 2: backward pass, compute optimal control law and cost-to-go
-    backPassDone   = 0;
-    while ~backPassDone
-        
-        t_back   = tic;
-        [diverge, Vx, Vxx, l, L, dV, Ku] = back_pass(D,idx,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,fx,fu,fxx,fxu,fuu,lambda,Op.regType,Op.lims,u);
-        % l is the feedforward term (42), 
-        % L is the time-variant feedback(42)
-        trace(iter).time_backward = toc(t_back);
-        
-        if diverge
-            % maybe not step 13 in Algorithm
-            if verbosity > 2
-                fprintf('Cholesky failed at timestep %d.\n',diverge);
-            end
-            dlambda   = max(dlambda * Op.lambdaFactor, Op.lambdaFactor);
-            lambda    = max(lambda * dlambda, Op.lambdaMin);
-            if lambda > Op.lambdaMax
-                break;
-            end
-            continue
-        end
-        backPassDone      = 1;
-    end
 
-    % check for termination due to small gradient
-    % another exit criteria than Schwarting, but it hardly ever comes here
-    g_norm         = mean(max(abs(l) ./ (squeeze(abs(u(idx,:,:)+1))),[],1));
-    trace(iter).grad_norm = g_norm;
-    if g_norm < Op.tolGrad && lambda < 1e-5
-        dlambda   = min(dlambda / Op.lambdaFactor, 1/Op.lambdaFactor);
-        lambda    = lambda * dlambda * (lambda > Op.lambdaMin);
-        if verbosity > 0
-            fprintf('\nSUCCESS: gradient norm < tolGrad\n');
-        end
-        break;
+%====== STEP 4: accept step (or not), draw graphics, print status
+
+% print headings
+if verbosity > 1
+    fprintf('%-12s','iteration','cost','reduction','expected','gradient','log10(lambda)')
+    fprintf('\n');
+end
+
+if fwdPassDone
+
+    % print status
+    if verbosity > 1
+        fprintf('%-12d%-12.6g%-12.3g%-12.3g%-12.3g%-12.1f\n', ...
+            iter, sum(cost(:)), dcost, expected, g_norm, log10(lambda));
     end
-    
-    %====== STEP 3: line-search to find new control sequence, trajectory, cost
-    fwdPassDone  = 0;
-    if backPassDone
-        t_fwd = tic;
-        if Op.parallel  % parallel line-search
-            [xnew,unew,costnew] = forward_pass(D,idx,x0 ,u, L, x(:,:,1:N), l, Ku, Op.Alpha, DYNCST,Op.lims,Op.diffFn);
-            % now we have 10 candidates of new traj
-            Dcost               = sum(cost(:)) - sum(squeeze(costnew),1);
-            [dcost, w]          = max(Dcost);
-            % find the one with greatest cost reduction
-            alpha               = Op.Alpha(w);
-            expected            = -alpha*(dV(1) + alpha*dV(2));
-            if expected > 0
-                z = dcost/expected;
-            else
-                z = sign(dcost);
-                warning('non-positive expected reduction: should not occur');
-            end
-            if (z > Op.zMin)
-                fwdPassDone = 1;
-                costnew     = costnew(:,:,:,w);
-                xnew        = xnew(:,:,:,w);
-                unew        = unew(:,:,:,w);
-            end
-        else            % serial backtracking line-search
-            for alpha = Op.Alpha
-                [xnew,unew,costnew]   = forward_pass(D,idx,x0 ,u+l*alpha, L, x(:,:,1:N),[],Ku,1,DYNCST,Op.lims,Op.diffFn);
-                dcost    = sum(cost(:)) - sum(costnew(:));
-                expected = -alpha*(dV(1) + alpha*dV(2));
-                if expected > 0
-                    z = dcost/expected;
-                else
-                    z = sign(dcost);
-                    warning('non-positive expected reduction: should not occur');
-                end
-                if (z > Op.zMin)
-                    fwdPassDone = 1;
-                    break;
-                end
-            end
-        end
-        if ~fwdPassDone
-            alpha = nan; % signals failure of forward pass
-        end
-        trace(iter).time_forward = toc(t_fwd);
-    end
-    
-    %====== STEP 4: accept step (or not), draw graphics, print status
-    
-    % print headings
-    if verbosity > 1 && last_head == print_head
-        last_head = 0;
-        fprintf('%-12s','iteration','cost','reduction','expected','gradient','log10(lambda)')
-        fprintf('\n');
-    end
-    
-    if fwdPassDone
-        
-        % print status
-        if verbosity > 1
-            fprintf('%-12d%-12.6g%-12.3g%-12.3g%-12.3g%-12.1f\n', ...
-                iter, sum(cost(:)), dcost, expected, g_norm, log10(lambda));
-            last_head = last_head+1;
-        end
-        % maybe step 13 in Algorithm
-        % decrease lambda
-        dlambda   = min(dlambda / Op.lambdaFactor, 1/Op.lambdaFactor);
-        lambda    = lambda * dlambda * (lambda > Op.lambdaMin);
-        
-        % accept changes
-        u              = unew;
-        x              = xnew;
-        cost           = costnew;
-        flgChange      = 1;
+    % maybe step 13 in Algorithm
+    % decrease lambda
+    dlambda   = min(dlambda / Op.lambdaFactor, 1/Op.lambdaFactor);
+    lambda    = lambda * dlambda * (lambda > Op.lambdaMin);
+
+    % accept changes
+    u              = unew;
+    x              = xnew;
+    cost           = costnew;
+%         flgChange      = 1;
 %         drawResult(Op.plotFn,x,2);
 %         Op.plotFn(x);
-        
-        % terminate ?
-        if dcost < Op.tolFun
-            if verbosity > 0
-                fprintf('\nSUCCESS: cost change < tolFun\n');
-            end
-            break;
+
+    % terminate ?
+    if dcost < Op.tolFun
+        if verbosity > 0
+            fprintf('\nSUCCESS: cost change < tolFun\n');
         end
-        
-    else % no cost improvement
-        % increase lambda
-        dlambda  = max(dlambda * Op.lambdaFactor, Op.lambdaFactor);
-        lambda   = max(lambda * dlambda, Op.lambdaMin);
-        
-        % print status
-        if verbosity > 1
-            fprintf('%-12d%-12s%-12.3g%-12.3g%-12.3g%-12.1f\n', ...
-                iter,'NO STEP', dcost, expected, g_norm, log10(lambda));           
-            last_head = last_head+1;
-        end     
-        
-        % terminate ?
-        if lambda > Op.lambdaMax,
-            if verbosity > 0
-                fprintf('\nEXIT: lambda > lambdaMax\n');
-            end
-            break;
-        end
+        finished = true;
+        return;
     end
-    % update trace
-    trace(iter).lambda      = lambda;
-    trace(iter).dlambda     = dlambda;
-    trace(iter).alpha       = alpha;
-    trace(iter).improvement = dcost;
-    trace(iter).cost        = sum(cost(:));
-    trace(iter).reduc_ratio = z;
+
+else % no cost improvement
+    % increase lambda
+    dlambda  = max(dlambda * Op.lambdaFactor, Op.lambdaFactor);
+    lambda   = max(lambda * dlambda, Op.lambdaMin);
+
+    % print status
+    if verbosity > 1
+        fprintf('%-12d%-12s%-12.3g%-12.3g%-12.3g%-12.1f\n', ...
+            iter,'NO STEP', dcost, expected, g_norm, log10(lambda));           
+    end     
+
+    % terminate ?
+    if lambda > Op.lambdaMax
+        if verbosity > 0
+            fprintf('\nEXIT: lambda > lambdaMax\n');
+        end
+        finished = true;
+        return;
+    end
+end
+% update trace
+% trace(iter).lambda      = lambda;
+% trace(iter).dlambda     = dlambda;
+% trace(iter).alpha       = alpha;
+% trace(iter).improvement = dcost;
+% trace(iter).cost        = sum(cost(:));
+% trace(iter).reduc_ratio = z;
 %     stop = graphics(Op.plot,x,u,cost,L,Vx,Vxx,fx,fxx,fu,fuu,trace(1:iter),0);
-end%end of iteration
-
-% save lambda/dlambda
-trace(iter).lambda      = lambda;
-trace(iter).dlambda     = dlambda;
-
-% if stop
-%     if verbosity > 0
-%         fprintf('\nEXIT: Terminated by user\n');
-%     end
-% end
-
-if iter == Op.maxIter
-    if verbosity > 0
-        fprintf('\nEXIT: Maximum iterations reached.\n');
-    end
-end
 
 
-if ~isempty(iter)
-    diff_t = [trace(1:iter).time_derivs];
-    diff_t = sum(diff_t(~isnan(diff_t)));
-    back_t = [trace(1:iter).time_backward];
-    back_t = sum(back_t(~isnan(back_t)));
-    fwd_t = [trace(1:iter).time_forward];
-    fwd_t = sum(fwd_t(~isnan(fwd_t)));
-    total_t = toc(t_start);
-    totalIterations = iter;
-    if verbosity > 0
-        fprintf(['\n'...
-            'iterations:   %-3d\n'...
-            'final cost:   %-12.7g\n' ...
-            'final grad:   %-12.7g\n' ...
-            'final lambda: %-12.7e\n' ...
-            'time / iter:  %-5.0f ms\n'...
-            'total time:   %-5.2f seconds, of which\n'...
-            '  derivs:     %-4.1f%%\n'...
-            '  back pass:  %-4.1f%%\n'...
-            '  fwd pass:   %-4.1f%%\n'...
-            '  other:      %-4.1f%% (graphics etc.)\n'...
-            '=========== end iLQG ===========\n'],...
-            iter,sum(cost(:)),g_norm,lambda,1e3*total_t/iter,total_t,...
-            [diff_t, back_t, fwd_t, (total_t-diff_t-back_t-fwd_t)]*100/total_t);
-    end
-    totaTime = total_t;
-    trace    = trace(~isnan([trace.iter]));
-%     timing   = [diff_t back_t fwd_t total_t-diff_t-back_t-fwd_t];
-%     graphics(Op.plot,x,u,cost,L,Vx,Vxx,fx,fxx,fu,fuu,trace,2); % draw legend
-else
-    error('Failure: no iterations completed, something is wrong.')
-end
 
 % [x,un,cost]  = forward_pass(x0(:,1),alpha*u,[],[],[],1,DYNCST,Op.lims,[]);
 function [xnew,unew,cnew] = forward_pass(D,idx,x0,u,L,x,du,Ku,Alpha,DYNCST,lims,diff)

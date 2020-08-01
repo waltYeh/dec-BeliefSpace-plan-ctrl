@@ -207,7 +207,7 @@ for k = 1:nSteps-1
 
     
     if k>1
-        figure(5)
+        figure(6)
         plot([x_save(1,1,k-1),x_save(1,1,k)],[x_save(1,2,k-1),x_save(1,2,k)],'-b.')
         hold on
         grid on

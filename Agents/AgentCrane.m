@@ -46,6 +46,13 @@ classdef AgentCrane < AgentBase
         function [b_nom,u_nom,L_opt,Vx,Vxx,cost]= iLQG_agent(obj,D, b0, u_guess, Op)
             [b_nom,u_nom,L_opt,Vx,Vxx,cost,~,~,tt, nIter]= iLQG_multiagent(D,obj.digraph_idx,obj.dyn_cst, b0, u_guess, Op);
         end
+        function [x, u, cost, L, Vx, Vxx, lambda, dlambda, finished]= ...
+                iLQG_one_it(obj,D, b0, Op, iter,...
+                u_guess,lambda_last, dlambda_last, u_last,x_last, cost_last)
+            [x, u, L, Vx, Vxx, cost, lambda, dlambda, finished] = ...
+                iLQG_multiagent_one_iter(D,obj.digraph_idx,obj.dyn_cst, b0, Op, iter,...
+                u_guess,lambda_last, dlambda_last, u_last,x_last, cost_last);
+        end
         function updatePolicy(obj, b_n,u_n,L)
             obj.policyHorizon = size(b_n,3);
             obj.b_nom = b_n;

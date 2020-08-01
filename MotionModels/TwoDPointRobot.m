@@ -17,6 +17,7 @@ classdef TwoDPointRobot < MotionModelBase
         ctrlLim = [-4.0 4.0;-4.0 4.0]; % max control for Vx and Vy 
         %this is no longer consistent with other lim definition
         Q_est = diag([0.001,0.001]);
+        P_Wg=0;
     end
     
     methods

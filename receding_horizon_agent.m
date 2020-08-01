@@ -122,8 +122,14 @@ agents{4} = AgentCrane(dt,horizonSteps,4);
 u_guess = zeros(size(D.Nodes,1),size(D.Nodes,1),2,horizonSteps-1);
 % initial guess, less iterations needed if given well
 % guess all agents for every agent, 4x4x2x40
-u_guess(1,1,1,:)=-3.3;
-u_guess(1,1,2,:)=-1.3;
+% u_guess(:,1,1,:)=1.0;
+% u_guess(:,1,2,:)=-1.0;
+% u_guess(:,2,1,:)=0.0;
+% u_guess(:,2,2,:)=0.0;
+% u_guess(:,3,1,:)=1.0;
+% u_guess(:,3,2,:)=1.0;
+% u_guess(:,4,1,:)=-1.0;
+% u_guess(:,4,2,:)=-1.0;
 b0=cell(size(D.Nodes,1),1);
 x_true = zeros(size(D.Nodes,1),agents{1}.motionModel.stDim);
 % each agent holds the belief of other agents, but in a later version,
@@ -157,7 +163,7 @@ Op.plotFn = plotFn;
 %% === run the optimization
 
 for i_sim = 1:simulation_steps
-    if 1
+    if 0
         [b_nom1,u_nom1,L_opt1,Vx1,Vxx1,cost1] = agents{1}.iLQG_agent(D,b0{1}(:,:), squeeze(u_guess(1,:,:,:)), Op);
         agents{1}.updatePolicy(b_nom1,u_nom1,L_opt1);
         [b_nom2,u_nom2,L_opt2,Vx2,Vxx2,cost2] = agents{2}.iLQG_agent(D,b0{2}(:,:), squeeze(u_guess(2,:,:,:)), Op);
@@ -166,7 +172,44 @@ for i_sim = 1:simulation_steps
         agents{3}.updatePolicy(b_nom3,u_nom3,L_opt3);
         [b_nom4,u_nom4,L_opt4,Vx4,Vxx4,cost4] = agents{4}.iLQG_agent(D,b0{4}(:,:), squeeze(u_guess(4,:,:,:)), Op);
         agents{4}.updatePolicy(b_nom4,u_nom4,L_opt4);
+    else
+        lambda = cell(size(D.Nodes,1),1);
+        dlambda = cell(size(D.Nodes,1),1);
+        u = cell(size(D.Nodes,1),1);
+        x = cell(size(D.Nodes,1),1);
+        L_opt = cell(size(D.Nodes,1),1);
+        cost = cell(size(D.Nodes,1),1);
+        finished = cell(size(D.Nodes,1),1);
+        for i = 1:size(D.Nodes,1)
+            finished{i}= false;
+        end
+        for iter = 1:10
+            if iter == 1
+                for i = 1:size(D.Nodes,1)
+                    lambda{i} = [];
+                    dlambda{i} = [];
+                    u{i} = [];
+                    x{i} = [];
+                    cost{i} = [];
+                end
+            end
+
+            for i = 1:size(D.Nodes,1)
+                if finished{i}~=true
+                    [x{i},u{i},cost{i},L_opt{i},Vx1,Vxx1, lambda{i}, dlambda{i}, finished{i}] ...
+                        = agents{i}.iLQG_one_it(D, b0{i}(:,:), Op, iter,squeeze(u_guess(i,:,:,:)),...
+                        lambda{i}, dlambda{i}, u{i},x{i}, cost{i});
+                end
+            end
+            if finished{1} && finished{2} && finished{3} && finished{4} 
+                break;
+            end
+        end
+        for i = 1:size(D.Nodes,1)
+            agents{i}.updatePolicy(x{i},u{i},L_opt{i});
+        end
     end
+
 %     assignin('base', 'om', om)
 %     assignin('base', 'lims', Op.lims)
 %     [b_nom2,u_nom2,L_opt2,Vx2,Vxx2,cost2] = agents{2}.iLQG_GMM(b0{2}, u_guess, Op);

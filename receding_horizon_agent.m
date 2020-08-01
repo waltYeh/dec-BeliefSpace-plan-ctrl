@@ -65,7 +65,7 @@ sig_4 = diag([0.01, 0.01]);
 dt = 0.05;
 horizon = 2.0;
 mpc_update_period = 0.5;
-simulation_time = 5;
+simulation_time = 4;
 
 %% 
 
@@ -157,15 +157,16 @@ Op.plotFn = plotFn;
 %% === run the optimization
 
 for i_sim = 1:simulation_steps
-    [b_nom1,u_nom1,L_opt1,Vx1,Vxx1,cost1] = agents{1}.iLQG_agent(D,b0{1}(:,:), squeeze(u_guess(1,:,:,:)), Op);
-    agents{1}.updatePolicy(b_nom1,u_nom1,L_opt1);
-    [b_nom2,u_nom2,L_opt2,Vx2,Vxx2,cost2] = agents{2}.iLQG_agent(D,b0{2}(:,:), squeeze(u_guess(2,:,:,:)), Op);
-    agents{2}.updatePolicy(b_nom2,u_nom2,L_opt2);
-    [b_nom3,u_nom3,L_opt3,Vx3,Vxx3,cost3] = agents{3}.iLQG_agent(D,b0{3}(:,:), squeeze(u_guess(3,:,:,:)), Op);
-    agents{3}.updatePolicy(b_nom3,u_nom3,L_opt3);
-    [b_nom4,u_nom4,L_opt4,Vx4,Vxx4,cost4] = agents{4}.iLQG_agent(D,b0{4}(:,:), squeeze(u_guess(4,:,:,:)), Op);
-    agents{4}.updatePolicy(b_nom4,u_nom4,L_opt4);
-    
+    if 1
+        [b_nom1,u_nom1,L_opt1,Vx1,Vxx1,cost1] = agents{1}.iLQG_agent(D,b0{1}(:,:), squeeze(u_guess(1,:,:,:)), Op);
+        agents{1}.updatePolicy(b_nom1,u_nom1,L_opt1);
+        [b_nom2,u_nom2,L_opt2,Vx2,Vxx2,cost2] = agents{2}.iLQG_agent(D,b0{2}(:,:), squeeze(u_guess(2,:,:,:)), Op);
+        agents{2}.updatePolicy(b_nom2,u_nom2,L_opt2);
+        [b_nom3,u_nom3,L_opt3,Vx3,Vxx3,cost3] = agents{3}.iLQG_agent(D,b0{3}(:,:), squeeze(u_guess(3,:,:,:)), Op);
+        agents{3}.updatePolicy(b_nom3,u_nom3,L_opt3);
+        [b_nom4,u_nom4,L_opt4,Vx4,Vxx4,cost4] = agents{4}.iLQG_agent(D,b0{4}(:,:), squeeze(u_guess(4,:,:,:)), Op);
+        agents{4}.updatePolicy(b_nom4,u_nom4,L_opt4);
+    end
 %     assignin('base', 'om', om)
 %     assignin('base', 'lims', Op.lims)
 %     [b_nom2,u_nom2,L_opt2,Vx2,Vxx2,cost2] = agents{2}.iLQG_GMM(b0{2}, u_guess, Op);

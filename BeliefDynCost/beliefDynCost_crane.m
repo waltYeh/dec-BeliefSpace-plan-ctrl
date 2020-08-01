@@ -115,7 +115,7 @@ else
 %     fprintf('Time to do sigma derivative and compute sigma: %f seconds\n', toc(tStart))
 %     
     %% cost first derivatives, only for u_i is enough
-    xu_cost = @(xu) costEgoAgentFormation(D,idx,xu(:,ib,:),xu(:,iu_begin:end,:),horizonSteps,motionModel.stDim);    
+    xu_cost = @(xu) costAgentFormation(D,idx,xu(:,ib,:),xu(:,iu_begin:end,:),horizonSteps,motionModel.stDim);    
 %     J       = 
     
 %     % construct Jacobian adding collision cost
@@ -140,7 +140,7 @@ else
     
     
     % first calculate Hessian excluding collision cost
-    xu_cost_nocc = @(xu) costEgoAgentFormation(D,idx,xu(:,ib,:),xu(:,iu_begin:end,:),horizonSteps,motionModel.stDim);
+    xu_cost_nocc = @(xu) costAgentFormation(D,idx,xu(:,ib,:),xu(:,iu_begin:end,:),horizonSteps,motionModel.stDim);
     xu_Jcst_nocc = @(xu) squeeze(multiAgentFiniteDifference(xu_cost_nocc,D,idx, xu));   
     % the following can only compute c_uj_uj
     % JJ = finiteDifference(fun, x, h)

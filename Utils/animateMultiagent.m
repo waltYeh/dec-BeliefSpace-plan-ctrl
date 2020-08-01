@@ -90,7 +90,7 @@ max_components_amount=agents{1}.components_amount;%max(agents{1}.components_amou
 % %     if comp_sel == i_comp
 % for i=1:agents_amount
 %         x_true = mu;%{1,i_comp};% + chol(sig{i_comp})' * randn(component_stDim,1);
-%         x_save = x_true;
+        x_save = x_true;
 
 
 
@@ -209,12 +209,19 @@ for k = 1:nSteps-1
         figure(5)
         plot([x_save(1,1,k-1),x_save(1,1,k)],[x_save(1,2,k-1),x_save(1,2,k)],'-b.')
         hold on
+        grid on
         axis equal
         plot([x_save(2,1,k-1),x_save(2,1,k)],[x_save(2,2,k-1),x_save(2,2,k)],'-r.')
         plot([x_save(3,1,k-1),x_save(3,1,k)],[x_save(3,2,k-1),x_save(3,2,k)],'-k.')
         plot([x_save(4,1,k-1),x_save(4,1,k)],[x_save(4,2,k-1),x_save(4,2,k)],'-g.')
-    %     plot(mu_save{1,1}(1,k),mu_save{1,1}(2,k),'bo')
-    %     plot(mu_save{1,2}(1,k),mu_save{1,2}(2,k),'ro')
+        plot(mu_save{1,1}(1,k),mu_save{1,1}(2,k),'bo')
+        plot(mu_save{2,1}(1,k),mu_save{2,1}(2,k),'ro')
+        plot(mu_save{3,1}(1,k),mu_save{3,1}(2,k),'ko')
+        plot(mu_save{4,1}(1,k),mu_save{4,1}(2,k),'go')
+        plot(z{1}(1),z{1}(2),'b*')
+        plot(z{2}(1),z{2}(2),'r*')
+        plot(z{3}(1),z{3}(2),'k*')
+        plot(z{4}(1),z{4}(2),'g*')
     %     
     %     pointsToPlot = drawResultGMM([mu_save{1,1}(:,k); sig_save{1,1}(:,k)], agents{1}.motionModel.stDim);
     %     plot(pointsToPlot(1,:),pointsToPlot(2,:),'b')

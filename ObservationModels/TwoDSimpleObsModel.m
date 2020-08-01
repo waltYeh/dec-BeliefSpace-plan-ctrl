@@ -16,9 +16,9 @@ classdef TwoDSimpleObsModel < ObservationModelBase
     properties
 %         sigma_b = 0.1; 
 %         eta = 0.01;
-        R_true = diag([0.1, 0.1]);
+        R_true = diag([0.001, 0.001]);
 %         R_speed = diag([0.01, 0.01]);
-        R_est = diag([0.1, 0.1]);
+        R_est = diag([0.001, 0.001]);
     end
     
     methods

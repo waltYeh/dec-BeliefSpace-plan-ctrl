@@ -39,6 +39,8 @@ if size(b,3)>1
     %         c(i) =  evaluateCost(b(:,i),u(:,i), goal, stDim, L, stateValidityChecker, varargin{1});
     %     end
     end
+% else
+%     a=1;% this does not happen
 end
 end
 
@@ -48,8 +50,8 @@ function cost = evaluateCost(D, idx, b, u, stDim, L)
 % of Van Den Berg et al. IJRR 2012
 %
 % Input:
-%   b: Current belief vector
-%   u: Control
+%   b: Current belief vector 4x2
+%   u: Control 4x6
 %   goal: target state
 %   stDim: State dimension
 %   L: Number of steps in horizon
@@ -111,15 +113,9 @@ else
         edge_row = eid(j_nid);
         x = transpose(b(j,1:stDim,1));
         P = zeros(stDim, stDim); % covariance matrix
-    % Extract columns of principal sqrt of covariance matrix
-    % right now we are not exploiting symmetry
         for d = 1:stDim
             P(:,d) = b(j,d*stDim+1:(d+1)*stDim, 1);
         end
-%         RowIdx = D.Nodes.incoming_edges(idx,j);
-        
-%         E_j = table2array(D.Edges(RowIdx,:));
-%         RowIdx = ismember(D.Edges.EndNodes, [j,idx],'rows');
         uc = uc + 0.5*rij_control*(transpose(u(j,:))'*transpose(u(j,:)));
         formation_error = x_idx-x-(D.Edges.nom_formation_2(edge_row,:))';
         sc = sc + 0.5*q_formation*(formation_error'*formation_error);

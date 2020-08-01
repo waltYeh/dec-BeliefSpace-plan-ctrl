@@ -125,14 +125,15 @@ for k = 1:nSteps-1
 %     u{4} = agents{4}.getNextControl(b{4});
     end
     %% update physical part
-%     processNoise = motionModel.generateProcessNoise(x_true,u);
-    zeroProcessNoise = zeros(2,1);
+    
+%     zeroProcessNoise = zeros(2,1);
     % here we only use the input of comp_sel, drop the other target
     % u_for_true includes one target and the assist
     
 %     u_for_true = [u((comp_sel-1)*max_components_amount + 1:comp_sel*max_components_amount);u(end-1:end)];
-    for i=1:4    
-        x_true(i,:) = agents{i}.motionModel.evolve(x_true(i,:)',u{i},zeroProcessNoise);
+    for i=1:4  
+        processNoise = agents{i}.motionModel.generateProcessNoise(x_true(i,:),u{i});
+        x_true(i,:) = agents{i}.motionModel.evolve(x_true(i,:)',u{i},processNoise);
         z{i} = agents{i}.obsModel.getObservation(x_true(i,:),'truenoise');
     end
 %         

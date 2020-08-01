@@ -83,7 +83,7 @@ classdef AgentCrane < AgentBase
                 x_prd = obj.motionModel.evolve(mu{i_comp},u_for_comp,zeroProcessNoise); % predict robot pose
                 A = obj.motionModel.getStateTransitionJacobian(mu{i_comp},u_for_comp,zeroProcessNoise);
                 G = obj.motionModel.getProcessNoiseJacobian(mu{i_comp},u_for_comp,zeroProcessNoise);
-                Q = obj.motionModel.getProcessNoiseCovariance(mu{i_comp},u_for_comp);
+                Q = obj.motionModel.Q_est;%getProcessNoiseCovariance(mu{i_comp},u_for_comp);
                 P_prd = A*sig{i_comp}*A' + G*Q*G';
 
                 z_prd = obj.obsModel.getObservation(x_prd,'nonoise'); % predicted observation

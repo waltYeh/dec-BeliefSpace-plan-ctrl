@@ -10,12 +10,13 @@ classdef TwoDPointRobot < MotionModelBase
         stDim = 2; % state dimension
         ctDim = 2;  % control vector dimension
         wDim = 2;   % Process noise (W) dimension
-        P_Wg = diag([0.0001,0.0001]); % covariance of state-additive-noise
+        Q_ture = diag([0.01,0.01]); % covariance of state-additive-noise
         sigma_b_u = [0.0;0.0]; % A constant bias intensity (std dev) of the control noise
         eta_u = [0;0]; % A coefficient, which makes the control noise intensity proportional to the control signal       
         zeroNoise = [0;0]; 
         ctrlLim = [-4.0 4.0;-4.0 4.0]; % max control for Vx and Vy 
         %this is no longer consistent with other lim definition
+        Q_est = diag([0.001,0.001]);
     end
     
     methods
@@ -55,11 +56,11 @@ classdef TwoDPointRobot < MotionModelBase
         end
         
         function Q = getProcessNoiseCovariance(obj,x,u) % compute the covariance of process noise based on the current poistion and controls
-            Q = obj.P_Wg;
+            Q = obj.Q_ture;
         end
         
         function w = generateProcessNoise(obj,x,u) % simulate (generate) process noise based on the current state and controls
-            w = mvnrnd(zeros(obj.stDim,1),obj.P_Wg)';
+            w = mvnrnd(zeros(obj.stDim,1),obj.Q_ture)';
         end
         
         function U = generateOpenLoopControls(obj,x0,xf)                                                          

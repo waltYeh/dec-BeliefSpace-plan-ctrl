@@ -65,14 +65,14 @@ x_next = motionModel.evolve(x,u,processNoise);
 % Get motion model jacobians
 A = motionModel.getStateTransitionJacobian(x,u,processNoise);
 G = motionModel.getProcessNoiseJacobian(x,u,processNoise);
-Q = motionModel.getProcessNoiseCovariance(x,u);
+Q = motionModel.Q_est;%motionModel.getProcessNoiseCovariance(x,u);
 
 % Get observation model jacobians
 z = obsModel.getObservation(x_next, 'nonoise');
 obsNoise = zeros(size(z));
 H = obsModel.getObservationJacobian(x,obsNoise);
 M = obsModel.getObservationNoiseJacobian(x,obsNoise,z);
-R = obsModel.getObservationNoiseCovariance(x,z);
+R = obsModel.R_est;%getObservationNoiseCovariance(x,z);
 
 % update P 
 P_prd = A*P*A' + G*Q*G';

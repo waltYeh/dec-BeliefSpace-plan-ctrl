@@ -84,14 +84,14 @@ simulation_steps = simulation_time/mpc_update_period;
 
 sd = [2 2 3 1];%edges start from
 td = [1 3 4 3];%edges go to
-nom_formation_1=[0.4,0.4;
+nom_formation_2=[0.4,0.4;
     -0.4,-0.4;
     -0.4,-0.4;
     -0.8,-0.8];%-- formation
-nom_formation_2=[-1,1;
-    -2,0;
-    1,-1;
-    -1,-1];%z formation
+% nom_formation_2=[-1,1;
+%     -2,0;
+%     1,-1;
+%     -1,-1];%z formation
 q_formation=[1;1;1;1];
 rij_control = [0.3;0.3;0.3;0.3];%control cost of node sd in opt of td
 rii_control = [0.8;0.8;0.8;0.8];

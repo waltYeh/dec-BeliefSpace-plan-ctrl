@@ -18,7 +18,7 @@ classdef TwoDSimpleObsModel < ObservationModelBase
 %         eta = 0.01;
         R_true = diag([0.001, 0.001]);
 %         R_speed = diag([0.01, 0.01]);
-        R_est = diag([0.001, 0.001]);
+        R_est = diag([0.01, 0.01]);
     end
     
     methods
@@ -46,7 +46,7 @@ classdef TwoDSimpleObsModel < ObservationModelBase
             if nargin == 2 % noisy observations
                 v = obj.computeObservationNoise(range);
                 z = [x(1);
-                    x(2)]; + v;
+                    x(2)] + v;
                 
             elseif nargin > 2 && strcmp('nonoise',varargin{1}) == 1 % nonoise
                 z = [x(1);
@@ -92,7 +92,7 @@ classdef TwoDSimpleObsModel < ObservationModelBase
         end
         
         function R = getObservationNoiseCovariance(obj,x,z)
-            R = obj.R_true;
+            R = obj.R_est;
             
         end                                                      
         

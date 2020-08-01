@@ -208,13 +208,13 @@ for k = 1:nSteps-1
     
     if k>1
         figure(6)
-        plot([x_save(1,1,k-1),x_save(1,1,k)],[x_save(1,2,k-1),x_save(1,2,k)],'-b.')
+        plot([x_save(1,1,k-1),x_save(1,1,k)],[x_save(1,2,k-1),x_save(1,2,k)],'-c.')
         hold on
         grid on
         axis equal
-        plot([x_save(2,1,k-1),x_save(2,1,k)],[x_save(2,2,k-1),x_save(2,2,k)],'-r.')
-        plot([x_save(3,1,k-1),x_save(3,1,k)],[x_save(3,2,k-1),x_save(3,2,k)],'-k.')
-        plot([x_save(4,1,k-1),x_save(4,1,k)],[x_save(4,2,k-1),x_save(4,2,k)],'-g.')
+        plot([x_save(2,1,k-1),x_save(2,1,k)],[x_save(2,2,k-1),x_save(2,2,k)],'-c.')
+        plot([x_save(3,1,k-1),x_save(3,1,k)],[x_save(3,2,k-1),x_save(3,2,k)],'-c.')
+        plot([x_save(4,1,k-1),x_save(4,1,k)],[x_save(4,2,k-1),x_save(4,2,k)],'-c.')
         plot(mu_save{1,1}(1,k),mu_save{1,1}(2,k),'bo')
         plot(mu_save{2,1}(1,k),mu_save{2,1}(2,k),'ro')
         plot(mu_save{3,1}(1,k),mu_save{3,1}(2,k),'ko')

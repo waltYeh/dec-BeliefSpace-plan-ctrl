@@ -1,4 +1,5 @@
 function c = costFunction(b, u, goal, L, stDim, stateValidityChecker, varargin)
+% one step cost, not the whole cost horizon
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Compute cost for vector of states according to cost model given in Section 6 
 % of Van Den Berg et al. IJRR 2012

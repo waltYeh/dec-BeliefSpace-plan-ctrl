@@ -1,4 +1,4 @@
-function [g,c,gb,gu,gbb,gbu,guu,cb,cu,cbb,cbu,cuu] = beliefDynCost(b,u,xf,L,full_DDP,motionModel,obsModel, collisionChecker)
+function [g,c,gb,gu,gbb,gbu,guu,cb,cu,cbb,cbu,cuu] = beliefDynCost_assisting_robot(b,u,horizonSteps,full_DDP,motionModel,obsModel)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % A utility function that combines belief dynamics and cost
 % uses helper function finite_difference() to compute derivatives
@@ -28,18 +28,20 @@ function [g,c,gb,gu,gbb,gbu,guu,cb,cu,cbb,cbu,cuu] = beliefDynCost(b,u,xf,L,full
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 beliefDim = size(b,1);
-ctDim = motionModel.ctDim;
+components_amount = round(beliefDim/(motionModel.stDim*(motionModel.stDim+1)+1));
+ctDim = motionModel.ctDim;% 4, only for one component
 % if only two outputs g and c are needed
 if nargout == 2
-    g = beliefDynamics(b, u, motionModel, obsModel);
-    c = costFunction(b, u, xf, L, motionModel.stDim, collisionChecker);
+    g = beliefDynamicsGMM(b, u, motionModel, obsModel);
+    c = costAssistingRobot(b, u, horizonSteps, motionModel.stDim,components_amount);
 else
+    components_amount = 2;
     % belief state and control indices
     ib = 1:beliefDim;
-    iu = beliefDim+1:beliefDim+ctDim;
+    iu = beliefDim+1:beliefDim+(ctDim-2)*components_amount+2;
     
     % dynamics first derivatives
-    xu_dyn  = @(xu) beliefDynamics(xu(ib,:),xu(iu,:),motionModel, obsModel);
+    xu_dyn  = @(xu) beliefDynamicsGMM(xu(ib,:),xu(iu,:),motionModel, obsModel);
     J       = finiteDifference(xu_dyn, [b; u]);
     gb      = J(:,ib,:);
     gu      = J(:,iu,:);
@@ -57,27 +59,28 @@ else
         [gbb,gbu,guu] = deal([]);
     end
     
-     if motionModel.stDim ~= 2
-        error('This partial of f w.r.t sigma is only valid for robot with state dimension 2')
-     end
-    
-    %% First derivative of sigmaToCollide (jacobian of sigma[b])
-    tStart = tic;
-    xu_sigma =  @(x) sigmaToCollide(x, motionModel.stDim, collisionChecker);
-    dsigma_db  = squeeze(finiteDifference(xu_sigma, b,1e-1)); % need to have a large step size to see derivative in collision
-    dsigma_db = [dsigma_db;zeros(motionModel.ctDim,size(dsigma_db,2))]; % jacobian w.r.t u is zero for collision
-    
-    nSigma = sigmaToCollide(b, motionModel.stDim, collisionChecker);
-    fprintf('Time to do sigma derivative and compute sigma: %f seconds\n', toc(tStart))
-    
+%      if motionModel.stDim ~= 2
+%         error('This partial of f w.r.t sigma is only valid for robot with state dimension 2')
+%      end
+%     
+%     %% First derivative of sigmaToCollide (jacobian of sigma[b])
+%     tStart = tic;
+%     xu_sigma =  @(x) sigmaToCollide(x, motionModel.stDim, collisionChecker);
+%     dsigma_db  = squeeze(finiteDifference(xu_sigma, b,1e-1)); % need to have a large step size to see derivative in collision
+%     dsigma_db = [dsigma_db;zeros(motionModel.ctDim,size(dsigma_db,2))]; % jacobian w.r.t u is zero for collision
+%     
+%     nSigma = sigmaToCollide(b, motionModel.stDim, collisionChecker);
+%     fprintf('Time to do sigma derivative and compute sigma: %f seconds\n', toc(tStart))
+%     
     %% cost first derivatives
-    xu_cost = @(xu) costFunction(xu(ib,:),xu(iu,:),xf,L,motionModel.stDim, collisionChecker,0);    
+    
+    xu_cost = @(xu) costAssistingRobot(xu(ib,:),xu(iu,:),horizonSteps,motionModel.stDim, components_amount);    
     J       = squeeze(finiteDifference(xu_cost, [b; u]));
     
-    % construct Jacobian adding collision cost
-    for i = 1:size(dsigma_db,2)               
-        J(:,i) = J(:,i) + ((-1/2)/(exp(nSigma(i)/2)-1)) * dsigma_db(:,i);
-    end
+%     % construct Jacobian adding collision cost
+%     for i = 1:size(dsigma_db,2)               
+%         J(:,i) = J(:,i) + ((-1/2)/(exp(nSigma(i)/2)-1)) * dsigma_db(:,i);
+%     end
     
     cb      = J(ib,:);
     cu      = J(iu,:);
@@ -86,16 +89,16 @@ else
     
     
     % first calculate Hessian excluding collision cost
-    xu_cost_nocc = @(xu) costFunction(xu(ib,:),xu(iu,:),xf,L,motionModel.stDim, collisionChecker,0);
+    xu_cost_nocc = @(xu) costAssistingRobot(xu(ib,:),xu(iu,:),horizonSteps,motionModel.stDim, components_amount);
     xu_Jcst_nocc = @(xu) squeeze(finiteDifference(xu_cost_nocc, xu));    
     JJ      = finiteDifference(xu_Jcst_nocc, [b; u]);
     JJ      = 0.5*(JJ + permute(JJ,[2 1 3])); %symmetrize                      
     
     % construct Hessian adding collision cost
-    for i = 1:size(dsigma_db,2)
-        jjt = dsigma_db(:,i)*dsigma_db(:,i)';        
-        JJ(:,:,i) = JJ(:,:,i) + ((1/4)*exp(nSigma(i)/2)/(exp(nSigma(i)/2)-1)^2) * 0.5*(jjt+jjt');
-    end
+%     for i = 1:size(dsigma_db,2)
+%         jjt = dsigma_db(:,i)*dsigma_db(:,i)';        
+%         JJ(:,:,i) = JJ(:,:,i) + ((1/4)*exp(nSigma(i)/2)/(exp(nSigma(i)/2)-1)^2) * 0.5*(jjt+jjt');
+%     end
     
     cbb     = JJ(ib,ib,:);
     cbu     = JJ(ib,iu,:);

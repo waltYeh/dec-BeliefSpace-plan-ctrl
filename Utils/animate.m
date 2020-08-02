@@ -15,6 +15,8 @@ function [failed, b_f, trCov_vs_time] = animate(figh, plotFn, b0, b_nom, u_nom, 
 % failed: 0 for no collision, 1 for collision, 2 for dynamic obstacle
 % detected
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% get the state space dimension
+
 stDim = motionModel.stDim;
 
 xt = b0(1:stDim); % true state of robot

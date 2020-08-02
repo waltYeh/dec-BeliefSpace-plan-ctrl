@@ -1,4 +1,4 @@
-function drawResult(plotFn, b, stDim)
+function pointsToPlot = drawResult(b, stDim)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Draw the trajectory and uncertainty ellipses
 %
@@ -7,9 +7,9 @@ function drawResult(plotFn, b, stDim)
 %   b: the beliefs to plot
 %   stDim: robot state space dimension
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-L = size(b,2);
-
-itp = round(linspace(1,L,50)); % indexes to plot
+% L = size(b,2);
+% 
+% itp = round(linspace(1,L,50)); % indexes to plot
 
 x = b(1:stDim,:);
 
@@ -21,22 +21,22 @@ phi= 0:inc:2*pi;
 sigmaScale = 3;
 
 % get covariances
-for i = itp
-    
+% for i = itp
+%     
     Sigma = zeros(stDim,stDim);
     
     for d = 1:stDim
-        Sigma(:,d) = b(d*stDim+1:(d+1)*stDim, i);
+        Sigma(:,d) = b(d*stDim+1:(d+1)*stDim);
     end
     
-    ptemp = make_ellipse(x(1:2,i),Sigma(1:2,1:2), sigmaScale, phi);
+    ptemp = make_ellipse(x(1:2),Sigma(1:2,1:2), sigmaScale, phi);
     
     if isempty(ptemp) == 0
         pointsToPlot = [pointsToPlot ptemp];
     end
-end
-
-plotFn(pointsToPlot);
+% end
+% % 
+% plotFn(pointsToPlot);
 
 end
 
@@ -65,7 +65,7 @@ end
 
 magnify = 1.0; % scale up drawing
 
-C = cholcov(P);
+C = chol(P);
 
 p = [];
 

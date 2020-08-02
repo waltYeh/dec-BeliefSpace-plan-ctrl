@@ -179,6 +179,7 @@ for k = 1:nSteps-1
 %     
     %% now do the machine part
     for i = 1:4%agents_amount
+        % b_next already contains all info of mu_i and sig_i
         [b_next_i,mu_i,sig_i,~] = agents{i}.getNextEstimation(b{i},u{i},z{i});
         %should pass in the control and measurement of connected agents in
         %order to do estimations for them!
@@ -186,7 +187,7 @@ for k = 1:nSteps-1
         b{2}(i,:)=b_next_i;
         b{3}(i,:)=b_next_i;
         b{4}(i,:)=b_next_i;
-        for i_comp=1:agents{i}.components_amount
+        for i_comp=1:agents{i}.components_amount % only one component
             mu{i,i_comp}=mu_i{i_comp};
             sig{i,i_comp}=sig_i{i_comp};
 %             weight{i}(i_comp)=weight_i(i_comp);
@@ -216,6 +217,14 @@ for k = 1:nSteps-1
         plot(mu_save{2,1}(1,k),mu_save{2,1}(2,k),'ro')
         plot(mu_save{3,1}(1,k),mu_save{3,1}(2,k),'ko')
         plot(mu_save{4,1}(1,k),mu_save{4,1}(2,k),'go')
+        pointsToPlot = drawResult([mu_save{1}(:,k); sig_save{1}(:,k)], 2);
+        plot(pointsToPlot(1,:),pointsToPlot(2,:),'b')
+        pointsToPlot = drawResult([mu_save{2}(:,k); sig_save{2}(:,k)], 2);
+        plot(pointsToPlot(1,:),pointsToPlot(2,:),'r')
+        pointsToPlot = drawResult([mu_save{3}(:,k); sig_save{3}(:,k)], 2);
+        plot(pointsToPlot(1,:),pointsToPlot(2,:),'k')
+        pointsToPlot = drawResult([mu_save{4}(:,k); sig_save{4}(:,k)], 2);
+        plot(pointsToPlot(1,:),pointsToPlot(2,:),'g')
         plot(z{1}(1),z{1}(2),'b*')
         plot(z{2}(1),z{2}(2),'r*')
         plot(z{3}(1),z{3}(2),'k*')

@@ -82,7 +82,7 @@ classdef AgentCrane < AgentBase
 %             [mu, sig, weight] = b2xPw(b, obj.component_stDim, obj.components_amount);
             mu=cell(1);
             sig=cell(1);
-            [mu{1}, sig{1}] = b2xP(b, obj.component_stDim);
+            [mu{1}, sig{1}] = b2xP(b(obj.digraph_idx,:), obj.component_stDim);
             z_mu = cell(obj.components_amount);
             z_sig = cell(obj.components_amount);
             for i_comp = 1:obj.components_amount

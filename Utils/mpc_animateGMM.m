@@ -93,7 +93,7 @@ for i_comp=1:components_amount
 %     end
 %     weight(i_comp) = b0_comp(end);
     if comp_sel == i_comp
-        x_true = mu{i_comp} + chol(sig{i_comp})' * randn(component_stDim,1);
+        x_true = mu{i_comp};% + chol(sig{i_comp})' * randn(component_stDim,1);
         x_save = x_true;
     end
     mu_save{i_comp} = mu{i_comp};
@@ -365,5 +365,17 @@ if time_past<0.01
     xlabel('t(s)')
     ylabel('Gewicht')
 %     legend('A','B')
+[x_m,y_m] = meshgrid(1:0.5:10,-1:0.5:5);
+X=1:0.5:10;
+Y=-1:0.5:5;
+Z = zeros(size(x_m,1),size(x_m,2));
+for i=1:length(X)
+    for j=1:length(Y)
+        Z(j,i) = obsModel.getObservationNoiseJacobian([0;0;X(i);Y(j)],zerObsNoise,1);
+%         1/(1/norm([X(i);Y(j)]-[7;0])^2 + 1/norm([X(i);Y(j)]-[3;1])^2 + 1);
+    end
+end
+figure(5)
+surf(x_m,y_m,Z-max(Z)-0.5)
 end
 end

@@ -65,7 +65,7 @@ end
 
 magnify = 1.0; % scale up drawing
 
-C = cholcov(P);
+C = chol(P);
 
 p = [];
 
@@ -73,6 +73,8 @@ if isempty(C) == 0
     a = C'*magnify*sqrt(chi2)*[cos(phi); sin(phi)];
     
     p=[a(1,:)+x(1) NaN;a(2,:)+x(2) NaN];
+else
+    a=1;
 end
 
 end

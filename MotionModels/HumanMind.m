@@ -10,7 +10,7 @@ classdef HumanMind < MotionModelBase
         stDim = 4; % state dimension
         ctDim = 4;  % control vector dimension
         wDim = 4;   % Process noise (W) dimension
-        P_Wg = diag([0.001,0.001,20.0,20.0]);
+        P_Wg = diag([0.001,0.001,0.001,0.001]);
 %         P_Wg = diag([0.005,0.005,0.005,0.005].^2); % covariance of state-additive-noise
         sigma_b_u = [0.0;0.0;0.0;0.0]; % A constant bias intensity (std dev) of the control noise
         eta_u = [0;0;0;0]; % A coefficient, which makes the control noise intensity proportional to the control signal       

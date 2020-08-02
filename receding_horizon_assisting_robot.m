@@ -56,7 +56,7 @@ switch show_mode
 end
 %% tuned parameters
 mu_1 = [8.5, 0.0, 5.0, 0.0]';
-mu_2 = [3, 2.0, 5.0, 0.0]';
+mu_2 = [3, 1.0, 5.0, 0.0]';
 sig_1 = diag([0.01, 0.01, 0.1, 0.1]);%sigma
 sig_2 = diag([0.01, 0.01, 0.1, 0.1]);
 % weight_1 = 0.9;
@@ -113,7 +113,7 @@ Op.plotFn = plotFn;
 for i_sim = 1:simulation_steps
     [b,u_opt,L_opt,~,~,optimCost,~,~,tt, nIter]= iLQG_GMM(DYNCST, b0, u_guess, Op);
     if i_sim < 2
-        show_mode = EQUAL_WEIGHT_TO_BALL_FEEDBACK;
+        show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
     else
         show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
     end

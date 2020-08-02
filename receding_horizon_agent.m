@@ -180,8 +180,10 @@ for i_sim = 1:simulation_steps
         L_opt = cell(size(D.Nodes,1),1);
         cost = cell(size(D.Nodes,1),1);
         finished = cell(size(D.Nodes,1),1);
+        flgChange = cell(size(D.Nodes,1),1);
         for i = 1:size(D.Nodes,1)
             finished{i}= false;
+            flgChange{i} = [];
         end
         for iter = 1:10
             if iter == 1
@@ -196,9 +198,9 @@ for i_sim = 1:simulation_steps
 
             for i = 1:size(D.Nodes,1)
                 if finished{i}~=true
-                    [x{i},u{i},cost{i},L_opt{i},Vx1,Vxx1, lambda{i}, dlambda{i}, finished{i}] ...
+                    [x{i},u{i},cost{i},L_opt{i},Vx1,Vxx1, lambda{i}, dlambda{i}, finished{i},flgChange{i}] ...
                         = agents{i}.iLQG_one_it(D, b0{i}(:,:), Op, iter,squeeze(u_guess(i,:,:,:)),...
-                        lambda{i}, dlambda{i}, u{i},x{i}, cost{i});
+                        lambda{i}, dlambda{i}, u{i},x{i}, cost{i},flgChange{i});
                 end
             end
             for i = 1:size(D.Nodes,1)
@@ -213,8 +215,10 @@ for i_sim = 1:simulation_steps
                 break;
             end
         end
+        
         for i = 1:size(D.Nodes,1)
             agents{i}.updatePolicy(x{i},u{i},L_opt{i});
+            u_guess(i,:,:,:) = u{i};
         end
     end
 

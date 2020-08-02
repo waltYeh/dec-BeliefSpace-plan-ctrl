@@ -1,6 +1,6 @@
 function [x, u, L, Vx, Vxx, cost,  ...
-    lambda, dlambda, finished] = iLQG_multiagent_one_iter(D,idx,DYNCST, x0, Op, iter,...
-    u_guess,lambda_last, dlambda_last, u_last,x_last, cost_last)
+    lambda, dlambda, finished,flgChange,derivatives_cell] = iLQG_multiagent_one_iter(D,idx,DYNCST, x0, Op, iter,...
+    u_guess,lambda_last, dlambda_last, u_last,x_last, cost_last, flg_last, derivatives_cell_last)
 
 %     trace(iter).iter = iter; 
 defaults = {'lims',           [],...            control limits
@@ -31,7 +31,7 @@ Op  = setOpts(defaults,Op);
 verbosity = Op.print;
 
 finished = false;
-
+derivatives_cell = {};
 if iter == 1
     u = u_guess;
     switch numel(Op.lims)
@@ -58,21 +58,36 @@ if iter == 1
         end
     end
 %     trace(1).cost = sum(cost(:));
+    flgChange   = 1;
 else
     cost = cost_last;
     x = x_last;
     u = u_last;
     lambda = lambda_last; 
-    dlambda = dlambda_last; 
+    dlambda = dlambda_last;
+    flgChange = flg_last;
 end
   
 %====== STEP 1: differentiate dynamics and cost along new trajectory
-%     if flgChange
+if flgChange
     t_diff = tic;
     [~,~,fx,fu,fxx,fxu,fuu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj]   = DYNCST(D,idx,x, cat(3,u,nan(size(D.Nodes,1),m,1)), 1:N+1);
 %     trace(iter).time_derivs = toc(t_diff);
-%         flgChange   = 0;
-%     end
+    flgChange   = 0;
+else
+%     fx,fu,fxx,fxu,fuu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj = derivatives_cell_last{1};
+    fx = derivatives_cell_last{1};
+    fu = derivatives_cell_last{2};
+    fxx = derivatives_cell_last{3};
+    fxu = derivatives_cell_last{4};
+    fuu = derivatives_cell_last{5};
+    c_bi = derivatives_cell_last{6};
+    c_ui = derivatives_cell_last{7};
+    c_bi_bi = derivatives_cell_last{8};
+    c_bi_ui = derivatives_cell_last{9};
+    c_ui_ui = derivatives_cell_last{10};
+    c_ui_uj = derivatives_cell_last{11};
+end
 
 %====== STEP 2: backward pass, compute optimal control law and cost-to-go
 backPassDone   = 0;
@@ -148,7 +163,7 @@ end
 
 % print headings
 if verbosity > 1
-    fprintf('%-12s','iteration','cost','reduction','expected','gradient','log10(lambda)')
+    fprintf('%-12s','idx','iteration','cost','reduction','expected','gradient','log10(lambda)')
     fprintf('\n');
 end
 
@@ -156,8 +171,8 @@ if fwdPassDone
 
     % print status
     if verbosity > 1
-        fprintf('%-12d%-12.6g%-12.3g%-12.3g%-12.3g%-12.1f\n', ...
-            iter, sum(cost(:)), dcost, expected, g_norm, log10(lambda));
+        fprintf('%-12d%-12d%-12.6g%-12.3g%-12.3g%-12.3g%-12.1f\n', ...
+           idx, iter, sum(cost(:)), dcost, expected, g_norm, log10(lambda));
     end
     % maybe step 13 in Algorithm
     % decrease lambda
@@ -168,7 +183,7 @@ if fwdPassDone
     u              = unew;
     x              = xnew;
     cost           = costnew;
-%         flgChange      = 1;
+    flgChange      = 1;
 %         drawResult(Op.plotFn,x,2);
 %         Op.plotFn(x);
 
@@ -182,14 +197,16 @@ if fwdPassDone
     end
 
 else % no cost improvement
+    
+    derivatives_cell =  { fx,fu,fxx,fxu,fuu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj};
     % increase lambda
     dlambda  = max(dlambda * Op.lambdaFactor, Op.lambdaFactor);
     lambda   = max(lambda * dlambda, Op.lambdaMin);
 
     % print status
     if verbosity > 1
-        fprintf('%-12d%-12s%-12.3g%-12.3g%-12.3g%-12.1f\n', ...
-            iter,'NO STEP', dcost, expected, g_norm, log10(lambda));           
+        fprintf('%-12d%-12d%-12s%-12.3g%-12.3g%-12.3g%-12.1f\n', ...
+            idx, iter,'NO STEP', dcost, expected, g_norm, log10(lambda));           
     end     
 
     % terminate ?

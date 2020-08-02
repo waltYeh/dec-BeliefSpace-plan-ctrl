@@ -208,14 +208,11 @@ for k = 1:nSteps-1
     
     if k>1
         figure(6)
-        plot([x_save(1,1,k-1),x_save(1,1,k)],[x_save(1,2,k-1),x_save(1,2,k)],'-c.')
+
+        plot(mu_save{1,1}(1,k),mu_save{1,1}(2,k),'bo')
         hold on
         grid on
         axis equal
-        plot([x_save(2,1,k-1),x_save(2,1,k)],[x_save(2,2,k-1),x_save(2,2,k)],'-c.')
-        plot([x_save(3,1,k-1),x_save(3,1,k)],[x_save(3,2,k-1),x_save(3,2,k)],'-c.')
-        plot([x_save(4,1,k-1),x_save(4,1,k)],[x_save(4,2,k-1),x_save(4,2,k)],'-c.')
-        plot(mu_save{1,1}(1,k),mu_save{1,1}(2,k),'bo')
         plot(mu_save{2,1}(1,k),mu_save{2,1}(2,k),'ro')
         plot(mu_save{3,1}(1,k),mu_save{3,1}(2,k),'ko')
         plot(mu_save{4,1}(1,k),mu_save{4,1}(2,k),'go')
@@ -223,6 +220,10 @@ for k = 1:nSteps-1
         plot(z{2}(1),z{2}(2),'r*')
         plot(z{3}(1),z{3}(2),'k*')
         plot(z{4}(1),z{4}(2),'g*')
+        plot([x_save(1,1,k-1),x_save(1,1,k)],[x_save(1,2,k-1),x_save(1,2,k)],'-r.')
+        plot([x_save(2,1,k-1),x_save(2,1,k)],[x_save(2,2,k-1),x_save(2,2,k)],'-k.')
+        plot([x_save(3,1,k-1),x_save(3,1,k)],[x_save(3,2,k-1),x_save(3,2,k)],'-r.')
+        plot([x_save(4,1,k-1),x_save(4,1,k)],[x_save(4,2,k-1),x_save(4,2,k)],'-r.')
     %     
     %     pointsToPlot = drawResultGMM([mu_save{1,1}(:,k); sig_save{1,1}(:,k)], agents{1}.motionModel.stDim);
     %     plot(pointsToPlot(1,:),pointsToPlot(2,:),'b')

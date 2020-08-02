@@ -31,12 +31,14 @@ classdef AgentCrane < AgentBase
         L_opt;
         ctrl_ptr;
         digraph_idx;
+        derivatives;
     end
     
     methods 
         function obj = AgentCrane(dt_input,horizonSteps, node_idx)
             obj@AgentBase();  
             obj.digraph_idx = node_idx;
+            obj.derivatives = {};
             obj.dt = dt_input; % delta_t for time discretization
             obj.motionModel = TwoDPointRobot(dt_input); % motion model
             obj.obsModel = TwoDSimpleObsModel(); % observation model
@@ -46,12 +48,14 @@ classdef AgentCrane < AgentBase
         function [b_nom,u_nom,L_opt,Vx,Vxx,cost]= iLQG_agent(obj,D, b0, u_guess, Op)
             [b_nom,u_nom,L_opt,Vx,Vxx,cost,~,~,tt, nIter]= iLQG_multiagent(D,obj.digraph_idx,obj.dyn_cst, b0, u_guess, Op);
         end
-        function [x, u, cost, L, Vx, Vxx, lambda, dlambda, finished]= ...
+        function [x, u, cost, L, Vx, Vxx, lambda, dlambda, finished,flgChange]= ...
                 iLQG_one_it(obj,D, b0, Op, iter,...
-                u_guess,lambda_last, dlambda_last, u_last,x_last, cost_last)
-            [x, u, L, Vx, Vxx, cost, lambda, dlambda, finished] = ...
+                u_guess,lambda_last, dlambda_last, u_last,x_last, cost_last,flg_last)
+            
+            [x, u, L, Vx, Vxx, cost, lambda, dlambda, finished,flgChange,derivatives_cell] = ...
                 iLQG_multiagent_one_iter(D,obj.digraph_idx,obj.dyn_cst, b0, Op, iter,...
-                u_guess,lambda_last, dlambda_last, u_last,x_last, cost_last);
+                u_guess,lambda_last, dlambda_last, u_last,x_last, cost_last,flg_last,obj.derivatives);
+            obj.derivatives = derivatives_cell;
         end
         function updatePolicy(obj, b_n,u_n,L)
             obj.policyHorizon = size(b_n,3);

@@ -36,15 +36,15 @@ switch show_mode
     case EQUAL_WEIGHT_BALANCING
         t_human_withdraw = 0.0;
     case EQUAL_WEIGHT_TO_BALL_FEEDBACK
-        t_human_withdraw = 0.3;
+        t_human_withdraw = 0.2;
         comp_sel =1;
     case EQUAL_WEIGHT_TO_REST_FEEDBACK
-        t_human_withdraw = 0.3;
+        t_human_withdraw = 0.2;
         comp_sel =2;        
     case BALL_WISH_WITHOUT_HUMAN_INPUT
         t_human_withdraw = 0.0;
     case BALL_WISH_WITH_HUMAN_INPUT
-        t_human_withdraw = 0.7;
+        t_human_withdraw = 0.2;
         comp_sel =1;
     case BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT
         t_human_withdraw = 0.5;

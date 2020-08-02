@@ -18,7 +18,7 @@ switch show_mode
     case EQUAL_WEIGHT_BALANCING
         t_human_withdraw = 0.0;
     case EQUAL_WEIGHT_TO_BALL_FEEDBACK
-        t_human_withdraw = 0.4;
+        t_human_withdraw = 0.2;
         comp_sel =1;
     case EQUAL_WEIGHT_TO_REST_FEEDBACK
         t_human_withdraw = 0.3;

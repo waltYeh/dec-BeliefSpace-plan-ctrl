@@ -13,7 +13,7 @@ function pointsToPlot = drawResultGMM(b, stDim)
 
 x = b(1:stDim,:);
 
-pointsToPlot = [x(1,:) NaN;x(2,:) NaN];
+pointsToPlot = [x(3,:) NaN;x(4,:) NaN];
 
 Ne = 50;% number of points in ellipse drawing
 inc= 2*pi/Ne;
@@ -29,7 +29,7 @@ sigmaScale = 3;
         Sigma(:,d) = b(d*stDim+1:(d+1)*stDim);
     end
     
-    ptemp = make_ellipse_GMM(x(1:2),Sigma(1:2,1:2), sigmaScale, phi);
+    ptemp = make_ellipse_GMM(x(3:4),Sigma(3:4,3:4), sigmaScale, phi);
     
     if isempty(ptemp) == 0
         pointsToPlot = [pointsToPlot ptemp];

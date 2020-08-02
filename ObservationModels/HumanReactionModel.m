@@ -18,7 +18,7 @@ classdef HumanReactionModel < ObservationModelBase
         R_true = diag([0.1, 0.1, 0.001, 0.001]);
         R_speed = diag([0.01, 0.01]);
 
-        R_est = diag([0.1, 0.1, 0.001, 0.001]);
+        R_est = diag([0.1, 0.1, 0.1, 0.1]);
         R_w = diag([4,2,2, 2]);
     end
     
@@ -139,11 +139,11 @@ classdef HumanReactionModel < ObservationModelBase
         
         function M = getObservationNoiseJacobian(obj,x,v,z)
             n = length(z);
-            M = eye(n);
+            M = 1/(1/norm(x(3:4)-[7;0])^2 + 1/norm(x(3:4)-[3;1])^2 + 1) * eye(n);
+%             M = eye(n);
         end
         
         function R = getObservationNoiseCovariance(obj,x,z)
-                        
 %             noise_std = repmat(obj.sigma_b,size(z,1),1);
 %             
 %             R = diag(noise_std.^2);

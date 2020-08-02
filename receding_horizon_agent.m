@@ -65,7 +65,7 @@ sig_4 = diag([0.01, 0.01]);
 dt = 0.05;
 horizon = 2.0;
 mpc_update_period = 0.5;
-simulation_time = 4;
+simulation_time = 3;
 
 %% 
 
@@ -88,10 +88,10 @@ nom_formation_2=[0.4,0.4;
     -0.4,-0.4;
     -0.4,-0.4;
     -0.8,-0.8];%-- formation
-nom_formation_2=[-1,1;
-    -2,0;
-    1,-1;
-    -1,-1];%z formation
+% nom_formation_2=[-1,1;
+%     -2,0;
+%     1,-1;
+%     -1,-1];%z formation
 q_formation=[1;1;1;1];
 rij_control = [0.3;0.3;0.3;0.3];%control cost of node sd in opt of td
 rii_control = [0.8;0.8;0.8;0.8];
@@ -122,14 +122,14 @@ agents{4} = AgentCrane(dt,horizonSteps,4);
 u_guess = zeros(size(D.Nodes,1),size(D.Nodes,1),2,horizonSteps-1);
 % initial guess, less iterations needed if given well
 % guess all agents for every agent, 4x4x2x40
-u_guess(:,1,1,:)=1.0;
-u_guess(:,1,2,:)=-1.0;
-u_guess(:,2,1,:)=0.0;
-u_guess(:,2,2,:)=0.0;
-u_guess(:,3,1,:)=1.0;
-u_guess(:,3,2,:)=1.0;
-u_guess(:,4,1,:)=-1.0;
-u_guess(:,4,2,:)=-1.0;
+% u_guess(:,1,1,:)=1.0;
+% u_guess(:,1,2,:)=-1.0;
+% u_guess(:,2,1,:)=0.0;
+% u_guess(:,2,2,:)=0.0;
+% u_guess(:,3,1,:)=1.0;
+% u_guess(:,3,2,:)=1.0;
+% u_guess(:,4,1,:)=-1.0;
+% u_guess(:,4,2,:)=-1.0;
 b0=cell(size(D.Nodes,1),1);
 x_true = zeros(size(D.Nodes,1),agents{1}.motionModel.stDim);
 % each agent holds the belief of other agents, but in a later version,

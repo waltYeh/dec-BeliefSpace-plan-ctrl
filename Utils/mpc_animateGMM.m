@@ -36,7 +36,7 @@ switch show_mode
     case EQUAL_WEIGHT_BALANCING
         t_human_withdraw = 0.0;
     case EQUAL_WEIGHT_TO_BALL_FEEDBACK
-        t_human_withdraw = 0.4;
+        t_human_withdraw = 0.15;
         comp_sel =1;
     case EQUAL_WEIGHT_TO_REST_FEEDBACK
         t_human_withdraw = 0.3;
@@ -274,6 +274,8 @@ for k = 1:nSteps-1
     plot(pointsToPlot(1,:),pointsToPlot(2,:),'b')
     pointsToPlot = drawResultGMM([mu_save{2}(:,k); sig_save{2}(:,k)], motionModel.stDim);
     plot(pointsToPlot(1,:),pointsToPlot(2,:),'r')
+    plot(z(3),z(4),'*')
+    
 %     [x_nom, P_nom, w_nom] = b2xPw(b_nom(:,k), component_stDim, components_amount);
 %     plot(x_save(1,k),x_save(2,k),'.')
 %     hold on

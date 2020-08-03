@@ -64,8 +64,8 @@ sig_4 = diag([0.5, 0.5]);
 % weight_2 = 0.1;
 dt = 0.05;
 horizon = 2.0;
-mpc_update_period = 0.5;
-simulation_time = 3;
+mpc_update_period = 2;
+simulation_time = 2;
 
 %% 
 
@@ -84,10 +84,10 @@ simulation_steps = simulation_time/mpc_update_period;
 
 sd = [2 2 3 1];%edges start from
 td = [1 3 4 3];%edges go to
-nom_formation_2=[0.4,0.4;
-    -0.4,-0.4;
-    -0.4,-0.4;
-    -0.8,-0.8];%-- formation
+nom_formation_2=[0.5,0.5;
+    -0.5,-0.5;
+    -0.5,-0.5;
+    -1,-1];%-- formation
 % nom_formation_2=[-1,1;
 %     -2,0;
 %     1,-1;
@@ -176,7 +176,7 @@ for i_sim = 1:simulation_steps
         lambda = cell(size(D.Nodes,1),1);
         dlambda = cell(size(D.Nodes,1),1);
         u = cell(size(D.Nodes,1),1);
-        x = cell(size(D.Nodes,1),1);
+        b = cell(size(D.Nodes,1),1);
         L_opt = cell(size(D.Nodes,1),1);
         cost = cell(size(D.Nodes,1),1);
         finished = cell(size(D.Nodes,1),1);
@@ -191,23 +191,26 @@ for i_sim = 1:simulation_steps
                     lambda{i} = [];
                     dlambda{i} = [];
                     u{i} = [];
-                    x{i} = [];
+                    b{i} = [];
                     cost{i} = [];
                 end
             end
 
             for i = 1:size(D.Nodes,1)
                 if finished{i}~=true
-                    [x{i},u{i},cost{i},L_opt{i},Vx1,Vxx1, lambda{i}, dlambda{i}, finished{i},flgChange{i}] ...
+                    [b{i},u{i},cost{i},L_opt{i},Vx1,Vxx1, lambda{i}, dlambda{i}, finished{i},flgChange{i}] ...
                         = agents{i}.iLQG_one_it(D, b0{i}(:,:), Op, iter,squeeze(u_guess(i,:,:,:)),...
-                        lambda{i}, dlambda{i}, u{i},x{i}, cost{i},flgChange{i});
+                        lambda{i}, dlambda{i}, u{i},b{i}, cost{i},flgChange{i});
                 end
             end
+            % up till now, in b{i} only ith (agent) row are changing, 
+            % jth (neighbor agents) have non-zero values but do not
+            % change. in u{i} only ith (agent) row are non-zero
             for i = 1:size(D.Nodes,1)
                 [eid,nid] = inedges(D,i);
                 for j_nid = 1:length(nid)
                     j = nid(j_nid);
-                    x{i}(j,:,:) = x{j}(j,:,:);
+%                     b{i}(j,:,:) = b{j}(j,:,:);
                     u{i}(j,:,:) = u{j}(j,:,:);
                 end
             end
@@ -217,7 +220,7 @@ for i_sim = 1:simulation_steps
         end
         
         for i = 1:size(D.Nodes,1)
-            agents{i}.updatePolicy(x{i},u{i},L_opt{i});
+            agents{i}.updatePolicy(b{i},u{i},L_opt{i});
             u_guess(i,:,:,:) = u{i};
         end
     end
@@ -238,7 +241,7 @@ for i_sim = 1:simulation_steps
     assignin('base', 'time_past', time_past)
     assignin('base', 'show_mode', show_mode)
     assignin('base', 'x_true', x_true)
-    [~, b0, x_true] = animateMultiagent(agents, b0, x_true,update_steps,time_past, show_mode);
+    [~, b0, x_true] = animateMultiagent(D,agents, b0, x_true,update_steps,time_past, show_mode);
 %     b0{1}(1:2) = x_true_final(1:2);
 end
 

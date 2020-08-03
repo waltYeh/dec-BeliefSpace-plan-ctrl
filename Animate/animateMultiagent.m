@@ -1,4 +1,4 @@
-function [failed, b_f, x_true_final] = animateMultiagent(agents, b0, x_true, nSteps,time_past, show_mode)
+function [failed, b_f, x_true_final] = animateMultiagent(D,agents, b0, x_true, nSteps,time_past, show_mode)
 % longer, clear wish, shorter, less overshoot
 t_human_withdraw = 0.5;
 comp_sel =1;
@@ -183,14 +183,22 @@ for k = 1:nSteps-1
         [b_next_i,mu_i,sig_i,~] = agents{i}.getNextEstimation(b{i},u{i},z{i});
         %should pass in the control and measurement of connected agents in
         %order to do estimations for them!
-        b{1}(i,:)=b_next_i;
-        b{2}(i,:)=b_next_i;
-        b{3}(i,:)=b_next_i;
-        b{4}(i,:)=b_next_i;
+        b{i}(i,:)=b_next_i;
+%         b{2}(i,:)=b_next_i;
+%         b{3}(i,:)=b_next_i;
+%         b{4}(i,:)=b_next_i;
         for i_comp=1:agents{i}.components_amount % only one component
             mu{i,i_comp}=mu_i{i_comp};
             sig{i,i_comp}=sig_i{i_comp};
 %             weight{i}(i_comp)=weight_i(i_comp);
+        end
+    end
+    for i = 1:size(D.Nodes,1)
+        [eid,nid] = inedges(D,i);
+        for j_nid = 1:length(nid)
+            j = nid(j_nid);
+            b{i}(j,:) = b{j}(j,:);
+%             u{i}(j,:) = u{j}(j,:);
         end
     end
 %     [b_next_i,mu_i,sig_i,weight_i] = agents{1}.getNextEstimation(b{1},u,z);
@@ -208,7 +216,7 @@ for k = 1:nSteps-1
 
     
     if k>1
-        figure(6)
+        figure(7)
 
         plot(mu_save{1,1}(1,k),mu_save{1,1}(2,k),'bo')
         hold on

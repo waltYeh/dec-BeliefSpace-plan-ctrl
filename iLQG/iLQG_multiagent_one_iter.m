@@ -71,6 +71,8 @@ end
 %====== STEP 1: differentiate dynamics and cost along new trajectory
 if flgChange
     t_diff = tic;
+    % only considers agent idx itself fx: 6x6x41, fu 6x2x41, c_bi 6x41, cui
+    % 2x41, ... 6x6x41, 6x2x41, 2x2x41, c_ui_uj 4x2x2x41
     [~,~,fx,fu,fxx,fxu,fuu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj]   = DYNCST(D,idx,x, cat(3,u,nan(size(D.Nodes,1),m,1)), 1:N+1);
 %     trace(iter).time_derivs = toc(t_diff);
     flgChange   = 0;
@@ -264,7 +266,8 @@ for k = 1:N
         else
             dx          = xnew(idx,:,:,k) - x(idx,:,k*K1);% both size 1x6x11
         end
-        unew(idx,:,:,k) = squeeze(unew(idx,:,:,k)) + L(:,:,k)*squeeze(dx); % with feedback
+        unew(idx,:,:,k) = squeeze(unew(idx,:,:,k)) + L(:,:,k)*squeeze(dx); 
+        % with feedback
     end
     if ~isempty(Ku)
         du_all_agent = u;

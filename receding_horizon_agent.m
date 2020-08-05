@@ -211,6 +211,8 @@ for i_sim = 1:simulation_steps
                 for j_nid = 1:length(nid)
                     j = nid(j_nid);
 %                     b{i}(j,:,:) = b{j}(j,:,:);
+% maybe not necessary to exchange b because b will be updated in forward
+% pass anyway
                     u{i}(j,:,:) = u{j}(j,:,:);
                 end
             end

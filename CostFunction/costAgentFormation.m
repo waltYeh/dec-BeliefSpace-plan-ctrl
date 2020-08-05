@@ -86,9 +86,9 @@ ic = 0;
 % control cost
 uc = 0;
 [eid,nid] = inedges(D,idx);
-rij_control = 0.3;
+rij_control = 0.0;
 q_formation = 1;
-rii_control = 0.8;
+rii_control = 0.2;
 if any(final)
     
     for j_nid = 1:length(nid)

@@ -216,7 +216,7 @@ for k = 1:nSteps-1
 
     
     if k>1
-        figure(7)
+        figure(8)
 
         plot(mu_save{1,1}(1,k),mu_save{1,1}(2,k),'bo')
         hold on

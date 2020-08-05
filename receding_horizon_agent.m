@@ -63,9 +63,9 @@ sig_4 = diag([0.5, 0.5]);
 % weight_1 = 0.9;
 % weight_2 = 0.1;
 dt = 0.05;
-horizon = 2.0;
-mpc_update_period = 2;
-simulation_time = 2;
+horizon = 3.0;
+mpc_update_period = 3;
+simulation_time = 3;
 
 %% 
 
@@ -82,18 +82,20 @@ simulation_steps = simulation_time/mpc_update_period;
 
 
 
-sd = [2 2 3 1];%edges start from
-td = [1 3 4 3];%edges go to
-% nom_formation_2=[0.5,0.5;
-%     -0.5,-0.5;
-%     -0.5,-0.5;
-%     -1,-1];%-- formation
+sd = [2 2 3 1 1];%edges start from
+td = [1 3 4 3 2];%edges go to
+nom_formation_2=[0.5,0.5;
+    -0.5,-0.5;
+    -0.5,-0.5;
+    -1,-1;
+    -0.5,-0.5;];%-- formation
 nom_formation_2=[-1,1;
     -2,0;
     1,-1;
-    -1,-1];%z formation
-q_formation=[1;1;1;1];
-rij_control = [0.3;0.3;0.3;0.3];%control cost of node sd in opt of td
+    -1,-1;
+    1,-1];%z formation
+q_formation=[1;1;1;1;1];
+rij_control = [0.3;0.3;0.3;0.3;0.3];%control cost of node sd in opt of td
 rii_control = [0.8;0.8;0.8;0.8];
 incoming_edges = zeros(4,4);
 EdgeTable = table([sd' td'],nom_formation_2,q_formation,rij_control,'VariableNames',{'EndNodes' 'nom_formation_2' 'q_formation' 'rij_control'});
@@ -231,14 +233,14 @@ for i_sim = 1:simulation_steps
                     % as long as all agents are connected by comm graph
                 end
             end
-            for ii =1:3
+            for ii =1:1
                 d_u_est = u;%only to make the size the same, values will not be used
                 for i = 1:4
                     for j=1:4
                         if i==j
-                            d_u_est{i,1}(j,:,:) = zeros(1,2,40);
+                            d_u_est{i,1}(j,:,:) = zeros(1,2,horizonSteps-1);
                         else
-                            sum_est = zeros(1,2,40);
+                            sum_est = zeros(1,2,horizonSteps-1);
                             for k=1:4
                                 sum_est = sum_est+adjGr(i,k)*(u{i}(j,:,:)-u{k}(j,:,:));
                             end

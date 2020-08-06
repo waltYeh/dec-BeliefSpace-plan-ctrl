@@ -22,7 +22,7 @@ classdef AgentPlattform < AgentBase
             -2.0 2.0;
             -2.0 2.0];
         % larger, less overshoot; smaller, less b-noise affects assist
-        P_feedback = 0.3;
+        P_feedback = 1.0;
     end
     
     properties
@@ -66,7 +66,7 @@ classdef AgentPlattform < AgentBase
             end
         end
         function [b_next,mu,sig,weight] = getNextEstimation(obj,b,u,z)
-component_alone_uDim = obj.motionModel.ctDim - obj.shared_uDim;
+            component_alone_uDim = obj.motionModel.ctDim - obj.shared_uDim;
 %             components_amount = length(b)/component_bDim;
             [mu, sig, weight] = b2xPw(b, obj.component_stDim, obj.components_amount);
             z_mu = cell(obj.components_amount);

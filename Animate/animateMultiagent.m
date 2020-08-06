@@ -131,7 +131,7 @@ for k = 1:nSteps-1
     % u_for_true includes one target and the assist
     
 %     u_for_true = [u((comp_sel-1)*max_components_amount + 1:comp_sel*max_components_amount);u(end-1:end)];
-    for i=1:4  
+    for i=1:4  % the real states of four robots
         processNoise = agents{i}.motionModel.generateProcessNoise(x_true(i,:),u{i});
         x_true(i,:) = agents{i}.motionModel.evolve(x_true(i,:)',u{i},processNoise);
         z{i} = agents{i}.obsModel.getObservation(x_true(i,:),'truenoise');
@@ -197,7 +197,9 @@ for k = 1:nSteps-1
         [eid,nid] = inedges(D,i);
         for j_nid = 1:length(nid)
             j = nid(j_nid);
-            b{i}(j,:) = b{j}(j,:);
+            % I close up the estimation exchange between agents!
+            % but it can be reopened
+%             b{i}(j,:) = b{j}(j,:);
 %             u{i}(j,:) = u{j}(j,:);
         end
     end

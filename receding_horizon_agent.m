@@ -101,16 +101,16 @@ incoming_edges = zeros(4,4);
 EdgeTable = table([sd' td'],nom_formation_2,q_formation,rij_control,'VariableNames',{'EndNodes' 'nom_formation_2' 'q_formation' 'rij_control'});
 
 NodeTable = table(incoming_edges,rii_control,'VariableNames',{'incoming_edges' 'rii_control'});
-D = digraph(EdgeTable,NodeTable);
+interfDiGr = digraph(EdgeTable,NodeTable);
 for idx=1:4
-    incoming_nbrs_idces = predecessors(D,idx)';
+    incoming_nbrs_idces = predecessors(interfDiGr,idx)';
     for j = incoming_nbrs_idces
         if isempty(j)
             continue
         end
-        RowIdx = ismember(D.Edges.EndNodes, [j,idx],'rows');
+        RowIdx = ismember(interfDiGr.Edges.EndNodes, [j,idx],'rows');
         [rId, cId] = find( RowIdx ) ;
-        D.Nodes.incoming_edges(idx,j)=rId;
+        interfDiGr.Nodes.incoming_edges(idx,j)=rId;
     end
 end
 
@@ -119,7 +119,7 @@ comm_td = [2 3 4 4];
 commGr = graph(comm_sd,comm_td);
 adjGr = full(adjacency(commGr));
 
-agents = cell(size(D.Nodes,1),1);
+agents = cell(size(interfDiGr.Nodes,1),1);
 agents{1} = AgentCrane(dt,horizonSteps,1);
 agents{2} = AgentCrane(dt,horizonSteps,2);
 agents{3} = AgentCrane(dt,horizonSteps,3);
@@ -127,7 +127,7 @@ agents{4} = AgentCrane(dt,horizonSteps,4);
 
 %% Setup start and goal/target state
 
-u_guess = zeros(size(D.Nodes,1),size(D.Nodes,1),2,horizonSteps-1);
+u_guess = zeros(size(interfDiGr.Nodes,1),size(interfDiGr.Nodes,1),2,horizonSteps-1);
 % initial guess, less iterations needed if given well
 % guess all agents for every agent, 4x4x2x40
 % u_guess(:,1,1,:)=1.0;
@@ -138,13 +138,13 @@ u_guess = zeros(size(D.Nodes,1),size(D.Nodes,1),2,horizonSteps-1);
 % u_guess(:,3,2,:)=1.0;
 % u_guess(:,4,1,:)=-1.0;
 % u_guess(:,4,2,:)=-1.0;
-b0=cell(size(D.Nodes,1),1);
-x_true = zeros(size(D.Nodes,1),agents{1}.motionModel.stDim);
+b0=cell(size(interfDiGr.Nodes,1),1);
+x_true = zeros(size(interfDiGr.Nodes,1),agents{1}.motionModel.stDim);
 % each agent holds the belief of other agents, but in a later version,
 % this will be limited to neighbors
-for i=1:size(D.Nodes,1)
+for i=1:size(interfDiGr.Nodes,1)
     %{4}x4x6
-    b0{i}=zeros(size(D.Nodes,1),size(mu_1,1)+size(sig_1(:),1));
+    b0{i}=zeros(size(interfDiGr.Nodes,1),size(mu_1,1)+size(sig_1(:),1));
     b0{i}(1,:) = [mu_1;sig_1(:)];
     b0{i}(2,:) = [mu_2;sig_2(:)];
     b0{i}(3,:) = [mu_3;sig_3(:)];
@@ -172,50 +172,45 @@ Op.plotFn = plotFn;
 
 for i_sim = 1:simulation_steps
     if 0
-        [b_nom1,u_nom1,L_opt1,Vx1,Vxx1,cost1] = agents{1}.iLQG_agent(D,b0{1}(:,:), squeeze(u_guess(1,:,:,:)), Op);
+        [b_nom1,u_nom1,L_opt1,Vx1,Vxx1,cost1] = agents{1}.iLQG_agent(interfDiGr,b0{1}(:,:), squeeze(u_guess(1,:,:,:)), Op);
         agents{1}.updatePolicy(b_nom1,u_nom1,L_opt1);
-        [b_nom2,u_nom2,L_opt2,Vx2,Vxx2,cost2] = agents{2}.iLQG_agent(D,b0{2}(:,:), squeeze(u_guess(2,:,:,:)), Op);
+        [b_nom2,u_nom2,L_opt2,Vx2,Vxx2,cost2] = agents{2}.iLQG_agent(interfDiGr,b0{2}(:,:), squeeze(u_guess(2,:,:,:)), Op);
         agents{2}.updatePolicy(b_nom2,u_nom2,L_opt2);
-        [b_nom3,u_nom3,L_opt3,Vx3,Vxx3,cost3] = agents{3}.iLQG_agent(D,b0{3}(:,:), squeeze(u_guess(3,:,:,:)), Op);
+        [b_nom3,u_nom3,L_opt3,Vx3,Vxx3,cost3] = agents{3}.iLQG_agent(interfDiGr,b0{3}(:,:), squeeze(u_guess(3,:,:,:)), Op);
         agents{3}.updatePolicy(b_nom3,u_nom3,L_opt3);
-        [b_nom4,u_nom4,L_opt4,Vx4,Vxx4,cost4] = agents{4}.iLQG_agent(D,b0{4}(:,:), squeeze(u_guess(4,:,:,:)), Op);
+        [b_nom4,u_nom4,L_opt4,Vx4,Vxx4,cost4] = agents{4}.iLQG_agent(interfDiGr,b0{4}(:,:), squeeze(u_guess(4,:,:,:)), Op);
         agents{4}.updatePolicy(b_nom4,u_nom4,L_opt4);
     else
-        lambda = cell(size(D.Nodes,1),1);
-        dlambda = cell(size(D.Nodes,1),1);
-        u = cell(size(D.Nodes,1),1);
-        b = cell(size(D.Nodes,1),1);
-        L_opt = cell(size(D.Nodes,1),1);
-        cost = cell(size(D.Nodes,1),1);
-        finished = cell(size(D.Nodes,1),1);
-        flgChange = cell(size(D.Nodes,1),1);
-        for i = 1:size(D.Nodes,1)
+        u = cell(size(interfDiGr.Nodes,1),1);
+        b = cell(size(interfDiGr.Nodes,1),1);
+        L_opt = cell(size(interfDiGr.Nodes,1),1);
+        cost = cell(size(interfDiGr.Nodes,1),1);
+        finished = cell(size(interfDiGr.Nodes,1),1);
+        for i = 1:size(interfDiGr.Nodes,1)
             finished{i}= false;
-            flgChange{i} = [];
         end
         for iter = 1:40
             if iter == 1
-                for i = 1:size(D.Nodes,1)
-                    lambda{i} = [];
-                    dlambda{i} = [];
+                for i = 1:size(interfDiGr.Nodes,1)
                     u{i} = [];
                     b{i} = [];
                     cost{i} = [];
                 end
             end
 
-            for i = 1:size(D.Nodes,1)
+            for i = 1:size(interfDiGr.Nodes,1)
                 if finished{i}~=true
-                    [b{i},u{i},cost{i},L_opt{i},Vx1,Vxx1, lambda{i}, dlambda{i}, finished{i},flgChange{i}] ...
-                        = agents{i}.iLQG_one_it(D, b0{i}(:,:), Op, iter,squeeze(u_guess(i,:,:,:)),...
-                        lambda{i}, dlambda{i}, u{i},b{i}, cost{i},flgChange{i});
+                    [b{i},u{i},cost{i},L_opt{i},~,~, finished{i}] ...
+                        = agents{i}.iLQG_one_it...
+                        (interfDiGr, b0{i}(:,:), Op, iter,squeeze(u_guess(i,:,:,:)),...
+                        u{i},b{i}, cost{i});
                 end
             end
             % up till now, in b{i} only ith (agent) row are changing, 
             % jth (neighbor agents) have non-zero values but do not
             % change. in u{i} only ith (agent) row are non-zero
-            for i = 1:size(D.Nodes,1)
-                [eid,nid] = inedges(D,i);
+            for i = 1:size(interfDiGr.Nodes,1)
+                [eid,nid] = inedges(interfDiGr,i);
                 for j_nid = 1:length(nid)
                     j = nid(j_nid);
 %                     b{i}(j,:,:) = b{j}(j,:,:);
@@ -268,7 +263,7 @@ for i_sim = 1:simulation_steps
             plot(error_policy_4_from_3(2,:))
         end
         
-        for i = 1:size(D.Nodes,1)
+        for i = 1:size(interfDiGr.Nodes,1)
             % iLQG iteration finished, take the policy to execute
             agents{i}.updatePolicy(b{i},u{i},L_opt{i});
             u_guess(i,:,:,:) = u{i};
@@ -292,7 +287,7 @@ for i_sim = 1:simulation_steps
     assignin('base', 'time_past', time_past)
     assignin('base', 'show_mode', show_mode)
     assignin('base', 'x_true', x_true)
-    [~, b0, x_true] = animateMultiagent(D,agents, b0, x_true,update_steps,time_past, show_mode);
+    [~, b0, x_true] = animateMultiagent(interfDiGr,agents, b0, x_true,update_steps,time_past, show_mode);
 %     b0{1}(1:2) = x_true_final(1:2);
 end
 figure(3)

@@ -218,7 +218,7 @@ for k = 1:nSteps-1
 
     
     if k>1
-        figure(8)
+        figure(99)
 
         plot(mu_save{1,1}(1,k),mu_save{1,1}(2,k),'bo')
         hold on
@@ -267,7 +267,7 @@ for k = 1:nSteps-1
     %     subplot(2,2,4)
     %     plot(time_past + agents{1}.dt*(k-1),u(3),'b.',time_past + agents{1}.dt*(k-1),u(4),'r.')
     %     hold on
-        pause(0.2);
+        pause(0.05);
     end
 end
 b_f = b;

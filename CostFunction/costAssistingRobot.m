@@ -96,6 +96,7 @@ for i_comp=1:components_amount
 
     end
     component_cost(i_comp) = sc + ic + uc + w_cc*cc;
+    % may also consider take uc out of factoring with weight
     cost = cost + component_cost(i_comp) * w(i_comp)^2;
 end
 end

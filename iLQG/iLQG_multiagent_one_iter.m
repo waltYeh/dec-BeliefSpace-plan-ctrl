@@ -1,6 +1,6 @@
 function [x, u, L, Vx, Vxx, cost,  ...
     lambda, dlambda, finished,flgChange,derivatives_cell] = iLQG_multiagent_one_iter(D,idx,DYNCST, x0, Op, iter,...
-    u_guess,lambda_last, dlambda_last, u_last,x_last, cost_last, flg_last, derivatives_cell_last)
+    u_guess,lambda_last, dlambda_last, u_last,x_last, cost_last, flg_last, derivatives_cell_last, u_lims)
 
 %     trace(iter).iter = iter; 
 defaults = {'lims',           [],...            control limits
@@ -34,24 +34,24 @@ finished = false;
 derivatives_cell = {};
 if iter == 1
     u = u_guess;
-    switch numel(Op.lims)
-    case 0
-    case 2*m
-        % we are here, no change in fact
-        Op.lims = sort(Op.lims,2);
-    case 2
-        Op.lims = ones(m,1)*sort(Op.lims(:))';
-    case m
-        Op.lims = Op.lims(:)*[-1 1];
-    otherwise
-        error('limits are of the wrong size')
-    end
+%     switch numel(Op.lims)
+%     case 0
+%     case 2*m
+%         % we are here, no change in fact
+%         Op.lims = sort(Op.lims,2);
+%     case 2
+%         Op.lims = ones(m,1)*sort(Op.lims(:))';
+%     case m
+%         Op.lims = Op.lims(:)*[-1 1];
+%     otherwise
+%         error('limits are of the wrong size')
+%     end
     lambda   = Op.lambda;
     dlambda  = Op.dlambda;
     for alpha = Op.Alpha
         % x, only nodes pointing towards me and myself is filled with
         % belief state predictions
-        [x,un,cost]  = forward_pass(D,idx,x0,alpha*u,[],[],[],[],1,DYNCST,Op.lims,[]);
+        [x,un,cost]  = forward_pass(D,idx,x0,alpha*u,[],[],[],[],1,DYNCST,u_lims,[]);
         if all(abs(x(:)) < 1e8)
             u = un;
             break
@@ -96,7 +96,7 @@ backPassDone   = 0;
 while ~backPassDone
 
     t_back   = tic;
-    [diverge, Vx, Vxx, l, L, dV, Ku] = back_pass(D,idx,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,fx,fu,fxx,fxu,fuu,lambda,Op.regType,Op.lims,u);
+    [diverge, Vx, Vxx, l, L, dV, Ku] = back_pass(D,idx,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,fx,fu,fxx,fxu,fuu,lambda,Op.regType,u_lims,u);
     % l is the feedforward term (42), 
     % L is the time-variant feedback(42)
 %     trace(iter).time_backward = toc(t_back);
@@ -135,7 +135,7 @@ fwdPassDone  = 0;
 if backPassDone
     t_fwd = tic;
     if Op.parallel  % parallel line-search
-        [xnew,unew,costnew] = forward_pass(D,idx,x0 ,u, L, x(:,:,1:N), l, Ku, Op.Alpha, DYNCST,Op.lims,Op.diffFn);
+        [xnew,unew,costnew] = forward_pass(D,idx,x0 ,u, L, x(:,:,1:N), l, Ku, Op.Alpha, DYNCST,u_lims,Op.diffFn);
         % now we have 10 candidates of new traj
         Dcost               = sum(cost(:)) - sum(squeeze(costnew),1);
         [dcost, w]          = max(Dcost);

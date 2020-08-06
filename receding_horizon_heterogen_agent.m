@@ -1,7 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Demo for a 2D belief space planning scenario 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function receding_horizon_agent()
+function receding_horizon_heterogen_agent()
 addpath(genpath('./'));
 clear
 % FigList = findall(groot, 'Type', 'figure');
@@ -24,42 +24,45 @@ REST_WISH_WITH_OPPOSITE_HUMAN_INPUT = 9;
 show_mode = EQUAL_WEIGHT_TO_BALL_FEEDBACK;
 switch show_mode
     case EQUAL_WEIGHT_BALANCING
-        weight_1 = 0.5;
-        weight_2 = 0.5;
+        weight_a1 = 0.5;
+        weight_a2 = 0.5;
     case EQUAL_WEIGHT_TO_BALL_FEEDBACK
-        weight_1 = 0.5;
-        weight_2 = 0.5;
+        weight_a1 = 0.5;
+        weight_a2 = 0.5;
     case EQUAL_WEIGHT_TO_REST_FEEDBACK
-        weight_1 = 0.5;
-        weight_2 = 0.5;        
+        weight_a1 = 0.5;
+        weight_a2 = 0.5;        
     case BALL_WISH_WITHOUT_HUMAN_INPUT
-        weight_1 = 0.95;
-        weight_2 = 0.05;
+        weight_a1 = 0.95;
+        weight_a2 = 0.05;
     case BALL_WISH_WITH_HUMAN_INPUT
-        weight_1 = 0.95;
-        weight_2 = 0.05;
+        weight_a1 = 0.95;
+        weight_a2 = 0.05;
     case BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT
-        weight_1 = 0.95;
-        weight_2 = 0.05;
+        weight_a1 = 0.95;
+        weight_a2 = 0.05;
     case REST_WISH_WITHOUT_HUMAN_INPUT
-        weight_1 = 0.05;
-        weight_2 = 0.95;
+        weight_a1 = 0.05;
+        weight_a2 = 0.95;
     case REST_WISH_WITH_HUMAN_INPUT
-        weight_1 = 0.05;
-        weight_2 = 0.95;
+        weight_a1 = 0.05;
+        weight_a2 = 0.95;
     case REST_WISH_WITH_OPPOSITE_HUMAN_INPUT
-        weight_1 = 0.05;
-        weight_2 = 0.95;
+        weight_a1 = 0.05;
+        weight_a2 = 0.95;
 end
 %% tuned parameters
-mu_1 = [0.7, 1.7]';
-mu_2 = [1.0, 0.0]';
-mu_3 = [-0.7, -1.7]';
-mu_4 = [0.7, 0.3]';
-sig_1 = diag([0.5, 0.5]);%sigma
-sig_2 = diag([0.5, 0.5]);
-sig_3 = diag([0.5, 0.5]);%sigma
-sig_4 = diag([0.5, 0.5]);
+mu_a1 = [8.5, 0.0, 5.0, 0.0]';
+mu_a2 = [3, 1.0, 5.0, 0.0]';
+mu_b = [8.5, 0.0]';
+mu_c = [5, 3]';
+% mu_4 = [0.7, 0.3]';
+sig_a1 = diag([0.01, 0.01, 0.1, 0.1]);%sigma
+sig_a2 = diag([0.01, 0.01, 0.1, 0.1]);
+sig_b = diag([0.01, 0.01]);%sigma
+sig_c = diag([0.5, 0.5]);
+
+
 % weight_1 = 0.9;
 % weight_2 = 0.1;
 dt = 0.05;
@@ -114,20 +117,22 @@ for idx=1:4
     end
 end
 
-comm_sd = [1 1 2 3];
+comm_sd = [1 1 1 3];
 comm_td = [2 3 4 4];
 commGr = graph(comm_sd,comm_td);
-adjGr = full(adjacency(commGr));
+adjGr = full(adjacency(commGr));% full transfers sparse to normal matrix
 
 agents = cell(size(interfDiGr.Nodes,1),1);
-agents{1} = AgentCrane(dt,horizonSteps,1);
-agents{2} = AgentCrane(dt,horizonSteps,2);
-agents{3} = AgentCrane(dt,horizonSteps,3);
-agents{4} = AgentCrane(dt,horizonSteps,4);
+agents{1} = AgentPlattform(dt,horizonSteps,1);
+% agents{2} = AgentBelt(dt,horizonSteps,2);
+% agents{3} = AgentCrane(dt,horizonSteps,3);
+% agents{4} = AgentCrane(dt,horizonSteps,4);
 
 %% Setup start and goal/target state
 
-u_guess = zeros(size(interfDiGr.Nodes,1),size(interfDiGr.Nodes,1),2,horizonSteps-1);
+u_guess = zeros(size(interfDiGr.Nodes,1),...
+                size(interfDiGr.Nodes,1),...
+                max(agents{1}.total_uDim,1),horizonSteps-1);
 % initial guess, less iterations needed if given well
 % guess all agents for every agent, 4x4x2x40
 % u_guess(:,1,1,:)=1.0;
@@ -139,27 +144,30 @@ u_guess = zeros(size(interfDiGr.Nodes,1),size(interfDiGr.Nodes,1),2,horizonSteps
 % u_guess(:,4,1,:)=-1.0;
 % u_guess(:,4,2,:)=-1.0;
 b0=cell(size(interfDiGr.Nodes,1),1);
-x_true = zeros(size(interfDiGr.Nodes,1),agents{1}.motionModel.stDim);
+
 % each agent holds the belief of other agents, but in a later version,
 % this will be limited to neighbors
 for i=1:size(interfDiGr.Nodes,1)
     %{4}x4x6
-    b0{i}=zeros(size(interfDiGr.Nodes,1),size(mu_1,1)+size(sig_1(:),1));
-    b0{i}(1,:) = [mu_1;sig_1(:)];
-    b0{i}(2,:) = [mu_2;sig_2(:)];
-    b0{i}(3,:) = [mu_3;sig_3(:)];
-    b0{i}(4,:) = [mu_4;sig_4(:)];
+    b0{i}=zeros(size(interfDiGr.Nodes,1),agents{1}.component_bDim * agents{1}.components_amount);
+    b0{i}(1,:) = [mu_a1;sig_a1(:);weight_a1;mu_a2;sig_a2(:);weight_a2];
+%     b0{i}(2,:) = [mu_2;sig_2(:)];
+%     b0{i}(3,:) = [mu_3;sig_3(:)];
+%     b0{i}(4,:) = [mu_4;sig_4(:)];
     
 end
+%????????????????
+x_true = zeros(size(interfDiGr.Nodes,1),agents{1}.motionModel.stDim);
 x_true(1,:)=mu_1;
 x_true(2,:)=mu_2;
 x_true(3,:)=mu_3;
 x_true(4,:)=mu_4;
+%????????????????
 % b0={[mu_1;sig_1(:);weight_1;mu_2;sig_2(:);weight_2];[mu_1;sig_1(:);weight_1;mu_2;sig_2(:);weight_2]};
 
 % control constraints are optional
-Op.lims  = [-4.0 4.0;
-    -4.0 4.0];
+% Op.lims  = [-4.0 4.0;
+%     -4.0 4.0];
 %% these are old codes remained
 Op.plot = -1; % plot the derivatives as well
 
@@ -198,7 +206,7 @@ for i_sim = 1:simulation_steps
                 end
             end
 
-            for i = 1:size(interfDiGr.Nodes,1)
+            for i = 1:1%size(interfDiGr.Nodes,1)
                 if finished{i}~=true
                     [b{i},u{i},cost{i},L_opt{i},~,~, finished{i}] ...
                         = agents{i}.iLQG_one_it...
@@ -228,21 +236,10 @@ for i_sim = 1:simulation_steps
                     % as long as all agents are connected by comm graph
                 end
             end
-%             for i = 1:4
-%                 for j=1:4
-%                     if i==j
-% %                             d_u_est{i,1}(j,:,:) = zeros(1,2,horizonSteps-1);
-%                     else
-% %                         u{i}(j,:,:) = u{j}(j,:,:);
-%                          u{i}(j,:,:) = (u{j}(j,:,:) + u{i}(j,:,:))/2;
-%                     end
-%                 end
-%             end
-
             for ii =1:1
                 d_u_est = u;%only to make the size the same, values will not be used
-                for i = 1:4
-                    for j=1:4
+                for i = 1:1
+                    for j=1:1
                         if i==j
                             d_u_est{i,1}(j,:,:) = zeros(1,2,horizonSteps-1);
                         else
@@ -250,16 +247,18 @@ for i_sim = 1:simulation_steps
                             for k=1:4
                                 sum_est = sum_est+adjGr(i,k)*(u{i}(j,:,:)-u{k}(j,:,:));
                             end
-                            d_u_est{i,1}(j,:,:)=-(sum_est);%+adjGr(i,j)*(u{i}(j,:,:)-u{j}(j,:,:)));
+                            d_u_est{i,1}(j,:,:)=-(sum_est+adjGr(i,j)*(u{i}(j,:,:)-u{j}(j,:,:)));
                         end
                     end
                 end
-                for i = 1:4
-                    u{i} = u{i} + 0.3*d_u_est{i,1};
+                for i = 1:1
+                    u{i} = u{i} + 0.2*d_u_est{i,1};
                 end
             end
             
-            
+            if finished{1}% && finished{2} && finished{3} && finished{4} 
+                break;
+            end
 %             error_policy_3_from_1 = squeeze(u{3,1}(1,:,:)-u{1,1}(1,:,:));
 %             error_policy_4_from_3 = squeeze(u{4,1}(3,:,:)-u{3,1}(3,:,:));
 %             figure(3)
@@ -270,27 +269,7 @@ for i_sim = 1:simulation_steps
 %             plot(error_policy_4_from_3(1,:))
 %             hold on
 %             plot(error_policy_4_from_3(2,:))
-%             figure(iter)
-%             for agent_i=1:4
-%                 subplot(2,2,agent_i)
-%                 title(strcat('Policy of agent ',num2str(agent_i)))
-%                 for agent_j=1:4
-%                     if agent_i == agent_j
-%                         pattern = '.';
-%                     else
-%                         pattern = '-';
-%                     end
-%                     plot(1:horizonSteps-1,squeeze(u{agent_j}(agent_i,1,:)),pattern)
-%                     hold on
-%                     plot(1:horizonSteps-1,squeeze(u{agent_j}(agent_i,2,:)),pattern)
-%                     hold on
-%                 end
-%                 title(strcat('Policy of agent ',num2str(agent_i)))
-%             end
-            if finished{1} && finished{2} && finished{3} && finished{4} 
-                break;
-            end
-        end% end of iLQG iterations
+        end
         
         for i = 1:size(interfDiGr.Nodes,1)
             % iLQG iteration finished, take the policy to execute
@@ -316,7 +295,7 @@ for i_sim = 1:simulation_steps
     assignin('base', 'time_past', time_past)
     assignin('base', 'show_mode', show_mode)
     assignin('base', 'x_true', x_true)
-    [~, b0, x_true] = animateMultiagent(interfDiGr,agents, b0, x_true,update_steps,time_past, show_mode);
+    [~, b0, x_true] = animateHeteroMultiagent(interfDiGr,agents, b0, x_true,update_steps,time_past, show_mode);
 %     b0{1}(1:2) = x_true_final(1:2);
 end
 % figure(3)

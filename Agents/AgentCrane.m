@@ -64,7 +64,7 @@ classdef AgentCrane < AgentBase
             end
             [x, u, L, Vx, Vxx, cost, obj.lambda, obj.dlambda, finished,obj.flgChange,derivatives_cell] = ...
                 iLQG_multiagent_one_iter(D,obj.digraph_idx,obj.dyn_cst, b0, Op, iter,...
-                u_guess,obj.lambda, obj.dlambda, u_last,x_last, cost_last,obj.flgChange,obj.derivatives);
+                u_guess,obj.lambda, obj.dlambda, u_last,x_last, cost_last,obj.flgChange,obj.derivatives, obj.u_lims);
             obj.derivatives = derivatives_cell;
         end
         function updatePolicy(obj, b_n,u_n,L)

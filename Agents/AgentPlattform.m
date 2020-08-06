@@ -13,8 +13,11 @@ classdef AgentPlattform < AgentBase
         component_stDim = 4;
         %component_stDim + component_stDim^2 + 1
         component_bDim = 21;
+        component_uDim = 4;
         components_amount = 2;
         shared_uDim = 2;
+        total_uDim = 6;
+        
         u_lims = [-0.0 0.0;
             -4.0 4.0;
             -0.0  0.0;
@@ -34,15 +37,25 @@ classdef AgentPlattform < AgentBase
         u_nom;
         L_opt;
         ctrl_ptr;
+        digraph_idx;
+        derivatives;
+        lambda; 
+        dlambda;
+        flgChange;
     end
     
     methods 
         function obj = AgentPlattform(dt_input,horizonSteps)
-            obj@AgentBase();       
+            obj@AgentBase(); 
+            obj.digraph_idx = node_idx;
+            obj.derivatives = {};
             obj.dt = dt_input; % delta_t for time discretization
             obj.motionModel = HumanMind(dt_input); % motion model
             obj.obsModel = HumanReactionModel(); % observation model
-            obj.dyn_cst  = @(b,u,i) beliefDynCost_assisting_robot(b,u,horizonSteps,false,obj.motionModel,obj.obsModel);
+            obj.dyn_cst  = @(D,idx,b,u,i) beliefDynCost_assisting_robot(D,idx,b,u,horizonSteps,false,obj.motionModel,obj.obsModel);
+            obj.lambda = []; 
+            obj.dlambda = [];
+            obj.flgChange = [];
         end
         function [b_nom,u_nom,L_opt,Vx,Vxx,cost]= iLQG_GMM(obj, b0, u_guess, Op)
             [b_nom,u_nom,L_opt,Vx,Vxx,cost,~,~,tt, nIter]= iLQG_GMM(obj.dyn_cst, b0, u_guess, Op);

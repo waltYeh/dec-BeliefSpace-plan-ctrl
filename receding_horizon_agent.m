@@ -64,7 +64,7 @@ sig_4 = diag([0.5, 0.5]);
 % weight_2 = 0.1;
 dt = 0.05;
 horizon = 3.0;
-mpc_update_period = 3;
+mpc_update_period = 1;
 simulation_time = 3;
 
 %% 
@@ -73,7 +73,7 @@ t0 = 0;
 tspan = t0 : dt : horizon;
 horizonSteps = length(tspan);
 tspan_btw_updates = t0 : dt : mpc_update_period;
-update_steps = length(tspan_btw_updates);
+update_steps = horizon/dt;%length(tspan_btw_updates);
 simulation_steps = simulation_time/mpc_update_period;
 
 % mm = HumanMind(dt); % motion model
@@ -228,37 +228,38 @@ for i_sim = 1:simulation_steps
                     % as long as all agents are connected by comm graph
                 end
             end
-%             for i = 1:4
-%                 for j=1:4
-%                     if i==j
-% %                             d_u_est{i,1}(j,:,:) = zeros(1,2,horizonSteps-1);
-%                     else
-% %                         u{i}(j,:,:) = u{j}(j,:,:);
-%                          u{i}(j,:,:) = (u{j}(j,:,:) + u{i}(j,:,:))/2;
-%                     end
-%                 end
-%             end
-
-            for ii =1:1
-                d_u_est = u;%only to make the size the same, values will not be used
+            if 0
                 for i = 1:4
                     for j=1:4
                         if i==j
-                            d_u_est{i,1}(j,:,:) = zeros(1,2,horizonSteps-1);
+    %                             d_u_est{i,1}(j,:,:) = zeros(1,2,horizonSteps-1);
                         else
-                            sum_est = zeros(1,2,horizonSteps-1);
-                            for k=1:4
-                                sum_est = sum_est+adjGr(i,k)*(u{i}(j,:,:)-u{k}(j,:,:));
-                            end
-                            d_u_est{i,1}(j,:,:)=-(sum_est);%+adjGr(i,j)*(u{i}(j,:,:)-u{j}(j,:,:)));
+                            u{i}(j,:,:) = u{j}(j,:,:);
+%                              u{i}(j,:,:) = 0.3*u{j}(j,:,:) + 0.7*u{i}(j,:,:);
                         end
                     end
                 end
-                for i = 1:4
-                    u{i} = u{i} + 0.3*d_u_est{i,1};
+            else
+                for ii =1:1
+                    d_u_est = u;%only to make the size the same, values will not be used
+                    for i = 1:4
+                        for j=1:4
+                            if i==j
+                                d_u_est{i,1}(j,:,:) = zeros(1,2,horizonSteps-1);
+                            else
+                                sum_est = zeros(1,2,horizonSteps-1);
+                                for k=1:4
+                                    sum_est = sum_est+adjGr(i,k)*(u{i}(j,:,:)-u{k}(j,:,:));
+                                end
+                                d_u_est{i,1}(j,:,:)=-(sum_est);%+adjGr(i,j)*(u{i}(j,:,:)-u{j}(j,:,:)));
+                            end
+                        end
+                    end
+                    for i = 1:4
+                        u{i} = u{i} + 0.2*d_u_est{i,1};
+                    end
                 end
             end
-            
             
 %             error_policy_3_from_1 = squeeze(u{3,1}(1,:,:)-u{1,1}(1,:,:));
 %             error_policy_4_from_3 = squeeze(u{4,1}(3,:,:)-u{3,1}(3,:,:));
@@ -270,23 +271,24 @@ for i_sim = 1:simulation_steps
 %             plot(error_policy_4_from_3(1,:))
 %             hold on
 %             plot(error_policy_4_from_3(2,:))
-%             figure(iter)
-%             for agent_i=1:4
-%                 subplot(2,2,agent_i)
-%                 title(strcat('Policy of agent ',num2str(agent_i)))
-%                 for agent_j=1:4
-%                     if agent_i == agent_j
-%                         pattern = '.';
-%                     else
-%                         pattern = '-';
-%                     end
-%                     plot(1:horizonSteps-1,squeeze(u{agent_j}(agent_i,1,:)),pattern)
-%                     hold on
-%                     plot(1:horizonSteps-1,squeeze(u{agent_j}(agent_i,2,:)),pattern)
-%                     hold on
-%                 end
-%                 title(strcat('Policy of agent ',num2str(agent_i)))
-%             end
+            if 1
+                figure(iter)
+                for agent_i=1:4
+                    subplot(2,2,agent_i)
+                    for agent_j=1:4
+                        if agent_i == agent_j
+                            pattern = '.';
+                        else
+                            pattern = '-';
+                        end
+                        plot(1:horizonSteps-1,squeeze(u{agent_j}(agent_i,1,:)),pattern)
+                        hold on
+                        plot(1:horizonSteps-1,squeeze(u{agent_j}(agent_i,2,:)),pattern)
+                        hold on
+                    end
+                    title(strcat('Policy of agent ',num2str(agent_i)))
+                end
+            end
             if finished{1} && finished{2} && finished{3} && finished{4} 
                 break;
             end
@@ -295,7 +297,8 @@ for i_sim = 1:simulation_steps
         for i = 1:size(interfDiGr.Nodes,1)
             % iLQG iteration finished, take the policy to execute
             agents{i}.updatePolicy(b{i},u{i},L_opt{i});
-            u_guess(i,:,:,:) = u{i};
+            u_guess(i,:,:,:) = u{i};% you dont have to repeat what you
+%             did last time, since it has already been done
             % guess value only used for the first iteration of each MPC iteration
         end
     end

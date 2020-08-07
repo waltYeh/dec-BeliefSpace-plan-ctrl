@@ -90,6 +90,22 @@ else
     c_ui_ui = derivatives_cell_last{10};
     c_ui_uj = derivatives_cell_last{11};
 end
+% convergence or not, these plots are the same!
+% figure(1+50)
+% subplot(2,2,idx)
+% horizonSteps = size(x,3);
+% plot(1:horizonSteps,squeeze(c_bi(1,:)),'b.')
+% hold on
+% plot(1:horizonSteps,squeeze(c_bi(2,:)),'r')
+% hold on
+% title(strcat('c_bi of agent ',num2str(idx)))
+% figure(1+100)
+% subplot(2,2,idx)
+% plot(1:horizonSteps,squeeze(c_ui(1,:)),'b.')
+% hold on
+% plot(1:horizonSteps,squeeze(c_ui(2,:)),'r')
+% hold on
+% title(strcat('c_ui of agent ',num2str(idx)))
 
 %====== STEP 2: backward pass, compute optimal control law and cost-to-go
 backPassDone   = 0;
@@ -100,6 +116,21 @@ while ~backPassDone
     % l is the feedforward term (42), 
     % L is the time-variant feedback(42)
 %     trace(iter).time_backward = toc(t_back);
+% figure(2+50)
+% subplot(2,2,idx)
+% horizonSteps = size(x,3);
+% plot(1:horizonSteps-1,squeeze(l(1,:)),'b.')
+% hold on
+% plot(1:horizonSteps-1,squeeze(l(2,:)),'r')
+% hold on
+% title(strcat('l of agent ',num2str(idx)))
+% figure(2+100)
+% subplot(2,2,idx)
+% plot(1:horizonSteps-1,squeeze(L(1,1,:)),'b.')
+% hold on
+% plot(1:horizonSteps-1,squeeze(L(2,2,:)),'r')
+% hold on
+% title(strcat('Lx of agent ',num2str(idx)))
 
     if diverge
         % maybe not step 13 in Algorithm
@@ -135,7 +166,30 @@ fwdPassDone  = 0;
 if backPassDone
     t_fwd = tic;
     if Op.parallel  % parallel line-search
+        %only u is different for case of consensus and direct exchange
         [xnew,unew,costnew] = forward_pass(D,idx,x0 ,u, L, x(:,:,1:N), l, Ku, Op.Alpha, DYNCST,u_lims,Op.diffFn);
+        if iter ==3
+            a=1;
+        end
+        figure(4+50)
+subplot(2,2,idx)
+horizonSteps = size(x,3);
+plot(1:horizonSteps,squeeze(costnew(:,:,:,1)),'.')
+hold on
+plot(1:horizonSteps,squeeze(costnew(:,:,:,4)))
+plot(1:horizonSteps,squeeze(costnew(:,:,:,8)))
+
+% plot(1:horizonSteps-1,squeeze(l(2,:)),'r')
+% hold on
+title(strcat('cost of agent ',num2str(idx)))
+% figure(2+100)
+% subplot(2,2,idx)
+% plot(1:horizonSteps-1,squeeze(L(1,1,:)),'b.')
+% hold on
+% plot(1:horizonSteps-1,squeeze(L(2,2,:)),'r')
+% hold on
+% title(strcat('Lx of agent ',num2str(idx)))
+%         
         % now we have 10 candidates of new traj
         Dcost               = sum(cost(:)) - sum(squeeze(costnew),1);
         [dcost, w]          = max(Dcost);
@@ -165,7 +219,7 @@ end
 
 % print headings
 if verbosity > 1
-    fprintf('%-12s','idx','iteration','cost','reduction','expected','gradient','log10(lambda)')
+    fprintf('%-12s','idx','iteration','cost','reduction','alpha','expected','gradient','log10(lambda)')
     fprintf('\n');
 end
 
@@ -173,8 +227,8 @@ if fwdPassDone
 
     % print status
     if verbosity > 1
-        fprintf('%-12d%-12d%-12.6g%-12.3g%-12.3g%-12.3g%-12.1f\n', ...
-           idx, iter, sum(cost(:)), dcost, expected, g_norm, log10(lambda));
+        fprintf('%-12d%-12d%-12.6g%-12.2f%-12.3f%-12d%-12.3g%-12.3g%-12.1f\n', ...
+           idx, iter, sum(cost(:)), dcost,alpha,expected, g_norm, log10(lambda));
     end
     % maybe step 13 in Algorithm
     % decrease lambda
@@ -220,6 +274,17 @@ else % no cost improvement
         return;
     end
 end
+
+% if ~isempty(lambda_last)
+%     figure(52)
+%     subplot(2,2,idx)
+%     plot([iter-1,iter],[lambda_last,lambda])
+%     hold on
+%     figure(53)
+%     subplot(2,2,idx)
+%     plot([iter-1,iter],[dlambda_last,dlambda])
+%     hold on
+% end
 % update trace
 % trace(iter).lambda      = lambda;
 % trace(iter).dlambda     = dlambda;
@@ -232,7 +297,7 @@ end
 
 
 % [x,un,cost]  = forward_pass(x0(:,1),alpha*u,[],[],[],1,DYNCST,Op.lims,[]);
-function [xnew,unew,cnew] = forward_pass(D,idx,x0,u,L,x,du,Ku,Alpha,DYNCST,lims,diff)
+function [xnew,unew,cnew] = forward_pass(D,idx,x0,u,L,x,l,Ku,Alpha,DYNCST,lims,diff)
 % l (Schwarting j_k^i) is taken into the function as the argument du
 % parallel forward-pass (rollout)
 % internally time is on the 3rd dimension, 
@@ -255,9 +320,9 @@ cnew        = zeros(1,1,K,N+1);% one agent, one dim c
 for k = 1:N
     unew(:,:,:,k) = u(:,:,k*K1);
     
-    if ~isempty(du)
+    if ~isempty(l)
         % feedforward control term should not be too agressive, Alpha < 1
-        unew(idx,:,:,k) = squeeze(unew(idx,:,:,k)) + du(:,k)*Alpha;
+        unew(idx,:,:,k) = squeeze(unew(idx,:,:,k)) + l(:,k)*Alpha;
     end    
     
     if ~isempty(L)
@@ -291,7 +356,7 @@ for k = 1:N
             unew(i,:,:,k) = min(lims(:,2*K1), max(lims(:,1*K1), unew_ik));
         end
     end
-
+% unew of other agents is updated, causing change of formation cost, which vergiftet the cost
     [xnew(:,:,:,k+1), cnew(:,:,:,k)]  = DYNCST(D,idx,xnew(:,:,:,k), unew(:,:,:,k), k*K1);
 %     
 end

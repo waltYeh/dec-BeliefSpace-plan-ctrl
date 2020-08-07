@@ -199,7 +199,9 @@ for k = 1:nSteps-1
             j = nid(j_nid);
             % I close up the estimation exchange between agents!
             % but it can be reopened
-%             b{i}(j,:) = b{j}(j,:);
+            b{i}(j,:) = b{j}(j,:);
+            %if you dont exchange this, MPC will always start from the very
+            %beginning state
 %             u{i}(j,:) = u{j}(j,:);
         end
     end

@@ -87,6 +87,7 @@ else
     J       = finiteDifference(xu_dyn, squeeze(cat(2,b(idx,:,:), u(idx,:,:))));
     gb      = J(:,ib,:);
     gu      = J(:,iu_begin:end,:);
+    % gu depends on dt
 %     all others are zero because dyn is decoupled
     % dynamics second derivatives
 %     if full_DDP
@@ -158,9 +159,11 @@ else
 %     cbb{idx}     = JJ{idx}(ib,ib,:);
 %     cbu{idx}     = JJ{idx}(ib,iu_begin:end,:);
 %     cuu{idx}     = JJ{idx}(iu_begin:end,iu_begin:end,:); 
-    c_bi_bi = squeeze(JJ(idx,ib,ib,:));
+    c_bi_bi = squeeze(JJ(idx,ib,ib,:));% the more edges coming into i, the higher
+    % usually eye or 2*eye
     c_bi_ui = squeeze(0.5 * (JJ(idx,ib,iu_begin:end,:) + permute(JJ(idx,iu_begin:end,ib,:),[1 3 2 4])));
     c_ui_ui = squeeze(JJ(idx,iu_begin:end,iu_begin:end,:));
+    % the answer is fixed diag(rii_control,rii_control) for the horizon
     c_ui_uj = zeros(size(D.Nodes,1),ctrlDim,ctrlDim,horizon);
     c_ui_uj(incoming_nbrs_idces,:,:,:) = JJ(incoming_nbrs_idces,iu_begin:end,iu_begin:end,:);
 %     JJ      = finiteDifference(xu_Jcst_nocc, [b; u]);

@@ -1,4 +1,5 @@
-function [g,c,gb,gu,gbb,gbu,guu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj] = beliefDynCost_crane(D,idx,b,u,horizonSteps,full_DDP,motionModel,obsModel)
+function [g,c,gb,gu,gbb,gbu,guu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj] ...
+    = beliefDynCost_crane(D,idx,b,u,horizonSteps,full_DDP,motionModel,obsModel)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % A utility function that combines belief dynamics and cost
 % uses helper function finite_difference() to compute derivatives

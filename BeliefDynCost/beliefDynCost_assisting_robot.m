@@ -1,4 +1,6 @@
-function [g,c,gb,gu,gbb,gbu,guu,cb,cu,cbb,cbu,cuu] = beliefDynCost_assisting_robot(b,u,horizonSteps,full_DDP,motionModel,obsModel)
+function [g,c,gb,gu,gbb,gbu,guu,cb,cu,cbb,cbu,cuu] ...
+    = beliefDynCost_assisting_robot...
+    (b,u,horizonSteps,full_DDP,motionModel,obsModel)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % A utility function that combines belief dynamics and cost
 % uses helper function finite_difference() to compute derivatives

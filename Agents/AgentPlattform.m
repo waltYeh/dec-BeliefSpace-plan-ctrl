@@ -18,11 +18,11 @@ classdef AgentPlattform < AgentBase
         shared_uDim = 2;
         total_uDim = 6;
         
-        u_lims = [-0.0 0.0;
-            -4.0 4.0;
-            -0.0  0.0;
-            -0.0  0.0;
-            -2.0 2.0;
+        u_lims = [-0.0 0.0;%band no movement in x direction
+            -4.0 4.0;%band move in y direction, may set to 0 if controlled by another agent
+            -0.0  0.0;%rest position not movable
+            -0.0  0.0;%
+            -2.0 2.0;%move plattform and human 
             -2.0 2.0];
         % larger, less overshoot; smaller, less b-noise affects assist
         P_feedback = 1.0;
@@ -42,33 +42,50 @@ classdef AgentPlattform < AgentBase
         lambda; 
         dlambda;
         flgChange;
+%         beliefDyns;
     end
     
     methods 
-        function obj = AgentPlattform(dt_input,horizonSteps)
+        function obj = AgentPlattform(dt_input,horizonSteps, node_idx, belief_dyns)
             obj@AgentBase(); 
             obj.digraph_idx = node_idx;
             obj.derivatives = {};
             obj.dt = dt_input; % delta_t for time discretization
             obj.motionModel = HumanMind(dt_input); % motion model
             obj.obsModel = HumanReactionModel(); % observation model
-            obj.dyn_cst  = @(D,idx,b,u,i) beliefDynCost_assisting_robot(D,idx,b,u,horizonSteps,false,obj.motionModel,obj.obsModel);
+            obj.dyn_cst  = @(D,idx,b,u,i) beliefDynCost_assisting_robot(D,idx,b,u,horizonSteps,false,obj.motionModel,obj.obsModel,belief_dyns);
             obj.lambda = []; 
             obj.dlambda = [];
             obj.flgChange = [];
+%             obj.beliefDyns = belief_dyns;
         end
-        function [b_nom,u_nom,L_opt,Vx,Vxx,cost]= iLQG_GMM(obj, b0, u_guess, Op)
+        function [b_nom,u_nom,L_opt,Vx,Vxx,cost]= iLQG_agent(obj, D, b0, u_guess, Op)
             [b_nom,u_nom,L_opt,Vx,Vxx,cost,~,~,tt, nIter]= iLQG_GMM(obj.dyn_cst, b0, u_guess, Op);
         end
-        function updatePolicy(obj, b_n,u_n,L)
-            obj.policyHorizon = size(b_n,2);
-            obj.b_nom = b_n;
-            obj.u_nom = u_n;
+        function [x, u, cost, L, Vx, Vxx, finished]= ...
+                iLQG_one_it...
+                (obj,D, b0, Op, iter, u_guess, u_last,x_last, cost_last)
+            if iter == 1
+                obj.lambda = [];
+                obj.dlambda = [];
+                obj.flgChange = [];
+            end
+            [x, u, L, Vx, Vxx, cost, obj.lambda, obj.dlambda, finished,obj.flgChange,derivatives_cell] = ...
+                iLQG_hetero_multiagent_one_iter(D,obj.digraph_idx,obj.dyn_cst, b0, Op, iter,...
+                u_guess,obj.lambda, obj.dlambda, u_last,x_last, cost_last,obj.flgChange,obj.derivatives, obj.u_lims);
+            obj.derivatives = derivatives_cell;
+        end
+        function updatePolicy(obj, b_n_idx,u_n_idx,L)
+            %b_n {4}x42x61, u_n {4}x6x60, L 6x42x60
+            obj.policyHorizon = size(b_n_idx,2);
+            obj.b_nom = b_n_idx;
+            obj.u_nom = u_n_idx;
             obj.L_opt = L;
             obj.ctrl_ptr = 1;
         end
         function u = getNextControl(obj, b)
-            u = obj.u_nom(:,obj.ctrl_ptr) + obj.P_feedback*obj.L_opt(:,:,obj.ctrl_ptr)*(b - obj.b_nom(:,obj.ctrl_ptr));
+            diff_b = b - obj.b_nom(:,obj.ctrl_ptr);
+            u = obj.u_nom(:,obj.ctrl_ptr) + obj.P_feedback*obj.L_opt(:,:,obj.ctrl_ptr)*diff_b;
             % dim is 6
             for i_u = 1:size(obj.u_nom,1)
                 u(i_u)=min(obj.u_lims(i_u,2), max(obj.u_lims(i_u,1), u(i_u)));

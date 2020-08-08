@@ -73,7 +73,7 @@ t0 = 0;
 tspan = t0 : dt : horizon;
 horizonSteps = length(tspan);
 tspan_btw_updates = t0 : dt : mpc_update_period;
-update_steps = horizon/dt;%length(tspan_btw_updates);
+update_steps = length(tspan_btw_updates);
 simulation_steps = simulation_time/mpc_update_period;
 
 % mm = HumanMind(dt); % motion model
@@ -139,7 +139,7 @@ u_guess = zeros(size(interfDiGr.Nodes,1),size(interfDiGr.Nodes,1),2,horizonSteps
 % u_guess(:,4,1,:)=-1.0;
 % u_guess(:,4,2,:)=-1.0;
 b0=cell(size(interfDiGr.Nodes,1),1);
-x_true = zeros(size(interfDiGr.Nodes,1),agents{1}.motionModel.stDim);
+
 % each agent holds the belief of other agents, but in a later version,
 % this will be limited to neighbors
 for i=1:size(interfDiGr.Nodes,1)
@@ -151,15 +151,13 @@ for i=1:size(interfDiGr.Nodes,1)
     b0{i}(4,:) = [mu_4;sig_4(:)];
     
 end
+x_true = zeros(size(interfDiGr.Nodes,1),agents{1}.motionModel.stDim);
 x_true(1,:)=mu_1;
 x_true(2,:)=mu_2;
 x_true(3,:)=mu_3;
 x_true(4,:)=mu_4;
 % b0={[mu_1;sig_1(:);weight_1;mu_2;sig_2(:);weight_2];[mu_1;sig_1(:);weight_1;mu_2;sig_2(:);weight_2]};
 
-% control constraints are optional
-Op.lims  = [-4.0 4.0;
-    -4.0 4.0];
 %% these are old codes remained
 Op.plot = -1; % plot the derivatives as well
 
@@ -171,96 +169,86 @@ Op.plotFn = plotFn;
 %% === run the optimization
 
 for i_sim = 1:simulation_steps
-    if 0
-        [b_nom1,u_nom1,L_opt1,Vx1,Vxx1,cost1] = agents{1}.iLQG_agent(interfDiGr,b0{1}(:,:), squeeze(u_guess(1,:,:,:)), Op);
-        agents{1}.updatePolicy(b_nom1,u_nom1,L_opt1);
-        [b_nom2,u_nom2,L_opt2,Vx2,Vxx2,cost2] = agents{2}.iLQG_agent(interfDiGr,b0{2}(:,:), squeeze(u_guess(2,:,:,:)), Op);
-        agents{2}.updatePolicy(b_nom2,u_nom2,L_opt2);
-        [b_nom3,u_nom3,L_opt3,Vx3,Vxx3,cost3] = agents{3}.iLQG_agent(interfDiGr,b0{3}(:,:), squeeze(u_guess(3,:,:,:)), Op);
-        agents{3}.updatePolicy(b_nom3,u_nom3,L_opt3);
-        [b_nom4,u_nom4,L_opt4,Vx4,Vxx4,cost4] = agents{4}.iLQG_agent(interfDiGr,b0{4}(:,:), squeeze(u_guess(4,:,:,:)), Op);
-        agents{4}.updatePolicy(b_nom4,u_nom4,L_opt4);
-    else
-        u = cell(size(interfDiGr.Nodes,1),1);
-        b = cell(size(interfDiGr.Nodes,1),1);
-        L_opt = cell(size(interfDiGr.Nodes,1),1);
-        cost = cell(size(interfDiGr.Nodes,1),1);
-        finished = cell(size(interfDiGr.Nodes,1),1);
-        for i = 1:size(interfDiGr.Nodes,1)
-            finished{i}= false;
+    u = cell(size(interfDiGr.Nodes,1),1);
+    b = cell(size(interfDiGr.Nodes,1),1);
+    L_opt = cell(size(interfDiGr.Nodes,1),1);
+    cost = cell(size(interfDiGr.Nodes,1),1);
+    finished = cell(size(interfDiGr.Nodes,1),1);
+    for i = 1:size(interfDiGr.Nodes,1)
+        finished{i}= false;
+    end
+    for iter = 1:20
+        if iter == 1
+            for i = 1:size(interfDiGr.Nodes,1)
+                u{i} = [];
+                b{i} = [];
+                cost{i} = [];
+            end
         end
-        for iter = 1:20
-            if iter == 1
-                for i = 1:size(interfDiGr.Nodes,1)
-                    u{i} = [];
-                    b{i} = [];
-                    cost{i} = [];
-                end
-            end
 
-            for i = 1:size(interfDiGr.Nodes,1)
-                if finished{i}~=true
-                    [b{i},u{i},cost{i},L_opt{i},~,~, finished{i}] ...
-                        = agents{i}.iLQG_one_it...
-                        (interfDiGr, b0{i}(:,:), Op, iter,squeeze(u_guess(i,:,:,:)),...
-                        u{i},b{i}, cost{i});
-                end
+        for i = 1:size(interfDiGr.Nodes,1)
+            if finished{i}~=true
+                [b{i},u{i},cost{i},L_opt{i},~,~, finished{i}] ...
+                    = agents{i}.iLQG_one_it...
+                    (interfDiGr, b0{i}(:,:), Op, iter,squeeze(u_guess(i,:,:,:)),...
+                    u{i},b{i}, cost{i});
             end
-            % up till now, in b{i} only ith (agent) row are changing, 
-            % jth (neighbor agents) have non-zero values but do not
-            % change. in u{i} only ith (agent) row are non-zero
-            for i = 1:size(interfDiGr.Nodes,1)
-                [eid,nid] = inedges(interfDiGr,i);
-                for j_nid = 1:length(nid)
-                    j = nid(j_nid);
+        end
+        % up till now, in b{i} only ith (agent) row are changing, 
+        % jth (neighbor agents) have non-zero values but do not
+        % change. in u{i} only ith (agent) row are non-zero
+        for i = 1:size(interfDiGr.Nodes,1)
+            [eid,nid] = inedges(interfDiGr,i);
+            for j_nid = 1:length(nid)
+                j = nid(j_nid);
 %                     b{i}(j,:,:) = b{j}(j,:,:);
 % maybe not necessary to exchange b because b will be updated in forward
 % pass anyway
 %                     u{i}(j,:,:) = u{j}(j,:,:);%simple share eigen-policy
-                        % which results in zero est-policy error from the real
+                    % which results in zero est-policy error from the real
 %                     u{i}(j,:,:) = (u{j}(j,:,:) + u{i}(j,:,:))/2;%Salehisadaghiani method
-                    
-                    
-                    % if you also want to let those agents without direct
-                    % coupling also learn the policies, use Ye & Hu's
-                    % update methods. In their case, coupling agents do 
-                    % not have to be neighbors in communication graph
-                    % as long as all agents are connected by comm graph
+
+
+                % if you also want to let those agents without direct
+                % coupling also learn the policies, use Ye & Hu's
+                % update methods. In their case, coupling agents do 
+                % not have to be neighbors in communication graph
+                % as long as all agents are connected by comm graph
+            end
+        end
+        if 0
+            for i = 1:4
+                for j=1:4
+                    if i==j
+%                             d_u_est{i,1}(j,:,:) = zeros(1,2,horizonSteps-1);
+                    else
+                        u{i}(j,:,:) = u{j}(j,:,:);
+%                              u{i}(j,:,:) = 0.3*u{j}(j,:,:) + 0.7*u{i}(j,:,:);
+                    end
                 end
             end
-            if 0
+        else
+            for ii =1:1
+                d_u_est = u;%only to make the size the same, values will not be used
                 for i = 1:4
                     for j=1:4
                         if i==j
-    %                             d_u_est{i,1}(j,:,:) = zeros(1,2,horizonSteps-1);
+                            d_u_est{i,1}(j,:,:) = zeros(1,2,horizonSteps-1);
                         else
-                            u{i}(j,:,:) = u{j}(j,:,:);
-%                              u{i}(j,:,:) = 0.3*u{j}(j,:,:) + 0.7*u{i}(j,:,:);
+                            sum_est = zeros(1,2,horizonSteps-1);
+                            for k=1:4
+                                sum_est = sum_est+adjGr(i,k)*(u{i}(j,:,:)-u{k}(j,:,:));
+                            end
+                            d_u_est{i,1}(j,:,:)=-(sum_est);%+adjGr(i,j)*(u{i}(j,:,:)-u{j}(j,:,:)));
                         end
                     end
                 end
-            else
-                for ii =1:1
-                    d_u_est = u;%only to make the size the same, values will not be used
-                    for i = 1:4
-                        for j=1:4
-                            if i==j
-                                d_u_est{i,1}(j,:,:) = zeros(1,2,horizonSteps-1);
-                            else
-                                sum_est = zeros(1,2,horizonSteps-1);
-                                for k=1:4
-                                    sum_est = sum_est+adjGr(i,k)*(u{i}(j,:,:)-u{k}(j,:,:));
-                                end
-                                d_u_est{i,1}(j,:,:)=-(sum_est);%+adjGr(i,j)*(u{i}(j,:,:)-u{j}(j,:,:)));
-                            end
-                        end
-                    end
-                    for i = 1:4
-                        u{i} = u{i} + 0.2*d_u_est{i,1};
-                    end
+                for i = 1:4
+                    u{i} = u{i} + 0.2*d_u_est{i,1};
                 end
             end
-            
+        end
+
 %             error_policy_3_from_1 = squeeze(u{3,1}(1,:,:)-u{1,1}(1,:,:));
 %             error_policy_4_from_3 = squeeze(u{4,1}(3,:,:)-u{3,1}(3,:,:));
 %             figure(3)
@@ -271,37 +259,37 @@ for i_sim = 1:simulation_steps
 %             plot(error_policy_4_from_3(1,:))
 %             hold on
 %             plot(error_policy_4_from_3(2,:))
-            if 1
-                figure(iter)
-                for agent_i=1:4
-                    subplot(2,2,agent_i)
-                    for agent_j=1:4
-                        if agent_i == agent_j
-                            pattern = '.';
-                        else
-                            pattern = '-';
-                        end
-                        plot(1:horizonSteps-1,squeeze(u{agent_j}(agent_i,1,:)),pattern)
-                        hold on
-                        plot(1:horizonSteps-1,squeeze(u{agent_j}(agent_i,2,:)),pattern)
-                        hold on
+        if 1
+            figure(iter)
+            for agent_i=1:4
+                subplot(2,2,agent_i)
+                for agent_j=1:4
+                    if agent_i == agent_j
+                        pattern = '.';
+                    else
+                        pattern = '-';
                     end
-                    title(strcat('Policy of agent ',num2str(agent_i)))
+                    plot(1:horizonSteps-1,squeeze(u{agent_j}(agent_i,1,:)),pattern)
+                    hold on
+                    plot(1:horizonSteps-1,squeeze(u{agent_j}(agent_i,2,:)),pattern)
+                    hold on
                 end
+                title(strcat('Policy of agent ',num2str(agent_i)))
             end
-            if finished{1} && finished{2} && finished{3} && finished{4} 
-                break;
-            end
-        end% end of iLQG iterations
-        
-        for i = 1:size(interfDiGr.Nodes,1)
-            % iLQG iteration finished, take the policy to execute
-            agents{i}.updatePolicy(b{i},u{i},L_opt{i});
-            u_guess(i,:,:,:) = u{i};% you dont have to repeat what you
-%             did last time, since it has already been done
-            % guess value only used for the first iteration of each MPC iteration
         end
+        if finished{1} && finished{2} && finished{3} && finished{4} 
+            break;
+        end
+    end% end of iLQG iterations
+
+    for i = 1:size(interfDiGr.Nodes,1)
+        % iLQG iteration finished, take the policy to execute
+        agents{i}.updatePolicy(b{i},u{i},L_opt{i});
+        u_guess(i,:,:,:) = u{i};% you dont have to repeat what you
+%             did last time, since it has already been done
+        % guess value only used for the first iteration of each MPC iteration
     end
+
 
 %     assignin('base', 'om', om)
 %     assignin('base', 'lims', Op.lims)

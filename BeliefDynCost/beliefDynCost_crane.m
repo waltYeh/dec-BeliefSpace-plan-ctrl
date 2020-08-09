@@ -1,5 +1,5 @@
 function [g,c,gb,gu,gbb,gbu,guu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj] ...
-    = beliefDynCost_crane(D,idx,b,u,horizonSteps,full_DDP,motionModel,obsModel)
+    = beliefDynCost_crane(D,idx,b,u,horizonSteps,full_DDP,motionModel,obsModel,belief_dyns)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % A utility function that combines belief dynamics and cost
 % uses helper function finite_difference() to compute derivatives
@@ -28,39 +28,53 @@ function [g,c,gb,gu,gbb,gbu,guu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj] ...
 %   cuu: 2-nd order derivate of cost func derivate w.r.t control
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-beliefDim = size(b,2);
-ctrlDim = size(u,2);
-horizon =  size(b,3);
-% beliefDim = size(b,1);
 incoming_nbrs_idces = predecessors(D,idx)';
+beliefDim = size(b{idx},1);
+ctrlDim = size(u{idx},1);
+paralDim = size(b{idx},2);% which can be one or equal to horizonSteps or 11
+
+% only for debug
+if paralDim == 11
+    a=1;
+end
 % neighbors_amount = round(beliefDim/(motionModel.stDim*(motionModel.stDim+1)));
 % ctDim = motionModel.ctDim;% 4, only for one component
 % if only two outputs g and c are needed
-size_paral = size(b,3);
-g=zeros(size(D.Nodes,1),beliefDim,size_paral);
+g = cell(size(D.Nodes,1),1);
+b_formation = zeros(size(D.Nodes,1),beliefDim,paralDim);
+u_formation = zeros(size(D.Nodes,1),ctrlDim,paralDim);
 if nargout == 2
     for j = incoming_nbrs_idces
         % the belief of agent idx about agent i
         %the last ":" in the following is for the parallel computing, not
         %affecting single computation
-        bj=squeeze(b(j,:,:));
-        uj=squeeze(u(j,:,:));
-        size_bj = size(bj);
-        if size_bj(1) ~= beliefDim
-            bj = transpose(bj);
-            uj = transpose(uj);
+        bj=squeeze(b{j});
+        uj = squeeze(u{j});
+        g{j} = belief_dyns{j}(bj, uj);
+        if size(bj,1)>6
+            for k=1:paralDim
+                [x, P, w] = b2xPw(bj(:,k), 4, 2);
+                avr_x = w(1)*x{1}(3:4,:)+w(2)*x{2}(3:4,:);
+                avr_P = w(1)*P{1}(3:4,3:4)+w(2)*P{2}(3:4,3:4);
+                b_formation(j,:,k) = [avr_x;avr_P(:)];
+                
+            end
+%             [x, P, w] = b2xPw(bj, 4, 2);
+%             avr_x = w(1)*x{1}(3:4,:)+w(2)*x{2}(3:4,:);
+%             avr_P = w(1)*P{1}(3:4,3:4)+w(2)*P{2}(3:4,3:4);
+%             b_formation(j,:,:) = [avr_x;avr_P(:)];
+            u_formation(j,:,:) = uj(5:6,:);
+        else
+            b_formation(j,:,:) = bj;
+            u_formation(j,:,:) = uj;
         end
-        g(j,:,:) = beliefDynamicsSimpleAgent(bj, uj, motionModel, obsModel);
     end
-    bidx=squeeze(b(idx,:,:));
-    uidx=squeeze(u(idx,:,:));
-    size_bidx = size(bidx);
-    if size_bidx(1) ~= beliefDim
-        bidx = transpose(bidx);
-        uidx = transpose(uidx);
-    end
-    g(idx,:,:) = beliefDynamicsSimpleAgent(bidx, uidx, motionModel, obsModel);
-    c = costAgentFormation(D, idx,b, u, horizonSteps, motionModel.stDim);
+    b_formation(idx,:,:) = b{idx};
+    u_formation(idx,:,:) = u{idx};
+    g{idx} = belief_dyns{idx}(b{idx}, u{idx});
+%     c = costAssistingRobot(b{idx}, u{idx}, horizonSteps, motionModel.stDim,components_amount);
+    
+    c = costAgentFormation(D, idx,b_formation, u_formation, horizonSteps, motionModel.stDim);
 else
     % belief state and control indices
     ib = 1:beliefDim;
@@ -85,7 +99,7 @@ else
 % but for cost values without der, b and u of all neighboring agents are
 % passed in, now we dont need those neighbors, but still have to pass them
 % in so that the syntax can be consistent
-    J       = finiteDifference(xu_dyn, squeeze(cat(2,b(idx,:,:), u(idx,:,:))));
+    J       = finiteDifference(xu_dyn, [b{idx}; u{idx}]);
     gb      = J(:,ib,:);
     gu      = J(:,iu_begin:end,:);
     % gu depends on dt
@@ -117,6 +131,28 @@ else
 %     fprintf('Time to do sigma derivative and compute sigma: %f seconds\n', toc(tStart))
 %     
     %% cost first derivatives, only for u_i is enough
+    for j = incoming_nbrs_idces
+        % the belief of agent idx about agent i
+        %the last ":" in the following is for the parallel computing, not
+        %affecting single computation
+        bj=squeeze(b{j});
+        uj = squeeze(u{j});
+        if size(bj,1)>6
+            for k=1:horizonSteps
+                [x, P, w] = b2xPw(bj(:,k), 4, 2);
+                avr_x = w(1)*x{1}(3:4,:)+w(2)*x{2}(3:4,:);
+                avr_P = w(1)*P{1}(3:4,3:4)+w(2)*P{2}(3:4,3:4);
+                b_formation(j,:,k) = [avr_x;avr_P(:)];
+                
+            end
+            u_formation(j,:,:) = uj(5:6,:);
+        else
+            b_formation(j,:,:) = bj;
+            u_formation(j,:,:) = uj;
+        end
+    end
+    b_formation(idx,:,:) = b{idx};
+    u_formation(idx,:,:) = u{idx};
     xu_cost = @(xu) costAgentFormation(D,idx,xu(:,ib,:),xu(:,iu_begin:end,:),horizonSteps,motionModel.stDim);    
 %     J       = 
     
@@ -131,7 +167,7 @@ else
 %     cu=zeros(size(D.Nodes,1),ctrlDim,horizon);
 %     for j = incoming_nbrs_idces
 % input dim 4*8*41
-        J       = multiAgentFiniteDifference(xu_cost,D,idx, squeeze(cat(2,b(:,:,:), u(:,:,:))));
+        J       = multiAgentFiniteDifference(xu_cost,D,idx, squeeze(cat(2,b_formation(:,:,:), u_formation(:,:,:))));
         c_bi      = squeeze(J(idx,ib,:));% 1x6x41
         c_ui      = squeeze(J(idx,iu_begin:end,:));%1x2x41
 %     end
@@ -154,7 +190,7 @@ else
 %         cuu{j}     = JJ{j}(iu_begin:end,iu_begin:end,:); 
 %     end
 % input dim 4*8*41
-    JJ   = multiAgentFiniteDifference2(xu_Jcst_nocc, D,idx,squeeze(cat(2,b(:,:,:), u(:,:,:))));
+    JJ   = multiAgentFiniteDifference2(xu_Jcst_nocc, D,idx,squeeze(cat(2,b_formation(:,:,:), u_formation(:,:,:))));
     %4x8x8x41
     %     JJ{idx}      = 0.5*(JJ{idx} + permute(JJ{idx},[2 1 3]));%symmetrize  
 %     cbb{idx}     = JJ{idx}(ib,ib,:);
@@ -165,7 +201,7 @@ else
     c_bi_ui = squeeze(0.5 * (JJ(idx,ib,iu_begin:end,:) + permute(JJ(idx,iu_begin:end,ib,:),[1 3 2 4])));
     c_ui_ui = squeeze(JJ(idx,iu_begin:end,iu_begin:end,:));
     % the answer is fixed diag(rii_control,rii_control) for the horizon
-    c_ui_uj = zeros(size(D.Nodes,1),ctrlDim,ctrlDim,horizon);
+    c_ui_uj = zeros(size(D.Nodes,1),ctrlDim,ctrlDim,horizonSteps);
     c_ui_uj(incoming_nbrs_idces,:,:,:) = JJ(incoming_nbrs_idces,iu_begin:end,iu_begin:end,:);
 %     JJ      = finiteDifference(xu_Jcst_nocc, [b; u]);
 %     JJ      = 0.5*(JJ + permute(JJ,[2 1 3])); %symmetrize                      

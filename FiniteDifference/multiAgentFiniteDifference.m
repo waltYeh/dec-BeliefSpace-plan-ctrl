@@ -17,9 +17,9 @@ J=zeros(n_agent,n_bu,K);
 % we consider dyn decoupled situation first
 incoming_nbrs_idces = predecessors(D,idx)';
 for j=[idx,incoming_nbrs_idces]
-        H = zeros(size(D.Nodes,1),n_bu,1+n_bu);
+    H = zeros(size(D.Nodes,1),n_bu,1+n_bu);
 
-        H(j,:,2:end)       = h*eye(n_bu);
+    H(j,:,2:end)       = h*eye(n_bu);
     H       = permute(H, [1 2 4 3]);
     X       = pp(x(:,:,:), H);
     %this makes the X as: first of 3rd-dim are still x, the rest n of this dim

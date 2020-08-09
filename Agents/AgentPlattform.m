@@ -53,7 +53,7 @@ classdef AgentPlattform < AgentBase
             obj.dt = dt_input; % delta_t for time discretization
             obj.motionModel = HumanMind(dt_input); % motion model
             obj.obsModel = HumanReactionModel(); % observation model
-            obj.dyn_cst  = @(D,idx,b,u,i) beliefDynCost_assisting_robot(D,idx,b,u,horizonSteps,false,obj.motionModel,obj.obsModel,belief_dyns);
+            obj.dyn_cst  = @(D,idx,b,u,i) beliefDynCost_plattform(D,idx,b,u,horizonSteps,false,obj.motionModel,obj.obsModel,belief_dyns);
             obj.lambda = []; 
             obj.dlambda = [];
             obj.flgChange = [];

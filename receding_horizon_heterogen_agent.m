@@ -123,10 +123,10 @@ commGr = graph(comm_sd,comm_td);
 adjGr = full(adjacency(commGr));% full transfers sparse to normal matrix
 
 agents = cell(size(interfDiGr.Nodes,1),1);
-belief_dyns = {@(b, u, motionModel, obsModel)beliefDynamicsGMM(b, u, motionModel, obsModel); 
-    @(b, u, motionModel, obsModel)beliefDynamicsSimpleAgent(b, u, motionModel, obsModel); 
-    @(b, u, motionModel, obsModel)beliefDynamicsSimpleAgent(b, u, motionModel, obsModel); 
-    @(b, u, motionModel, obsModel)beliefDynamicsSimpleAgent(b, u, motionModel, obsModel)};
+belief_dyns = {@(b, u)beliefDynamicsGMM(b, u,HumanMind(dt),HumanReactionModel()); 
+    @(b, u)beliefDynamicsSimpleAgent(b, u, TwoDPointRobot(dt),TwoDSimpleObsModel()); 
+    @(b, u)beliefDynamicsSimpleAgent(b, u, TwoDPointRobot(dt),TwoDSimpleObsModel()); 
+    @(b, u)beliefDynamicsSimpleAgent(b, u, TwoDPointRobot(dt),TwoDSimpleObsModel())};
 agents{1} = AgentPlattform(dt,horizonSteps,1,belief_dyns);
 agents{2} = AgentArm(dt,horizonSteps,2,belief_dyns);
 agents{3} = AgentArm(dt,horizonSteps,3,belief_dyns);
@@ -206,10 +206,14 @@ for i_sim = 1:simulation_steps
 
         for i = 1:size(interfDiGr.Nodes,1)
             if finished{i}~=true
-                [b{i},u{i},cost{i},L_opt{i},~,~, finished{i}] ...
+                [bi,ui,cost{i},L_opt{i},~,~, finished{i}] ...
                     = agents{i}.iLQG_one_it...
                     (interfDiGr, {b0{i,:}}, Op, iter,squeeze(u_guess(i,:,:,:)),...
                     u{i},b{i}, cost{i});
+                for j=1:size(interfDiGr.Nodes,1)
+                    u{i,j} = ui{j};
+                    b{i,j} = bi{j};
+                end
             end
         end
         % up till now, in b{i} only ith (agent) row are changing, 
@@ -236,21 +240,34 @@ for i_sim = 1:simulation_steps
         end
         for ii =1:1
             d_u_est = u;%only to make the size the same, values will not be used
-            for i = 1:1
-                for j=1:1
+            for i = 1:size(interfDiGr.Nodes,1)
+                for j=1:size(interfDiGr.Nodes,1)
                     if i==j
-                        d_u_est{i,1}(j,:,:) = zeros(1,2,horizonSteps-1);
+                        d_u_est{i,j}(:,:) = zeros(size(u{i,j},1),horizonSteps-1);
                     else
-                        sum_est = zeros(1,2,horizonSteps-1);
-                        for k=1:4
-                            sum_est = sum_est+adjGr(i,k)*(u{i}(j,:,:)-u{k}(j,:,:));
+                        
+                        sum_est = zeros(size(u{i,j},1),horizonSteps-1);
+                        for k=1:size(interfDiGr.Nodes,1)
+%                             if size(u{i,j},1)>2
+%                                 u_ij = u{i,j}(5:6,:);
+%                             else
+                                u_ij = u{i,j};
+%                             end
+%                             if size(u{k,j},1)>2
+%                                 u_kj = u{k,j}(5:6,:);
+%                             else
+                                u_kj = u{k,j};
+%                             end
+                            sum_est = sum_est+adjGr(i,k)*(u_ij-u_kj);
                         end
-                        d_u_est{i,1}(j,:,:)=-(sum_est+adjGr(i,j)*(u{i}(j,:,:)-u{j}(j,:,:)));
+                        d_u_est{i,j}(:,:)=-(sum_est+adjGr(i,j)*(u{i,j}-u{j,j}));
                     end
                 end
             end
-            for i = 1:1
-                u{i} = u{i} + 0.2*d_u_est{i,1};
+            for i = 1:size(interfDiGr.Nodes,1)
+                for j = 1:size(interfDiGr.Nodes,1)
+                    u{i,j} = u{i,j} + 0.2*d_u_est{i,j};
+                end
             end
         end
 

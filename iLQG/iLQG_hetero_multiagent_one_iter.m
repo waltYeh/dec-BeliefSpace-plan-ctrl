@@ -54,10 +54,21 @@ if iter == 1
         % belief state predictions
         alpha_u = u;
         for i=1:length(alpha_u)
-            alpha_u{i} = alpha*u{i}
+            alpha_u{i} = alpha*u{i};
         end
         [x,un,cost]  = forward_pass(D,idx,x0,alpha_u,[],[],[],[],1,DYNCST,u_lims,[]);
-        if all(abs(x(:)) < 1e8)
+        incoming_nbrs_idces = predecessors(D,idx)';
+        diverges = false;
+        for j = [idx,incoming_nbrs_idces]
+            if all(abs(x{j}(:)) < 1e8)
+%                 u = un;
+%                 break
+            else
+                diverges = true;
+            end
+            
+        end
+        if ~diverges
             u = un;
             break
         end
@@ -76,9 +87,14 @@ end
 %====== STEP 1: differentiate dynamics and cost along new trajectory
 if flgChange
     t_diff = tic;
+    enlonged_u = u;
+    for i=1:size(D.Nodes,1)
+        ctrl_dim = size(u{i},1);
+        enlonged_u{i}=cat(2,u{i},nan(ctrl_dim,1));
+    end
     % only considers agent idx itself fx: 6x6x41, fu 6x2x41, c_bi 6x41, cui
     % 2x41, ... 6x6x41, 6x2x41, 2x2x41, c_ui_uj 4x2x2x41
-    [~,~,fx,fu,fxx,fxu,fuu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj]   = DYNCST(D,idx,x, cat(3,u,nan(size(D.Nodes,1),m,1)), 1:N+1);
+    [~,~,fx,fu,fxx,fxu,fuu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj]   = DYNCST(D,idx,x, enlonged_u, 1:N+1);
 %     trace(iter).time_derivs = toc(t_diff);
     flgChange   = 0;
 else
@@ -154,7 +170,7 @@ end
 
 % check for termination due to small gradient
 % another exit criteria than Schwarting, but it hardly ever comes here
-g_norm         = mean(max(abs(l) ./ (squeeze(abs(u(idx,:,:)+1))),[],1));
+g_norm         = mean(max(abs(l) ./ (squeeze(abs(u{idx}(:,:)+1))),[],1));
 % trace(iter).grad_norm = g_norm;
 if g_norm < Op.tolGrad && lambda < 1e-5
     dlambda   = min(dlambda / Op.lambdaFactor, 1/Op.lambdaFactor);
@@ -172,21 +188,21 @@ if backPassDone
     t_fwd = tic;
     if Op.parallel  % parallel line-search
         %only u is different for case of consensus and direct exchange
-        [xnew,unew,costnew] = forward_pass(D,idx,x0 ,u, L, x(:,:,1:N), l, Ku, Op.Alpha, DYNCST,u_lims,Op.diffFn);
+        [xnew,unew,costnew] = forward_pass(D,idx,x0 ,u, L, x, l, Ku, Op.Alpha, DYNCST,u_lims,Op.diffFn);
         if iter ==3
             a=1;
         end
         figure(4+50)
-subplot(2,2,idx)
-horizonSteps = size(x,3);
-plot(1:horizonSteps,squeeze(costnew(:,:,:,1)),'.')
-hold on
-plot(1:horizonSteps,squeeze(costnew(:,:,:,4)))
-plot(1:horizonSteps,squeeze(costnew(:,:,:,8)))
+        subplot(2,2,idx)
+        horizonSteps = size(x{idx},2);
+        plot(1:horizonSteps,squeeze(costnew(:,:,:,1)),'.')
+        hold on
+        plot(1:horizonSteps,squeeze(costnew(:,:,:,4)))
+        plot(1:horizonSteps,squeeze(costnew(:,:,:,8)))
 
-% plot(1:horizonSteps-1,squeeze(l(2,:)),'r')
-% hold on
-title(strcat('cost of agent ',num2str(idx)))
+        % plot(1:horizonSteps-1,squeeze(l(2,:)),'r')
+        % hold on
+        title(strcat('cost of agent ',num2str(idx)))
 % figure(2+100)
 % subplot(2,2,idx)
 % plot(1:horizonSteps-1,squeeze(L(1,1,:)),'b.')
@@ -210,8 +226,10 @@ title(strcat('cost of agent ',num2str(idx)))
         if (z > Op.zMin)
             fwdPassDone = 1;
             costnew     = costnew(:,:,:,w);
-            xnew        = xnew(:,:,:,w);
-            unew        = unew(:,:,:,w);
+            for i=1:size(D.Nodes,1)
+                xnew{i}        = xnew{i}(:,:,w);
+                unew{i}        = unew{i}(:,:,w);
+            end
         end
     end
     if ~fwdPassDone
@@ -320,7 +338,7 @@ unew = cell(n_agent,1);
 for i=1:n_agent
     n_b = size(x0{i},1);
     m_u = size(u{i},1);
-    xnew{i} = zeros(n_b,K,N);
+    xnew{i} = zeros(n_b,K,N+1);
     xnew{i}(:,:,1) = x0{i}(:,ones(1,K));
     unew{i} = zeros(m_u,K,N);
 end
@@ -338,15 +356,15 @@ for k = 1:N
         if ~isempty(diff)
             dx = diff(xnew(:,:,k), x(:,k*K1));
         else
-            dx          = xnew(idx,:,:,k) - x(idx,:,k*K1);% both size 1x6x11
+            dx          = xnew{idx}(:,:,k) - x{idx}(:,k*K1);% both size 1x6x11
         end
-        unew(idx,:,:,k) = squeeze(unew(idx,:,:,k)) + L(:,:,k)*squeeze(dx); 
+        unew{idx}(:,:,k) = squeeze(unew{idx}(:,:,k)) + L(:,:,k)*squeeze(dx); 
         % with feedback
     end%!!! not corrected yet
     if ~isempty(Ku)%!!! not corrected yet
         du_all_agent = u;
 %         u_real_all_agent = u;
-        du_all_agent(:) = 0;
+%         du_all_agent(:) = 0;
 %         dx          = xnew(idx,:,:,k) - x(idx,:,k*K1);
         incoming_nbrs = predecessors(D,idx)';
 %         for j_agent=incoming_nbrs
@@ -367,13 +385,33 @@ for k = 1:N
 %         end
     end
 % unew of other agents is updated, causing change of formation cost, which vergiftet the cost
-    [xnew(:,:,:,k+1), cnew(:,:,:,k)]  = DYNCST(D,idx,xnew(:,:,:,k), unew(:,:,:,k), k*K1);
-%     
+    xnew_k = cell(n_agent,1);
+    unew_k = cell(n_agent,1);
+    for i=1:n_agent
+        xnew_k{i}=xnew{i}(:,:,k);
+        unew_k{i}=unew{i}(:,:,k);
+    end
+    [xnew_next,cnew_k]  = DYNCST(D,idx,xnew_k, unew_k, k*K1);
+    incoming_nbrs_idces = predecessors(D,idx)';
+    for i=incoming_nbrs_idces
+        xnew{i}(:,:,k+1) = xnew_next{i};
+        
+    end
+    xnew{idx}(:,:,k+1) = xnew_next{idx};
+    cnew(:,:,:,k)=cnew_k;
 end
-[~, cnew(:,:,:,N+1)] = DYNCST(D,idx,xnew(:,:,:,N+1),nan(n_agent,m_u,K,1),k);
-xnew = permute(xnew, [1 2 4 3]);
-unew = permute(unew, [1 2 4 3]);%unew of other agents never updated
-cnew = permute(cnew, [1 2 4 3]);
+xnew_k = cell(n_agent,1);
+    unew_k = cell(n_agent,1);
+    for i=1:n_agent
+        xnew_k{i}=xnew{i}(:,:,N+1);
+        unew_k{i}=nan(size(unew{i},1),K,1);
+    end
+[~, cnew(:,:,:,N+1)] = DYNCST(D,idx,xnew_k,unew_k,k);
+for i=1:n_agent
+    xnew{i} = permute(xnew{i}, [1 3 2 ]);
+    unew{i} = permute(unew{i}, [1 3 2 ]);%unew of other agents never updated
+end
+cnew = permute(cnew, [1 2 4 3 ]);
 % components_amount = 2;
 % horiz = N+1;
 % mu = cell(components_amount,1);
@@ -510,7 +548,7 @@ for i = N-1:-1:1
     k2_i = -QuuF\Qu;
     incoming_nbrs_idces = predecessors(D,idx)';
     for j = incoming_nbrs_idces
-        Ku(j,:,:,i) = -QuuF\squeeze(c_ui_uj(j,:,:,i));
+%         Ku(j,:,:,i) = -QuuF\squeeze(c_ui_uj(j,:,:,i));
     end
 %         if any(free)
 %             Lfree        = -R\(R'\Qux_reg(free,:)); %=-(R*R')^(-1)*Qux=-Quu^(-1)*Qux

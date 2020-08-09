@@ -77,17 +77,19 @@ classdef AgentPlattform < AgentBase
         end
         function updatePolicy(obj, b_n_idx,u_n_idx,L)
             %b_n {4}x42x61, u_n {4}x6x60, L 6x42x60
-            obj.policyHorizon = size(b_n_idx,2);
+            obj.policyHorizon = size(b_n_idx{obj.digraph_idx},2);
             obj.b_nom = b_n_idx;
             obj.u_nom = u_n_idx;
             obj.L_opt = L;
             obj.ctrl_ptr = 1;
         end
         function u = getNextControl(obj, b)
-            diff_b = b - obj.b_nom(:,obj.ctrl_ptr);
-            u = obj.u_nom(:,obj.ctrl_ptr) + obj.P_feedback*obj.L_opt(:,:,obj.ctrl_ptr)*diff_b;
+            
+                
+            diff_b = b{obj.digraph_idx} - obj.b_nom{obj.digraph_idx}(:,obj.ctrl_ptr);
+            u = obj.u_nom{obj.digraph_idx}(:,obj.ctrl_ptr) + obj.P_feedback*obj.L_opt(:,:,obj.ctrl_ptr)*diff_b;
             % dim is 6
-            for i_u = 1:size(obj.u_nom,1)
+            for i_u = 1:size(obj.u_lims,1)
                 u(i_u)=min(obj.u_lims(i_u,2), max(obj.u_lims(i_u,1), u(i_u)));
             end
             obj.ctrl_ptr = obj.ctrl_ptr + 1;

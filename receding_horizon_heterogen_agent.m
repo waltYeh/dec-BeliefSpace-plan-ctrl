@@ -208,8 +208,8 @@ for i_sim = 1:simulation_steps
             if finished{i}~=true
                 [bi,ui,cost{i},L_opt{i},~,~, finished{i}] ...
                     = agents{i}.iLQG_one_it...
-                    (interfDiGr, {b0{i,:}}, Op, iter,squeeze(u_guess(i,:,:,:)),...
-                    u{i},b{i}, cost{i});
+                    (interfDiGr, b0(i,:), Op, iter,u_guess(i,:),...
+                    u(i,:),b(i,:), cost{i});
                 for j=1:size(interfDiGr.Nodes,1)
                     u{i,j} = ui{j};
                     b{i,j} = bi{j};
@@ -266,12 +266,12 @@ for i_sim = 1:simulation_steps
             end
             for i = 1:size(interfDiGr.Nodes,1)
                 for j = 1:size(interfDiGr.Nodes,1)
-                    u{i,j} = u{i,j} + 0.2*d_u_est{i,j};
+                    u{i,j} = u{i,j} + 0.15*d_u_est{i,j};
                 end
             end
         end
 
-        if finished{1}% && finished{2} && finished{3} && finished{4} 
+        if finished{1} && finished{2} && finished{3} && finished{4} 
             break;
         end
 %             error_policy_3_from_1 = squeeze(u{3,1}(1,:,:)-u{1,1}(1,:,:));
@@ -288,8 +288,8 @@ for i_sim = 1:simulation_steps
 
     for i = 1:size(interfDiGr.Nodes,1)
         % iLQG iteration finished, take the policy to execute
-        agents{i}.updatePolicy(b{i},u{i},L_opt{i});
-        u_guess(i,:,:,:) = u{i};
+        agents{i}.updatePolicy(b(i,:),u(i,:),L_opt{i});
+        u_guess(i,:) = u(i,:);
         % guess value only used for the first iteration of each MPC iteration
     end
 
@@ -304,14 +304,20 @@ for i_sim = 1:simulation_steps
         show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
     end
     time_past = (i_sim-1) * mpc_update_period;
+    assignin('base', 'interfDiGr', interfDiGr)
     assignin('base', 'b0', b0)
     assignin('base', 'agents', agents)
     assignin('base', 'update_steps', update_steps)
     assignin('base', 'time_past', time_past)
     assignin('base', 'show_mode', show_mode)
     assignin('base', 'x_true', x_true)
-    [~, b0, x_true] = animateHeteroMultiagent(interfDiGr,agents, b0, x_true,update_steps,time_past, show_mode);
+    for i = 1:size(interfDiGr.Nodes,1)
+        agents{i}.ctrl_ptr = 1;
+    end
+    [~, b0_next, x_true_next] = animateHeteroMultiagent(interfDiGr,agents, b0, x_true,update_steps,time_past, show_mode);
 %     b0{1}(1:2) = x_true_final(1:2);
+    b0 = b0_next;
+    x_true = x_true_next;
 end
 % figure(3)
 % plot(error_policy_3_from_1(1,:),'.k')

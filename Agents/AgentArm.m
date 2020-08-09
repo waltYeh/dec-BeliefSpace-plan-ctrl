@@ -77,10 +77,10 @@ classdef AgentArm < AgentBase
             obj.ctrl_ptr = 1;
         end
         function u = getNextControl(obj, b)
-            diff_b = b - obj.b_nom(:,obj.ctrl_ptr);
-            u = obj.u_nom(:,obj.ctrl_ptr) + obj.P_feedback*obj.L_opt(:,:,obj.ctrl_ptr)*diff_b;
+            diff_b = b{obj.digraph_idx} - obj.b_nom{obj.digraph_idx}(:,obj.ctrl_ptr);
+            u = obj.u_nom{obj.digraph_idx}(:,obj.ctrl_ptr) + obj.P_feedback*obj.L_opt(:,:,obj.ctrl_ptr)*diff_b;
             % dim is 6
-            for i_u = 1:size(obj.u_nom,1)
+            for i_u = 1:size(obj.u_lims,1)
                 u(i_u)=min(obj.u_lims(i_u,2), max(obj.u_lims(i_u,1), u(i_u)));
             end
             obj.ctrl_ptr = obj.ctrl_ptr + 1;
@@ -94,7 +94,7 @@ classdef AgentArm < AgentBase
 %             [mu, sig, weight] = b2xPw(b, obj.component_stDim, obj.components_amount);
             mu=cell(1);
             sig=cell(1);
-            [mu{1}, sig{1}] = b2xP(b(obj.digraph_idx,:), obj.component_stDim);
+            [mu{1}, sig{1}] = b2xP(b, obj.component_stDim);
             z_mu = cell(obj.components_amount);
             z_sig = cell(obj.components_amount);
             for i_comp = 1:obj.components_amount

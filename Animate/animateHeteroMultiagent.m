@@ -229,7 +229,7 @@ for k = 1:nSteps-1
 
     
     if k>1
-        figure(99)
+        figure(102)
 
         plot(mu_save{1,1}(1,k),mu_save{1,1}(2,k),'bo')
         hold on
@@ -264,7 +264,19 @@ for k = 1:nSteps-1
     %     plot(pointsToPlot(1,:),pointsToPlot(2,:),'b')
     %     pointsToPlot = drawResultGMM([mu_save{1,2}(:,k); sig_save{1,2}(:,k)], agents{1}.motionModel.stDim);
     %     plot(pointsToPlot(1,:),pointsToPlot(2,:),'r')
-
+    figure(52)
+    subplot(2,2,1)
+    plot(time_past + 0.05*(k-1),u{1}(5),'b.',time_past + 0.05*(k-1),u{1}(6),'r.')
+    hold on
+    subplot(2,2,2)
+    plot(time_past + 0.05*(k-1),u{2}(1),'b.',time_past + 0.05*(k-1),u{2}(2),'r.')
+    hold on
+    subplot(2,2,3)
+    plot(time_past + 0.05*(k-1),u{3}(1),'b.',time_past + 0.05*(k-1),u{3}(2),'r.')
+    hold on
+    subplot(2,2,4)
+    plot(time_past + 0.05*(k-1),u{4}(1),'b.',time_past + 0.05*(k-1),u{4}(2),'r.')
+    hold on
     % figure(6)
     % %     
     %     plot([time_past + agents{1}.dt*(k-1),time_past + agents{1}.dt*(k)],[weight_save{1,1}(k),weight_save{1,1}(k+1)],'-ob',[time_past + agents{1}.dt*(k-1),time_past + agents{1}.dt*(k)],[weight_save{1,2}(k),weight_save{1,2}(k+1)],'-ok')

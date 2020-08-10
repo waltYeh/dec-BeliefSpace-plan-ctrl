@@ -18,7 +18,7 @@ classdef AgentCrane < AgentBase
         u_lims = [-4.0 4.0;
             -4.0 4.0];
         % larger, less overshoot; smaller, less b-noise affects assist
-        P_feedback = 1.0;
+        
     end
     
     properties
@@ -35,6 +35,7 @@ classdef AgentCrane < AgentBase
         lambda; 
         dlambda;
         flgChange;
+        P_feedback = 1.0;
     end
     
     methods 

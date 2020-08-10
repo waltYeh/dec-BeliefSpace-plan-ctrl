@@ -21,7 +21,7 @@ BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT = 6;
 REST_WISH_WITHOUT_HUMAN_INPUT = 7;
 REST_WISH_WITH_HUMAN_INPUT = 8;
 REST_WISH_WITH_OPPOSITE_HUMAN_INPUT = 9;
-show_mode = EQUAL_WEIGHT_TO_BALL_FEEDBACK;
+show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
 switch show_mode
     case EQUAL_WEIGHT_BALANCING
         weight_a1 = 0.5;
@@ -67,7 +67,7 @@ sig_d = diag([0.5, 0.5]);
 % weight_2 = 0.1;
 dt = 0.05;
 horizon = 3.0;
-mpc_update_period = 1;
+mpc_update_period = 3;
 simulation_time = 3;
 
 %% 
@@ -206,6 +206,11 @@ for i_sim = 1:simulation_steps
 
         for i = 1:size(interfDiGr.Nodes,1)
             if finished{i}~=true
+                if i==1
+                    Op.tolFun = 0.1;
+                else
+                    Op.tolFun = 0.5;
+                end
                 [bi,ui,cost{i},L_opt{i},~,~, finished{i}] ...
                     = agents{i}.iLQG_one_it...
                     (interfDiGr, b0(i,:), Op, iter,u_guess(i,:),...
@@ -266,7 +271,7 @@ for i_sim = 1:simulation_steps
             end
             for i = 1:size(interfDiGr.Nodes,1)
                 for j = 1:size(interfDiGr.Nodes,1)
-                    u{i,j} = u{i,j} + 0.15*d_u_est{i,j};
+                    u{i,j} = u{i,j} + 0.3*d_u_est{i,j};
                 end
             end
         end
@@ -299,7 +304,7 @@ for i_sim = 1:simulation_steps
 %     [b_nom2,u_nom2,L_opt2,Vx2,Vxx2,cost2] = agents{2}.iLQG_GMM(b0{2}, u_guess, Op);
 %     agents{2}.updatePolicy(b_nom2,u_nom2,L_opt2);
     if i_sim < 2
-        show_mode = EQUAL_WEIGHT_TO_BALL_FEEDBACK;
+        show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
     else
         show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
     end

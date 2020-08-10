@@ -25,7 +25,7 @@ classdef AgentPlattform < AgentBase
             -2.0 2.0;%move plattform and human 
             -2.0 2.0];
         % larger, less overshoot; smaller, less b-noise affects assist
-        P_feedback = 1.0;
+         
     end
     
     properties
@@ -42,6 +42,7 @@ classdef AgentPlattform < AgentBase
         lambda; 
         dlambda;
         flgChange;
+        P_feedback= 1.0;
 %         beliefDyns;
     end
     

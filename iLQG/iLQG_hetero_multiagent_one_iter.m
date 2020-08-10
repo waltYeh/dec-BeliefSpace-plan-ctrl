@@ -183,6 +183,7 @@ if g_norm < Op.tolGrad && lambda < 1e-5
 end
 
 %====== STEP 3: line-search to find new control sequence, trajectory, cost
+[~,~,cost]  = forward_pass(D,idx,x0,u,[],[],[],[],1,DYNCST,u_lims,[]);
 fwdPassDone  = 0;
 if backPassDone
     t_fwd = tic;
@@ -230,6 +231,14 @@ if backPassDone
                 xnew{i}        = xnew{i}(:,:,w);
                 unew{i}        = unew{i}(:,:,w);
             end
+        else
+            w=11;
+            fwdPassDone = 1;
+            costnew     = costnew(:,:,:,w);
+            for i=1:size(D.Nodes,1)
+                xnew{i}        = xnew{i}(:,:,w);
+                unew{i}        = unew{i}(:,:,w);
+            end
         end
     end
     if ~fwdPassDone
@@ -247,6 +256,7 @@ if verbosity > 1
 end
 
 if fwdPassDone
+    derivatives_cell =  { fx,fu,fxx,fxu,fuu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj};
 
     % print status
     if verbosity > 1
@@ -267,7 +277,7 @@ if fwdPassDone
 %         Op.plotFn(x);
 
     % terminate ?
-    if dcost < Op.tolFun
+    if dcost < Op.tolFun && dcost>-Op.tolFun
         if verbosity > 0
             fprintf('\nSUCCESS: cost change < tolFun\n');
         end

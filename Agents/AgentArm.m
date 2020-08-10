@@ -19,7 +19,7 @@ classdef AgentArm < AgentBase
         u_lims = [-4.0 4.0;
             -4.0 4.0];
         % larger, less overshoot; smaller, less b-noise affects assist
-        P_feedback = 1.0;
+        
     end
     
     properties
@@ -36,6 +36,7 @@ classdef AgentArm < AgentBase
         lambda; 
         dlambda;
         flgChange;
+        P_feedback = 1.0;
     end
     
     methods 
@@ -70,7 +71,7 @@ classdef AgentArm < AgentBase
         end
         function updatePolicy(obj,b_n_idx,u_n_idx,L)
             %b_n 6x61, u_n 2x60, L 2x6x60
-            obj.policyHorizon = size(b_n_idx,2);
+            obj.policyHorizon = size(b_n_idx{obj.digraph_idx},2);
             obj.b_nom = b_n_idx;
             obj.u_nom = u_n_idx;
             obj.L_opt = L;

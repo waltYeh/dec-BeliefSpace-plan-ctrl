@@ -135,13 +135,29 @@ for k = 1:nSteps-1
     for i=1:size(D.Nodes,1)  % the real states of four robots
         processNoise = agents{i}.motionModel.generateProcessNoise(x_true(i,:),u{i});
         if i==1
-            x_mind = [x_true(2,:)';x_true(1,:)'];
-            x_mind_next = agents{i}.motionModel.evolve(x_mind,[u{i}(1:2);u{i}(5:6)],processNoise);
-            x_true(i,:) = x_mind_next(3:4)';
-            z{i} = agents{i}.obsModel.getObservation(x_mind_next,'truenoise');
-        else
+            
+            
+            if show_mode>6
+                x_mind = [x_true(3,:)';x_true(1,:)'];
+                x_mind_next = agents{i}.motionModel.evolve(x_mind,[u{i}(3:4);u{i}(5:6)],processNoise);
+                x_true(1,:) = x_mind_next(3:4)';
+                z{i} = agents{i}.obsModel.getObservation(x_mind_next,'truenoise');
+            else
+                x_mind = [x_true(2,:)';x_true(1,:)'];
+                x_mind_next = agents{i}.motionModel.evolve(x_mind,[u{i}(1:2);u{i}(5:6)],processNoise);
+                x_true(1,:) = x_mind_next(3:4)';
+                z{i} = agents{i}.obsModel.getObservation(x_mind_next,'truenoise');
+            end
+            
+        elseif i==2
+            x_true_x_last = x_true(i,1);
             x_true(i,:) = agents{i}.motionModel.evolve(x_true(i,:)',u{i},processNoise);
+            x_true(i,1)=x_true_x_last;
             z{i} = agents{i}.obsModel.getObservation(x_true(i,:),'truenoise');
+
+        else
+            x_true(i+1,:) = agents{i}.motionModel.evolve(x_true(i+1,:)',u{i},processNoise);
+            z{i} = agents{i}.obsModel.getObservation(x_true(i+1,:),'truenoise');
         end
         
     end
@@ -229,7 +245,7 @@ for k = 1:nSteps-1
 
     
     if k>1
-        figure(102)
+        figure(105)
 
         plot(mu_save{1,1}(1,k),mu_save{1,1}(2,k),'bo')
         hold on
@@ -264,19 +280,20 @@ for k = 1:nSteps-1
     %     plot(pointsToPlot(1,:),pointsToPlot(2,:),'b')
     %     pointsToPlot = drawResultGMM([mu_save{1,2}(:,k); sig_save{1,2}(:,k)], agents{1}.motionModel.stDim);
     %     plot(pointsToPlot(1,:),pointsToPlot(2,:),'r')
-    figure(52)
-    subplot(2,2,1)
-    plot(time_past + 0.05*(k-1),u{1}(5),'b.',time_past + 0.05*(k-1),u{1}(6),'r.')
-    hold on
-    subplot(2,2,2)
-    plot(time_past + 0.05*(k-1),u{2}(1),'b.',time_past + 0.05*(k-1),u{2}(2),'r.')
-    hold on
-    subplot(2,2,3)
-    plot(time_past + 0.05*(k-1),u{3}(1),'b.',time_past + 0.05*(k-1),u{3}(2),'r.')
-    hold on
-    subplot(2,2,4)
-    plot(time_past + 0.05*(k-1),u{4}(1),'b.',time_past + 0.05*(k-1),u{4}(2),'r.')
-    hold on
+        figure(55)
+        subplot(2,2,1)
+        plot(time_past + 0.05*(k-1),u{1}(5),'b.',time_past + 0.05*(k-1),u{1}(6),'r.')
+        plot(time_past + 0.05*(k-1),u{1}(1),'b.',time_past + 0.05*(k-1),u{1}(2),'r.')
+        hold on
+        subplot(2,2,2)
+        plot(time_past + 0.05*(k-1),u{2}(1),'b.',time_past + 0.05*(k-1),u{2}(2),'r.')
+        hold on
+        subplot(2,2,3)
+        plot(time_past + 0.05*(k-1),u{3}(1),'b.',time_past + 0.05*(k-1),u{3}(2),'r.')
+        hold on
+        subplot(2,2,4)
+        plot(time_past + 0.05*(k-1),u{4}(1),'b.',time_past + 0.05*(k-1),u{4}(2),'r.')
+        hold on
     % figure(6)
     % %     
     %     plot([time_past + agents{1}.dt*(k-1),time_past + agents{1}.dt*(k)],[weight_save{1,1}(k),weight_save{1,1}(k+1)],'-ob',[time_past + agents{1}.dt*(k-1),time_past + agents{1}.dt*(k)],[weight_save{1,2}(k),weight_save{1,2}(k+1)],'-ok')

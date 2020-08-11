@@ -183,7 +183,7 @@ if g_norm < Op.tolGrad && lambda < 1e-5
 end
 
 %====== STEP 3: line-search to find new control sequence, trajectory, cost
-[~,~,cost]  = forward_pass(D,idx,x0,u,[],[],[],[],1,DYNCST,u_lims,[]);
+% [~,~,cost]  = forward_pass(D,idx,x0,u,[],[],[],[],1,DYNCST,u_lims,[]);
 fwdPassDone  = 0;
 if backPassDone
     t_fwd = tic;

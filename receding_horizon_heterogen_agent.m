@@ -21,7 +21,7 @@ BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT = 6;
 REST_WISH_WITHOUT_HUMAN_INPUT = 7;
 REST_WISH_WITH_HUMAN_INPUT = 8;
 REST_WISH_WITH_OPPOSITE_HUMAN_INPUT = 9;
-show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
+show_mode = REST_WISH_WITHOUT_HUMAN_INPUT;
 switch show_mode
     case EQUAL_WEIGHT_BALANCING
         weight_a1 = 0.5;
@@ -33,8 +33,8 @@ switch show_mode
         weight_a1 = 0.5;
         weight_a2 = 0.5;        
     case BALL_WISH_WITHOUT_HUMAN_INPUT
-        weight_a1 = 0.95;
-        weight_a2 = 0.05;
+        weight_a1 = 0.999;
+        weight_a2 = 0.001;
     case BALL_WISH_WITH_HUMAN_INPUT
         weight_a1 = 0.95;
         weight_a2 = 0.05;
@@ -42,8 +42,8 @@ switch show_mode
         weight_a1 = 0.95;
         weight_a2 = 0.05;
     case REST_WISH_WITHOUT_HUMAN_INPUT
-        weight_a1 = 0.05;
-        weight_a2 = 0.95;
+        weight_a1 = 0.01;
+        weight_a2 = 0.99;
     case REST_WISH_WITH_HUMAN_INPUT
         weight_a1 = 0.05;
         weight_a2 = 0.95;
@@ -85,20 +85,20 @@ simulation_steps = simulation_time/mpc_update_period;
 
 
 
-sd = [2 2 3 1 1];%edges start from
-td = [1 3 4 3 2];%edges go to
-nom_formation_2=[0.5,0.5;
-    -0.5,-0.5;
+sd = [2  3 1 1];%edges start from
+td = [1  4 3 2];%edges go to
+nom_formation_2=[0.0,0.0;
+    %-0.5,-0.5;
     -0.5,-0.5;
     -1,-1;
-    -0.5,-0.5;];%-- formation
-nom_formation_2=[-1,1;
-    -2,0;
+    -0.0,-0.0;];%-- formation
+nom_formation_2=[-0,0;
+    %-2,0;
     1,-1;
     -1,-1;
-    1,-1];%z formation
-q_formation=[1;1;1;1;1];
-rij_control = [0.3;0.3;0.3;0.3;0.3];%control cost of node sd in opt of td
+    0,-0];%z formation
+q_formation=[1;1;1;1];
+rij_control = [0.3;0.3;0.3;0.3];%control cost of node sd in opt of td
 rii_control = [0.8;0.8;0.8;0.8];
 incoming_edges = zeros(4,4);
 EdgeTable = table([sd' td'],nom_formation_2,q_formation,rij_control,'VariableNames',{'EndNodes' 'nom_formation_2' 'q_formation' 'rij_control'});
@@ -124,11 +124,11 @@ adjGr = full(adjacency(commGr));% full transfers sparse to normal matrix
 
 agents = cell(size(interfDiGr.Nodes,1),1);
 belief_dyns = {@(b, u)beliefDynamicsGMM(b, u,HumanMind(dt),HumanReactionModel()); 
-    @(b, u)beliefDynamicsSimpleAgent(b, u, TwoDPointRobot(dt),TwoDSimpleObsModel()); 
+    @(b, u)beliefDynamicsSimpleAgent(b, u, TwoDPointBelt(dt),TwoDSimpleObsModel()); 
     @(b, u)beliefDynamicsSimpleAgent(b, u, TwoDPointRobot(dt),TwoDSimpleObsModel()); 
     @(b, u)beliefDynamicsSimpleAgent(b, u, TwoDPointRobot(dt),TwoDSimpleObsModel())};
 agents{1} = AgentPlattform(dt,horizonSteps,1,belief_dyns);
-agents{2} = AgentArm(dt,horizonSteps,2,belief_dyns);
+agents{2} = AgentBelt(dt,horizonSteps,2,belief_dyns);
 agents{3} = AgentArm(dt,horizonSteps,3,belief_dyns);
 agents{4} = AgentArm(dt,horizonSteps,4,belief_dyns);
 % agents{2} = AgentBelt(dt,horizonSteps,2);
@@ -141,6 +141,7 @@ u_guess=cell(size(interfDiGr.Nodes,1),size(interfDiGr.Nodes,1));
 for i=1:size(interfDiGr.Nodes,1)
     u_guess{i,1} = zeros(agents{1}.total_uDim,horizonSteps-1);
     u_guess{i,2} = zeros(agents{2}.total_uDim,horizonSteps-1);
+    u_guess{i,2}(2,:) = 0.1;
     u_guess{i,3} = zeros(agents{3}.total_uDim,horizonSteps-1);
     u_guess{i,4} = zeros(agents{4}.total_uDim,horizonSteps-1);
 end
@@ -168,12 +169,17 @@ for i=1:size(interfDiGr.Nodes,1)
 end
 %????????????????
 % true states of agents are 2D position vectors
-x_true = zeros(size(interfDiGr.Nodes,1),agents{3}.motionModel.stDim);
+x_true = zeros(size(interfDiGr.Nodes,1)+1,agents{3}.motionModel.stDim);
 % we select component 1 as true goal
-x_true(1,:)=mu_a1(3:4);
+% if show_mode>6
+%     x_true(1,:)=mu_a2(3:4);
+% else
+    x_true(1,:)=mu_a1(3:4);%plattform
+% end
 x_true(2,:)=mu_b;
-x_true(3,:)=mu_c;
-x_true(4,:)=mu_d;
+x_true(3,:)=mu_a2(1:2);
+x_true(4,:)=mu_c;
+x_true(5,:)=mu_d;
 
 %% these are old codes remained
 Op.plot = -1; % plot the derivatives as well
@@ -304,9 +310,9 @@ for i_sim = 1:simulation_steps
 %     [b_nom2,u_nom2,L_opt2,Vx2,Vxx2,cost2] = agents{2}.iLQG_GMM(b0{2}, u_guess, Op);
 %     agents{2}.updatePolicy(b_nom2,u_nom2,L_opt2);
     if i_sim < 2
-        show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
+        show_mode = REST_WISH_WITHOUT_HUMAN_INPUT;
     else
-        show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
+        show_mode = REST_WISH_WITHOUT_HUMAN_INPUT;
     end
     time_past = (i_sim-1) * mpc_update_period;
     assignin('base', 'interfDiGr', interfDiGr)

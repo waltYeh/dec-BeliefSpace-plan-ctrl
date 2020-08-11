@@ -21,7 +21,7 @@ BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT = 6;
 REST_WISH_WITHOUT_HUMAN_INPUT = 7;
 REST_WISH_WITH_HUMAN_INPUT = 8;
 REST_WISH_WITH_OPPOSITE_HUMAN_INPUT = 9;
-show_mode = REST_WISH_WITHOUT_HUMAN_INPUT;
+show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
 switch show_mode
     case EQUAL_WEIGHT_BALANCING
         weight_a1 = 0.5;
@@ -53,7 +53,7 @@ switch show_mode
 end
 %% tuned parameters
 mu_a1 = [8.5, 0.0, 5.0, 0.0]';
-mu_a2 = [3, 1.0, 5.0, 0.0]';
+mu_a2 = [3, 0.5, 5.0, 0.0]';
 mu_b = [8.5, 0.0]';
 mu_c = [5, 3]';
 mu_d = [0.0, 0.0]';

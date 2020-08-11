@@ -54,16 +54,16 @@ if nargout == 2
         if size(bj,1)>6
             for k=1:paralDim
                 [x, P, w] = b2xPw(bj(:,k), 4, 2);
-                avr_x = w(1)*x{1}(3:4,:)+w(2)*x{2}(3:4,:);
-                avr_P = w(1)*P{1}(3:4,3:4)+w(2)*P{2}(3:4,3:4);
+                avr_x = x{1}(1:2,:);%+w(2)*x{2}(3:4,:);
+                avr_P = P{1}(1:2,1:2);
                 b_formation(j,:,k) = [avr_x;avr_P(:)];
-                
-            end
 %             [x, P, w] = b2xPw(bj, 4, 2);
 %             avr_x = w(1)*x{1}(3:4,:)+w(2)*x{2}(3:4,:);
 %             avr_P = w(1)*P{1}(3:4,3:4)+w(2)*P{2}(3:4,3:4);
 %             b_formation(j,:,:) = [avr_x;avr_P(:)];
-            u_formation(j,:,:) = uj(5:6,:);
+            end
+
+            u_formation(j,:,:) = uj(1:2,:);
         else
             b_formation(j,:,:) = bj;
             u_formation(j,:,:) = uj;
@@ -137,15 +137,19 @@ else
         %affecting single computation
         bj=squeeze(b{j});
         uj = squeeze(u{j});
-        if size(bj,1)>6
-            for k=1:horizonSteps
+                if size(bj,1)>6
+            for k=1:paralDim
                 [x, P, w] = b2xPw(bj(:,k), 4, 2);
-                avr_x = w(1)*x{1}(3:4,:)+w(2)*x{2}(3:4,:);
-                avr_P = w(1)*P{1}(3:4,3:4)+w(2)*P{2}(3:4,3:4);
+                avr_x = x{1}(1:2,:);%+w(2)*x{2}(3:4,:);
+                avr_P = P{1}(1:2,1:2);
                 b_formation(j,:,k) = [avr_x;avr_P(:)];
                 
             end
-            u_formation(j,:,:) = uj(5:6,:);
+%             [x, P, w] = b2xPw(bj, 4, 2);
+%             avr_x = w(1)*x{1}(3:4,:)+w(2)*x{2}(3:4,:);
+%             avr_P = w(1)*P{1}(3:4,3:4)+w(2)*P{2}(3:4,3:4);
+%             b_formation(j,:,:) = [avr_x;avr_P(:)];
+            u_formation(j,:,:) = uj(1:2,:);
         else
             b_formation(j,:,:) = bj;
             u_formation(j,:,:) = uj;

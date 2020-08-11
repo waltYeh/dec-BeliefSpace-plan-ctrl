@@ -146,13 +146,14 @@ for k = 1:nSteps-1
                 x_mind = [x_true(2,:)';x_true(1,:)'];
                 x_mind_next = agents{i}.motionModel.evolve(x_mind,[u{i}(1:2);u{i}(5:6)],processNoise);
                 x_true(1,:) = x_mind_next(3:4)';
+                x_true(2,2)=x_mind_next(2)';
                 z{i} = agents{i}.obsModel.getObservation(x_mind_next,'truenoise');
             end
             
         elseif i==2
-            x_true_x_last = x_true(i,1);
-            x_true(i,:) = agents{i}.motionModel.evolve(x_true(i,:)',u{i},processNoise);
-            x_true(i,1)=x_true_x_last;
+%             x_true_x_last = x_true(i,1);
+%             x_true(i,:) = agents{i}.motionModel.evolve(x_true(i,:)',u{i},processNoise);
+%             x_true(i,1)=x_true_x_last;
             z{i} = agents{i}.obsModel.getObservation(x_true(i,:),'truenoise');
 
         else

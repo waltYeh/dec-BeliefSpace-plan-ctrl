@@ -57,7 +57,7 @@ incoming_nbrs_idces = predecessors(D,idx)';
         end
 
     end
-    nSigma = nSigma*0.1;
+%     nSigma = nSigma;
 % else
 %     nSigma = 3.5*ones(size(D.Nodes,1),size(bi,2));
 % 

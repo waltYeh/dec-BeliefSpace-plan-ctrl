@@ -306,7 +306,8 @@ for i_sim = 1:simulation_steps
             % guess value only used for the first iteration of each MPC iteration
         end% guess value only used for the first iteration of each MPC iteration
         time_past = (i_sim-1) * mpc_update_period;
-        [~, ~, ~] = animateHeteroMultiagent(interfDiGr,agents, b0, x_true,update_steps,time_past, show_mode);
+        draw_ball=false;
+        [~, ~, ~] = animateHeteroMultiagent(interfDiGr,agents, b0, x_true,update_steps,time_past, show_mode,draw_ball);
 
     end% end of iLQG iterations
 
@@ -337,7 +338,8 @@ for i_sim = 1:simulation_steps
     for i = 1:size(interfDiGr.Nodes,1)
         agents{i}.ctrl_ptr = 1;
     end
-    [~, b0_next, x_true_next] = animateHeteroMultiagent(interfDiGr,agents, b0, x_true,update_steps,time_past, show_mode);
+    draw_ball=true;
+    [~, b0_next, x_true_next] = animateHeteroMultiagent(interfDiGr,agents, b0, x_true,update_steps,time_past, show_mode,draw_ball);
 %     b0{1}(1:2) = x_true_final(1:2);
     b0 = b0_next;
     x_true = x_true_next;

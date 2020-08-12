@@ -289,12 +289,14 @@ else % no cost improvement
     
     derivatives_cell =  { fx,fu,fxx,fxu,fuu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj};
     % increase lambda
-%     dlambda  = max(dlambda * Op.lambdaFactor, Op.lambdaFactor);
-%     lambda   = max(lambda * dlambda, Op.lambdaMin);
-%     u              = unew;
-%     x              = xnew;
+    dlambda  = max(dlambda * Op.lambdaFactor, Op.lambdaFactor);
+    lambda   = max(lambda * dlambda, Op.lambdaMin);
+%     dlambda   = min(dlambda / Op.lambdaFactor, 1/Op.lambdaFactor);
+%     lambda    = lambda * dlambda * (lambda > Op.lambdaMin);
+    u              = unew;
+    x              = xnew;
 %     cost           = costnew;
-    flgChange      = 1;
+    flgChange      = 0;
     % print status
     if verbosity > 1
         fprintf('%-12d%-12d%-12s%-12.3g%-12.3g%-12.3g%-12.1f\n', ...

@@ -1,5 +1,5 @@
 function [failed, b_f, x_true_final]...
-    = animateHeteroMultiagent(D,agents, b0, x_true, nSteps,time_past, show_mode)
+    = animateHeteroMultiagent(D,agents, b0, x_true, nSteps,time_past, show_mode,draw_ball)
 % longer, clear wish, shorter, less overshoot
 t_human_withdraw = 0.5;
 comp_sel =1;
@@ -258,8 +258,9 @@ for k = 1:nSteps-1
     x_save(:,:,k+1) = x_true;
     x_true_final = x_true;
 
-    
-    
+%     
+%    
+    if draw_ball
         figure(105)
 
         plot(mu_save{1,1}(1,k),mu_save{1,1}(2,k),'bo')
@@ -313,6 +314,7 @@ for k = 1:nSteps-1
 %             plot(time_past + 0.05*(k-1),u{4}(1),'b.',time_past + 0.05*(k-1),u{4}(2),'r.')
 %             hold on
         end
+    end
     % figure(6)
     % %     
     %     plot([time_past + agents{1}.dt*(k-1),time_past + agents{1}.dt*(k)],[weight_save{1,1}(k),weight_save{1,1}(k+1)],'-ob',[time_past + agents{1}.dt*(k-1),time_past + agents{1}.dt*(k)],[weight_save{1,2}(k),weight_save{1,2}(k+1)],'-ok')
@@ -331,7 +333,7 @@ for k = 1:nSteps-1
     %     subplot(2,2,4)
     %     plot(time_past + agents{1}.dt*(k-1),u(3),'b.',time_past + agents{1}.dt*(k-1),u(4),'r.')
     %     hold on
-%         pause(0.05);
+        pause(0.5);
     
 end
 figure(105)

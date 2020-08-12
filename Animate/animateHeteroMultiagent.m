@@ -298,20 +298,20 @@ for k = 1:nSteps-1
         %     plot(pointsToPlot(1,:),pointsToPlot(2,:),'b')
         %     pointsToPlot = drawResultGMM([mu_save{1,2}(:,k); sig_save{1,2}(:,k)], agents{1}.motionModel.stDim);
         %     plot(pointsToPlot(1,:),pointsToPlot(2,:),'r')
-            figure(55)
-            subplot(2,2,1)
-    %         plot(time_past + 0.05*(k-1),u{1}(5),'b.',time_past + 0.05*(k-1),u{1}(6),'r.')
-            plot(time_past + 0.05*(k-1),u{1}(1),'b.',time_past + 0.05*(k-1),u{1}(2),'r.')
-            hold on
-            subplot(2,2,2)
-            plot(time_past + 0.05*(k-1),u{2}(1),'b.',time_past + 0.05*(k-1),u{2}(2),'r.')
-            hold on
-            subplot(2,2,3)
-            plot(time_past + 0.05*(k-1),u{3}(1),'b.',time_past + 0.05*(k-1),u{3}(2),'r.')
-            hold on
-            subplot(2,2,4)
-            plot(time_past + 0.05*(k-1),u{4}(1),'b.',time_past + 0.05*(k-1),u{4}(2),'r.')
-            hold on
+%             figure(55)
+%             subplot(2,2,1)
+%     %         plot(time_past + 0.05*(k-1),u{1}(5),'b.',time_past + 0.05*(k-1),u{1}(6),'r.')
+%             plot(time_past + 0.05*(k-1),u{1}(1),'b.',time_past + 0.05*(k-1),u{1}(2),'r.')
+%             hold on
+%             subplot(2,2,2)
+%             plot(time_past + 0.05*(k-1),u{2}(1),'b.',time_past + 0.05*(k-1),u{2}(2),'r.')
+%             hold on
+%             subplot(2,2,3)
+%             plot(time_past + 0.05*(k-1),u{3}(1),'b.',time_past + 0.05*(k-1),u{3}(2),'r.')
+%             hold on
+%             subplot(2,2,4)
+%             plot(time_past + 0.05*(k-1),u{4}(1),'b.',time_past + 0.05*(k-1),u{4}(2),'r.')
+%             hold on
         end
     % figure(6)
     % %     
@@ -331,9 +331,43 @@ for k = 1:nSteps-1
     %     subplot(2,2,4)
     %     plot(time_past + agents{1}.dt*(k-1),u(3),'b.',time_past + agents{1}.dt*(k-1),u(4),'r.')
     %     hold on
-        pause(0.5);
+%         pause(0.05);
     
 end
+figure(105)
+
+plot(mu_save{1,1}(1,:),mu_save{1,1}(2,:),'bo')
+hold on
+grid on
+axis equal
+plot(mu_save{1,1}(1,:),mu_save{1,1}(2,:),'bo')
+%         plot(mu_save{1,2}(1,k),mu_save{1,2}(2,k),'mo')
+%         plot(mu_save{1,2}(3,k),mu_save{1,2}(4,k),'mo')
+plot(mu_save{2,1}(1,:),mu_save{2,1}(2,:),'ro')
+plot(mu_save{3,1}(1,:),mu_save{3,1}(2,:),'ko')
+plot(mu_save{4,1}(1,:),mu_save{4,1}(2,:),'go')
+%         pointsToPlot = drawResultGMM([mu_save{1,1}(:,k); sig_save{1,1}(:,k)], 4);
+% pointsToPlot = drawResult([mu_save{1,1}(:,k); sig_save{1,1}(:,k)], 2);
+% plot(pointsToPlot(1,:),pointsToPlot(2,:),'b')
+% %         pointsToPlot = drawResultGMM([mu_save{1,2}(:,k); sig_save{1,2}(:,k)], 4);
+% %         plot(pointsToPlot(1,:),pointsToPlot(2,:),'m')
+% pointsToPlot = drawResult([mu_save{2,1}(:,k); sig_save{2,1}(:,k)], 2);
+% plot(pointsToPlot(1,:),pointsToPlot(2,:),'r')
+% pointsToPlot = drawResult([mu_save{3,1}(:,k); sig_save{3,1}(:,k)], 2);
+% plot(pointsToPlot(1,:),pointsToPlot(2,:),'k')
+% pointsToPlot = drawResult([mu_save{4,1}(:,k); sig_save{4,1}(:,k)], 2);
+% plot(pointsToPlot(1,:),pointsToPlot(2,:),'g')
+%         plot(z{1}(3),z{1}(4),'b*')
+% plot(z{1}(1),z{1}(2),'b*')
+% plot(z{2}(1),z{2}(2),'r*')
+% plot(z{3}(1),z{3}(2),'k*')
+% plot(z{4}(1),z{4}(2),'g*')
+% if k>1
+    plot(squeeze(x_save(1,1,:)),squeeze(x_save(1,2,:)),'-r.')
+    plot(squeeze(x_save(2,1,:)),squeeze(x_save(2,2,:)),'-k.')
+    plot(squeeze(x_save(3,1,:)),squeeze(x_save(3,2,:)),'-r.')
+    plot(squeeze(x_save(4,1,:)),squeeze(x_save(4,2,:)),'-r.')
+% end
 b_f = b;
 % if time_past<0.01
 %     figure(10)

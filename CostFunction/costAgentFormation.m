@@ -88,7 +88,7 @@ uc = 0;
 [eid,nid] = inedges(D,idx);
 rij_control = 0.0;
 q_formation = 2;
-rii_control = 0.2;
+rii_control = 0.1;
 if any(final)
     
     for j_nid = 1:length(nid)
@@ -117,7 +117,7 @@ else
         end
         uc = uc + 0.5*rij_control*(transpose(u(j,:))'*transpose(u(j,:)));
         formation_error = x_idx-x-(D.Edges.nom_formation_2(edge_row,:))';
-        sc = sc + 0.5*q_formation*(formation_error'*formation_error);
+        sc = sc + 8*0.5*q_formation*(formation_error'*formation_error);
         
         
 

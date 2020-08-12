@@ -52,14 +52,14 @@ switch show_mode
         weight_2 = 0.95;
 end
 %% tuned parameters
-mu_1 = [0, 1.0]';
-mu_2 = [-1.0, 0.0]';
-mu_3 = [1, 0.1]';
+mu_1 = [-0.0, 1.3]';
+mu_2 = [-1.0, 0.1]';
+mu_3 = [1, 0.0]';
 mu_4 = [0.0, -0.3]';
-sig_1 = diag([0.04, 0.04]);%sigma
-sig_2 = diag([0.04, 0.04]);
-sig_3 = diag([0.04, 0.04]);%sigma
-sig_4 = diag([0.04, 0.04]);
+sig_1 = diag([0.01, 0.01]);%sigma
+sig_2 = diag([0.01, 0.01]);
+sig_3 = diag([0.01, 0.01]);%sigma
+sig_4 = diag([0.01, 0.01]);
 % weight_1 = 0.9;
 % weight_2 = 0.1;
 dt = 0.05;
@@ -82,9 +82,9 @@ simulation_steps = simulation_time/mpc_update_period;
 
 
 
-sd = [2 2 3 1 1 4 3];%edges start from
-td = [1 3 4 3 2 2 2];%edges go to
-nom_formation_2=[0.5,0.5;
+sd = [2 2 3 1 4 3 3];%edges start from
+td = [1 3 4 3 2 2 1];%edges go to
+nom_formation_1=[0.5,0.5;
     -0.5,-0.5;
     -0.5,-0.5;
     -1,-1;
@@ -93,15 +93,13 @@ nom_formation_2=[0.5,0.5;
 nom_formation_2=[-1,1;
     -2,0;
     1,-1;
-    -1,-1;
-    1,-1;
+    -0.8,-1.2;
+%     1,-1;
     1,2;
-    2,0];%z formation
-q_formation=[1;1;1;1;1;1;1];
-rij_control = [0.3;0.3;0.3;0.3;0.3;0.3;0.3];%control cost of node sd in opt of td
+    2,0;1,1];%z formation
 rii_control = [0.8;0.8;0.8;0.8];
 incoming_edges = zeros(4,4);
-EdgeTable = table([sd' td'],nom_formation_2,q_formation,rij_control,'VariableNames',{'EndNodes' 'nom_formation_2' 'q_formation' 'rij_control'});
+EdgeTable = table([sd' td'],nom_formation_2,'VariableNames',{'EndNodes' 'nom_formation_2' });
 
 NodeTable = table(incoming_edges,rii_control,'VariableNames',{'incoming_edges' 'rii_control'});
 interfDiGr = digraph(EdgeTable,NodeTable);
@@ -117,13 +115,13 @@ for idx=1:4
     end
 end
 
-comm_sd = [1 1 2 3];
-comm_td = [2 3 4 4];
+comm_sd = [1 3 2 3];
+comm_td = [2 1 4 4];
 commGr = graph(comm_sd,comm_td);
 adjGr = full(adjacency(commGr));
 
 agents = cell(size(interfDiGr.Nodes,1),1);
-belief_dyns = {@(b, u)beliefDynamicsGMM(b, u,TwoDPointRobot(dt),TwoDSimpleObsModel()); 
+belief_dyns = {@(b, u)beliefDynamicsSimpleAgent(b, u,TwoDPointRobot(dt),TwoDSimpleObsModel()); 
     @(b, u)beliefDynamicsSimpleAgent(b, u, TwoDPointRobot(dt),TwoDSimpleObsModel()); 
     @(b, u)beliefDynamicsSimpleAgent(b, u, TwoDPointRobot(dt),TwoDSimpleObsModel()); 
     @(b, u)beliefDynamicsSimpleAgent(b, u, TwoDPointRobot(dt),TwoDSimpleObsModel())};
@@ -137,7 +135,7 @@ agents{4} = AgentArm(dt,horizonSteps,4,belief_dyns);
 u_guess=cell(size(interfDiGr.Nodes,1),size(interfDiGr.Nodes,1));
 for i=1:size(interfDiGr.Nodes,1)
     u_guess{i,1} = zeros(agents{1}.total_uDim,horizonSteps-1);
-%     u_guess{i,1}(1,:) = 1.0;
+    u_guess{i,1}(1,:) = -0.15;
     u_guess{i,2} = zeros(agents{2}.total_uDim,horizonSteps-1);
     u_guess{i,2}(1,:) = 1.0;
     u_guess{i,3} = zeros(agents{3}.total_uDim,horizonSteps-1);
@@ -265,7 +263,7 @@ for i_sim = 1:simulation_steps
                 end
                 for i = 1:size(interfDiGr.Nodes,1)
                     for j = 1:size(interfDiGr.Nodes,1)
-                        u{i,j} = u{i,j} + 0.3*d_u_est{i,j};
+                        u{i,j} = u{i,j} + 0.4*d_u_est{i,j};
                     end
                 end
             end
@@ -302,16 +300,22 @@ for i_sim = 1:simulation_steps
         if finished{1} && finished{2} && finished{3} && finished{4} 
             break;
         end
+        for i = 1:size(interfDiGr.Nodes,1)
+            % iLQG iteration finished, take the policy to execute
+            agents{i}.updatePolicy(b(i,:),u(i,:),L_opt{i});
+            % guess value only used for the first iteration of each MPC iteration
+        end% guess value only used for the first iteration of each MPC iteration
+        time_past = (i_sim-1) * mpc_update_period;
+        [~, ~, ~] = animateHeteroMultiagent(interfDiGr,agents, b0, x_true,update_steps,time_past, show_mode);
+
     end% end of iLQG iterations
+
 
     for i = 1:size(interfDiGr.Nodes,1)
         % iLQG iteration finished, take the policy to execute
-        agents{i}.updatePolicy(b(i,:),u(i,:),L_opt{i});
         u_guess(i,:) = u(i,:);
         % guess value only used for the first iteration of each MPC iteration
-    end% guess value only used for the first iteration of each MPC iteration
-
-
+    end
 
 %     assignin('base', 'om', om)
 %     assignin('base', 'lims', Op.lims)

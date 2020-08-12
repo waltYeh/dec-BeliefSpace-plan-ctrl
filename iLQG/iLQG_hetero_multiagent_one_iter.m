@@ -190,9 +190,7 @@ if backPassDone
     if Op.parallel  % parallel line-search
         %only u is different for case of consensus and direct exchange
         [xnew,unew,costnew] = forward_pass(D,idx,x0 ,u, L, x, l, Ku, Op.Alpha, DYNCST,u_lims,Op.diffFn);
-        if iter ==3
-            a=1;
-        end
+
         if iter>1
             figure(4+50)
             subplot(2,2,idx)
@@ -235,7 +233,7 @@ if backPassDone
             end
         else
             w=11;
-            fwdPassDone = 1;
+            fwdPassDone = 0;
             costnew     = costnew(:,:,:,w);
             for i=1:size(D.Nodes,1)
                 xnew{i}        = xnew{i}(:,:,w);
@@ -279,7 +277,7 @@ if fwdPassDone
 %         Op.plotFn(x);
 
     % terminate ?
-    if dcost < Op.tolFun && dcost>-Op.tolFun
+    if dcost < Op.tolFun && dcost>0
         if verbosity > 0
             fprintf('\nSUCCESS: cost change < tolFun\n');
         end
@@ -291,9 +289,12 @@ else % no cost improvement
     
     derivatives_cell =  { fx,fu,fxx,fxu,fuu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj};
     % increase lambda
-    dlambda  = max(dlambda * Op.lambdaFactor, Op.lambdaFactor);
-    lambda   = max(lambda * dlambda, Op.lambdaMin);
-
+%     dlambda  = max(dlambda * Op.lambdaFactor, Op.lambdaFactor);
+%     lambda   = max(lambda * dlambda, Op.lambdaMin);
+%     u              = unew;
+%     x              = xnew;
+%     cost           = costnew;
+    flgChange      = 1;
     % print status
     if verbosity > 1
         fprintf('%-12d%-12d%-12s%-12.3g%-12.3g%-12.3g%-12.1f\n', ...

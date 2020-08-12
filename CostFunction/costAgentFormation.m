@@ -1,4 +1,4 @@
-function c = costAgentFormation(D, idx, b, u, horizon, stDim)
+function c = costAgentFormation(D, idx, b, u, horizon, stDim, stateValidityChecker)
 % one step cost, not the whole cost horizon
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Compute cost for vector of states according to cost model given in Section 6 
@@ -17,9 +17,9 @@ function c = costAgentFormation(D, idx, b, u, horizon, stDim)
 
 c = zeros(1,size(b,3));
 % if size(b,3)>1  
-% % size is n_b * 1 * ((n_b+n_u+1)horizon) for deri before backward path
-% % size of u is n_u * 1 * ((n_b+n_u+1)horizon) with NaN at the end of
-% % horizons
+% % % size is n_b * 1 * ((n_b+n_u+1)horizon) for deri before backward path
+% % % size of u is n_u * 1 * ((n_b+n_u+1)horizon) with NaN at the end of
+% % % horizons
 %     keyboard
 % end
 % size is n_agent * n_b for forward path
@@ -34,7 +34,7 @@ for j=1:size(b,3)
 %     end
 %     b_this_for_paral{idx} = b{idx}(:,j);
 %     u_this_for_paral{idx} = u{idx}(:,j);
-    c(j) =  evaluateCost(D, idx, squeeze(b(:,:,j)),squeeze(u(:,:,j)), stDim, horizon);
+    c(j) =  evaluateCost(D, idx, squeeze(b(:,:,j)),squeeze(u(:,:,j)), stDim, horizon, stateValidityChecker);
 %     else
 %         c(i) =  evaluateCost(b(:,i),u(:,i), goal, stDim, L, stateValidityChecker, varargin{1});
 %     end
@@ -42,7 +42,7 @@ end
 
 end
 
-function cost = evaluateCost(D, idx, b, u, stDim, L)
+function cost = evaluateCost(D, idx, b, u, stDim, L, stateValidityChecker)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Compute cost for a states according to cost model given in Section 6 
 % of Van Den Berg et al. IJRR 2012
@@ -87,7 +87,7 @@ ic = 0;
 uc = 0;
 [eid,nid] = inedges(D,idx);
 rij_control = 0.0;
-q_formation = 1;
+q_formation = 2;
 rii_control = 0.2;
 if any(final)
     
@@ -118,6 +118,15 @@ else
         uc = uc + 0.5*rij_control*(transpose(u(j,:))'*transpose(u(j,:)));
         formation_error = x_idx-x-(D.Edges.nom_formation_2(edge_row,:))';
         sc = sc + 0.5*q_formation*(formation_error'*formation_error);
+        
+        
+
+        %sigmaToCollide(b,stDim,stateValidityChecker);
+        
+    end
+    nSigma = sigmaToCollide_multiagent_D(D,idx,b,2,stateValidityChecker);
+    for j=incoming_nbrs_idces
+        cc = cc-log(chi2cdf(nSigma(j)^2, stDim));
     end
     uc = uc + 0.5*rii_control*(transpose(u(idx,:))'*transpose(u(idx,:)));
 end

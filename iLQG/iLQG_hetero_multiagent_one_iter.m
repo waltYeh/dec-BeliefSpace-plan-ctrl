@@ -193,17 +193,19 @@ if backPassDone
         if iter ==3
             a=1;
         end
-        figure(4+50)
-        subplot(2,2,idx)
-        horizonSteps = size(x{idx},2);
-        plot(1:horizonSteps,squeeze(costnew(:,:,:,1)),'.')
-        hold on
-        plot(1:horizonSteps,squeeze(costnew(:,:,:,4)))
-        plot(1:horizonSteps,squeeze(costnew(:,:,:,8)))
+        if iter>1
+            figure(4+50)
+            subplot(2,2,idx)
+            horizonSteps = size(x{idx},2);
+            plot(1:horizonSteps,squeeze(costnew(:,:,:,1)),'-')
+            hold on
+    %         plot(1:horizonSteps,squeeze(costnew(:,:,:,4)))
+    %         plot(1:horizonSteps,squeeze(costnew(:,:,:,8)))
 
-        % plot(1:horizonSteps-1,squeeze(l(2,:)),'r')
-        % hold on
-        title(strcat('cost of agent ',num2str(idx)))
+            % plot(1:horizonSteps-1,squeeze(l(2,:)),'r')
+            % hold on
+            title(strcat('cost of agent ',num2str(idx)))
+        end
 % figure(2+100)
 % subplot(2,2,idx)
 % plot(1:horizonSteps-1,squeeze(L(1,1,:)),'b.')

@@ -7,9 +7,9 @@ function J = multiAgentFiniteDifference(fun, D,idx,x, h)
 %   x: point at which to diff
 %   h: step-size
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% if nargin < 4
+if nargin < 5
     h = 2^-17;
-% end
+end
 
 [n_agent, n_bu, K]  = size(x);%4,8,41
 
@@ -29,12 +29,17 @@ for j=[idx,incoming_nbrs_idces]
     %the fun has concatenated x/b and u as input, next x/b as output, so we know
     %dim of x/b is clear
     Y       = fun(X);
+    %1x(41*9)
     %numel: num of elements
     m       = numel(Y)/(K*(n_bu+1));
     Y       = reshape(Y, m, K, n_bu+1);%1x41x9
     J_j       = pp(Y(:,:,2:end), -Y(:,:,1)) / h;
     %this means (Y(x+h)-Y(x))/h
     J_j       = permute(J_j, [1 3 2]);%1x8x41
-    J(j,:,:) = J_j;
+    if size(J_j,1)>1
+        J(j,:,:)=J(j,:,:)+J_j(j,:,:);
+    else
+        J(j,:,:) = J_j;
+    end
 end
 end

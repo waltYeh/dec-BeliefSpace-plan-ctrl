@@ -36,7 +36,7 @@ classdef AgentArm < AgentBase
         lambda; 
         dlambda;
         flgChange;
-        P_feedback = 1.0;
+        P_feedback = 0.2;
     end
     
     methods 
@@ -47,7 +47,8 @@ classdef AgentArm < AgentBase
             obj.dt = dt_input; % delta_t for time discretization
             obj.motionModel = TwoDPointRobot(dt_input); % motion model
             obj.obsModel = TwoDSimpleObsModel(); % observation model
-            obj.dyn_cst  = @(D,idx,b,u,i) beliefDynCost_crane(D,idx,b,u,horizonSteps,false,obj.motionModel,obj.obsModel, belief_dyns);
+            svc = @(xi,ri, xj, rj)isStateValid_multiagent(xi,ri, xj, rj);
+            obj.dyn_cst  = @(D,idx,b,u,i) beliefDynCost_crane(D,idx,b,u,horizonSteps,false,obj.motionModel,obj.obsModel, belief_dyns, svc);
             obj.lambda = []; 
             obj.dlambda = [];
             obj.flgChange = [];

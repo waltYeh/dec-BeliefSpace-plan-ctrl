@@ -40,7 +40,7 @@ incoming_nbrs_idces = predecessors(D,idx)';
             dj = sqrt(lambda_j);
             % number of standard deviations at which robot collides
             % at s = 0, f goes to infinite so not good -> better to use small value of 0.01
-            for s = 0.01:0.2:2.21
+            for s = 0.01:0.2:4.21
 
                 % inflate robot radius 
                 ri = ri_orig + s*di;

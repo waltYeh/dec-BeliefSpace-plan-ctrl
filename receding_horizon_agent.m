@@ -63,9 +63,9 @@ sig_4 = diag([0.01, 0.01]);
 % weight_1 = 0.9;
 % weight_2 = 0.1;
 dt = 0.05;
-horizon = 2.0;
-mpc_update_period = 2;
-simulation_time = 2;
+horizon = 1.0;
+mpc_update_period = 1;
+simulation_time = 1;
 
 %% 
 
@@ -189,7 +189,7 @@ for i_sim = 1:simulation_steps
     for i = 1:size(interfDiGr.Nodes,1)
         finished{i}= false;
     end
-    for iter = 1:20
+    for iter = 1:15
         if iter == 1
             for i = 1:size(interfDiGr.Nodes,1)
                 u{i} = [];

@@ -6,7 +6,7 @@ function [x, u, L, Vx, Vxx, cost,  ...
 defaults = {'lims',           [],...            control limits
             'parallel',       true,...          use parallel line-search?
             'Alpha',          10.^linspace(0,-3,11),... backtracking coefficients
-            'tolFun',         1e-1,...          reduction exit criterion
+            'tolFun',         5e-1,...          reduction exit criterion
             'tolGrad',        1e-4,...          gradient exit criterion
             'maxIter',        50,...           maximum iterations            
             'lambda',         1,...             initial value for lambda
@@ -289,14 +289,14 @@ else % no cost improvement
     
     derivatives_cell =  { fx,fu,fxx,fxu,fuu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj};
     % increase lambda
-    dlambda  = max(dlambda * Op.lambdaFactor, Op.lambdaFactor);
-    lambda   = max(lambda * dlambda, Op.lambdaMin);
+%     dlambda  = max(dlambda * Op.lambdaFactor, Op.lambdaFactor);
+%     lambda   = max(lambda * dlambda, Op.lambdaMin);
 %     dlambda   = min(dlambda / Op.lambdaFactor, 1/Op.lambdaFactor);
 %     lambda    = lambda * dlambda * (lambda > Op.lambdaMin);
     u              = unew;
     x              = xnew;
-%     cost           = costnew;
-    flgChange      = 0;
+    cost           = costnew;
+    flgChange      = 1;
     % print status
     if verbosity > 1
         fprintf('%-12d%-12d%-12s%-12.3g%-12.3g%-12.3g%-12.1f\n', ...

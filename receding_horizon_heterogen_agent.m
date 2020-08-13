@@ -55,8 +55,8 @@ end
 mu_a1 = [8.5, 0.0, 5.0, 0.0]';
 mu_a2 = [3, 0.5, 5.0, 0.0]';
 mu_b = [8.5, 0.0]';
-mu_c = [5, 3]';
-mu_d = [0.0, 0.0]';
+mu_c = [6.5, 1]';
+mu_d = [5.0, 0.5]';
 sig_a1 = diag([0.01, 0.01, 0.1, 0.1]);%sigma
 sig_a2 = diag([0.01, 0.01, 0.1, 0.1]);
 sig_b = diag([0.01, 0.01]);%sigma
@@ -66,9 +66,9 @@ sig_d = diag([0.5, 0.5]);
 % weight_1 = 0.9;
 % weight_2 = 0.1;
 dt = 0.05;
-horizon = 3.0;
-mpc_update_period = 3;
-simulation_time = 3;
+horizon = 1.5;
+mpc_update_period = 1.5;
+simulation_time = 1.5;
 
 %% 
 
@@ -85,8 +85,8 @@ simulation_steps = simulation_time/mpc_update_period;
 
 
 
-sd = [2  3 1 1];%edges start from
-td = [1  4 3 2];%edges go to
+sd = [2  3 1 1 1];%edges start from
+td = [1  4 3 2 4];%edges go to
 nom_formation_2=[0.0,0.0;
     %-0.5,-0.5;
     -0.5,-0.5;
@@ -95,13 +95,13 @@ nom_formation_2=[0.0,0.0;
 nom_formation_2=[-0,0;
     %-2,0;
     1,-1;
-    -1,-1;
-    0,-0];%z formation
-q_formation=[1;1;1;1];
-rij_control = [0.3;0.3;0.3;0.3];%control cost of node sd in opt of td
+    -0.1,-0.1;
+    0,-0;
+    0.9,-1.1];%z formation
+%control cost of node sd in opt of td
 rii_control = [0.8;0.8;0.8;0.8];
 incoming_edges = zeros(4,4);
-EdgeTable = table([sd' td'],nom_formation_2,q_formation,rij_control,'VariableNames',{'EndNodes' 'nom_formation_2' 'q_formation' 'rij_control'});
+EdgeTable = table([sd' td'],nom_formation_2,'VariableNames',{'EndNodes' 'nom_formation_2'});
 
 NodeTable = table(incoming_edges,rii_control,'VariableNames',{'incoming_edges' 'rii_control'});
 interfDiGr = digraph(EdgeTable,NodeTable);
@@ -325,7 +325,7 @@ for i_sim = 1:simulation_steps
     for i = 1:size(interfDiGr.Nodes,1)
         agents{i}.ctrl_ptr = 1;
     end
-    [~, b0_next, x_true_next] = animateHeteroMultiagent(interfDiGr,agents, b0, x_true,update_steps,time_past, show_mode);
+    [~, b0_next, x_true_next] = animateHeteroMultiagentIntention(interfDiGr,agents, b0, x_true,update_steps,time_past, show_mode);
 %     b0{1}(1:2) = x_true_final(1:2);
     b0 = b0_next;
     x_true = x_true_next;

@@ -117,7 +117,7 @@ else
         end
         uc = uc + 0.5*rij_control*(transpose(u(j,:))'*transpose(u(j,:)));
         formation_error = x_idx-x-(D.Edges.nom_formation_2(edge_row,:))';
-        sc = sc + 8*0.5*q_formation*(formation_error'*formation_error);
+        sc = sc + 0.1*q_formation*(formation_error'*formation_error);
         
         
 

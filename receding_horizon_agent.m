@@ -82,8 +82,8 @@ simulation_steps = simulation_time/mpc_update_period;
 
 
 
-sd = [2 2 3 1 4 3 3];%edges start from
-td = [1 3 4 3 2 2 1];%edges go to
+sd = [2 2 3 1];%edges start from
+td = [1 3 4 3];%edges go to
 nom_formation_1=[0.5,0.5;
     -0.5,-0.5;
     -0.5,-0.5;
@@ -93,10 +93,8 @@ nom_formation_1=[0.5,0.5;
 nom_formation_2=[-1,1;
     -2,0;
     1,-1;
-    -0.8,-1.2;
-%     1,-1;
-    1,2;
-    2,0;1,1];%z formation
+    -1,-1;
+];%z formation
 rii_control = [0.8;0.8;0.8;0.8];
 incoming_edges = zeros(4,4);
 EdgeTable = table([sd' td'],nom_formation_2,'VariableNames',{'EndNodes' 'nom_formation_2' });

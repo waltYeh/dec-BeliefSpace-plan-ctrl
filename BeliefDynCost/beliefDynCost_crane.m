@@ -137,7 +137,7 @@ else
         %affecting single computation
         bj=squeeze(b{j});
         uj = squeeze(u{j});
-        if size(bj,1)>6
+        if size(bj,1)>6% for position of the plattform
             for k=1:horizonSteps
                 [x, P, w] = b2xPw(bj(:,k), 4, 2);
                 avr_x = w(1)*x{1}(3:4,:)+w(2)*x{2}(3:4,:);
@@ -169,21 +169,21 @@ else
 % input dim 4*8*41
         J       = multiAgentFiniteDifference(xu_cost,D,idx, squeeze(cat(2,b_formation(:,:,:), u_formation(:,:,:))));
         
-        xu_sigma =  @(b_f) sigmaToCollide_multiagent_D(D,idx,b_f(:,:,:),motionModel.stDim,collisionChecker);
-        
-        
-        dsigma_db  = squeeze(multiAgentFiniteDifference(xu_sigma,D,idx, b_formation,1e-1)); % need to have a large step size to see derivative in collision
-        % J has the size 4x8x61, dsigma_db 4x6x61 -> 4x8x61
-        dsigma_db = cat(2,dsigma_db,zeros(size(D.Nodes,1),motionModel.ctDim,size(dsigma_db,3))); % jacobian w.r.t u is zero for collision
-        nSigma = sigmaToCollide_multiagent_D(D,idx,b_formation, motionModel.stDim, collisionChecker);
-%         bb =1;
-        for j = [idx,incoming_nbrs_idces]
-            for k = 1:size(dsigma_db,3)  %horizon             
-                J(j,:,k) = J(j,:,k) + ((-1/2)/(exp(nSigma(j,k)/2)-1)) * dsigma_db(j,:,k);
-                
-            end
-%             bb=bb+1;
-        end
+%         xu_sigma =  @(b_f) sigmaToCollide_multiagent_D(D,idx,b_f(:,:,:),motionModel.stDim,collisionChecker);
+%         
+%         
+%         dsigma_db  = squeeze(multiAgentFiniteDifference(xu_sigma,D,idx, b_formation,1e-1)); % need to have a large step size to see derivative in collision
+%         % J has the size 4x8x61, dsigma_db 4x6x61 -> 4x8x61
+%         dsigma_db = cat(2,dsigma_db,zeros(size(D.Nodes,1),motionModel.ctDim,size(dsigma_db,3))); % jacobian w.r.t u is zero for collision
+%         nSigma = sigmaToCollide_multiagent_D(D,idx,b_formation, motionModel.stDim, collisionChecker);
+% %         bb =1;
+%         for j = [idx,incoming_nbrs_idces]
+%             for k = 1:size(dsigma_db,3)  %horizon             
+%                 J(j,:,k) = J(j,:,k) + ((-1/2)/(exp(nSigma(j,k)/2)-1)) * dsigma_db(j,:,k);
+%                 
+%             end
+% %             bb=bb+1;
+%         end
         
         c_bi      = squeeze(J(idx,ib,:));% 1x6x41
         c_ui      = squeeze(J(idx,iu_begin:end,:));%1x2x41
@@ -219,12 +219,12 @@ else
 %     cbu{idx}     = JJ{idx}(ib,iu_begin:end,:);
 %     cuu{idx}     = JJ{idx}(iu_begin:end,iu_begin:end,:); 
     % construct Hessian adding collision cost
-    for j = [idx,incoming_nbrs_idces]
-        for k = 1:size(dsigma_db,3)
-            jjt = dsigma_db(j,:,k)*dsigma_db(j,:,k)';        
-            JJ(j,:,:,k) = JJ(j,:,:,k) + ((1/4)*exp(nSigma(j,k)/2)/(exp(nSigma(j,k)/2)-1)^2) * 0.5*(jjt+jjt');
-        end
-    end 
+%     for j = [idx,incoming_nbrs_idces]
+%         for k = 1:size(dsigma_db,3)
+%             jjt = dsigma_db(j,:,k)*dsigma_db(j,:,k)';        
+%             JJ(j,:,:,k) = JJ(j,:,:,k) + ((1/4)*exp(nSigma(j,k)/2)/(exp(nSigma(j,k)/2)-1)^2) * 0.5*(jjt+jjt');
+%         end
+%     end 
     
     c_bi_bi = squeeze(JJ(idx,ib,ib,:));% the more edges coming into i, the higher
     % usually eye or 2*eye

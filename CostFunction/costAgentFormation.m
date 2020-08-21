@@ -124,10 +124,10 @@ else
         %sigmaToCollide(b,stDim,stateValidityChecker);
         
     end
-    nSigma = sigmaToCollide_multiagent_D(D,idx,b,2,stateValidityChecker);
-    for j=incoming_nbrs_idces
-        cc = cc-log(chi2cdf(nSigma(j)^2, stDim));
-    end
+%     nSigma = sigmaToCollide_multiagent_D(D,idx,b,2,stateValidityChecker);
+%     for j=incoming_nbrs_idces
+%         cc = cc-log(chi2cdf(nSigma(j)^2, stDim));
+%     end
     uc = uc + 0.5*rii_control*(transpose(u(idx,:))'*transpose(u(idx,:)));
 end
 

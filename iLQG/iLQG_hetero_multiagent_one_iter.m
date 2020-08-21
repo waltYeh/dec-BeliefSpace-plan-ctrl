@@ -6,7 +6,7 @@ function [x, u, L, Vx, Vxx, cost,  ...
 defaults = {'lims',           [],...            control limits
             'parallel',       true,...          use parallel line-search?
             'Alpha',          10.^linspace(0,-3,11),... backtracking coefficients
-            'tolFun',         5e-1,...          reduction exit criterion
+            'tolFun',         1e-1,...          reduction exit criterion
             'tolGrad',        1e-4,...          gradient exit criterion
             'maxIter',        50,...           maximum iterations            
             'lambda',         1,...             initial value for lambda
@@ -277,7 +277,7 @@ if fwdPassDone
 %         Op.plotFn(x);
 
     % terminate ?
-    if dcost < Op.tolFun && dcost>0
+    if dcost < Op.tolFun && dcost>0 && iter > 5
         if verbosity > 0
             fprintf('\nSUCCESS: cost change < tolFun\n');
         end

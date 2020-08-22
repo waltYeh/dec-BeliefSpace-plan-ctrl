@@ -97,14 +97,19 @@ end
 if flgChange
     t_diff = tic;
     enlonged_u = u;
+    enlonged_uC_lambda = uC_lambda;
     for i=1:size(D.Nodes,1)
         ctrl_dim = size(u{i},1);
         enlonged_u{i}=cat(2,u{i},nan(ctrl_dim,1));
+        enlonged_uC_lambda{i}=cat(2,uC_lambda{i},nan(ctrl_dim,1));
     end
     % only considers agent idx itself fx: 6x6x41, fu 6x2x41, c_bi 6x41, cui
     % 2x41, ... 6x6x41, 6x2x41, 2x2x41, c_ui_uj 4x2x2x41
     [~,~,fx,fu,fxx,fxu,fuu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj] ...
         = DYNCST(D,idx,x, enlonged_u, 1:N+1);
+    [c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj] ...
+        = derive_cost_admm(D,idx,x,enlonged_u,c_bi,c_ui,...
+        c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,rho, enlonged_uC_lambda);
 %     trace(iter).time_derivs = toc(t_diff);
     flgChange   = 0;
 else
@@ -487,7 +492,20 @@ cnew = permute(cnew, [1 2 4 3 ]);
 
 % put the time dimension in the columns
 
+function [c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj] ...
+        = derive_cost_admm(D,idx,x,u,c_bi,c_ui,...
+        c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,rho, uC_lambda)
+horizon = size(c_bi,2);
+belief_dim = size(c_bi,1);
+ctrl_dim = size(c_ui,1);
+for k=1:horizon
+%     c_bi(:,k) = c_bi(:,k) + rho(1) * (x{idx}(:,k) - );
+    c_ui(:,k) = c_ui(:,k) + rho(2) * (u{idx}(:,k) - uC_lambda{idx}(:,k));
+    c_ui_ui(:,:,k) = c_ui_ui(:,:,k) + rho(2) * eye(ctrl_dim);
+end
 
+        
+        
 
 
 

@@ -63,9 +63,9 @@ sig_4 = diag([0.01, 0.01]);
 % weight_1 = 0.9;
 % weight_2 = 0.1;
 dt = 0.05;
-horizon = 1.0;
-mpc_update_period = 1;
-simulation_time = 1;
+horizon = 2.0;
+mpc_update_period = 2;
+simulation_time = 2;
 
 %% 
 
@@ -210,11 +210,12 @@ for i_sim = 1:simulation_steps
                 for j=1:size(interfDiGr.Nodes,1)
                     uC_lambda{j} = uC{j}-u_lambda{i,j};
                 end
+                %% 
                 [bi,ui,cost{i},L_opt{i},~,~, finished{i}] ...
                     = agents{i}.iLQG_one_it...
                     (interfDiGr, b0(i,:), Op,  iter,u_guess(i,:),...
-                    uC_lambda,...
-                    u(i,:),b(i,:), cost{i});
+                    uC_lambda,uC,b(i,:), cost{i});
+                %% 
                 for j=1:size(interfDiGr.Nodes,1)
                     u{i,j} = ui{j};
                     b{i,j} = bi{j};
@@ -243,16 +244,14 @@ for i_sim = 1:simulation_steps
                 % as long as all agents are connected by comm graph
             end
         end
-        if 1
-            for i = 1:4
-                uC{i} = u{i,i};
-            end
-            alpha_u = 1;
-            for i = 1:4
-                for j = 1:4
-                    u_lambda{i,j} = u_lambda{i,j} + alpha_u / agents{i}.rho(2) *...
-                        (u{i,j}-uC{j});
-                end
+        for i = 1:4
+            uC{i} = u{i,i};
+        end
+        alpha_u = 1.0;
+        for i = 1:4
+            for j = 1:4
+                u_lambda{i,j} = u_lambda{i,j} + alpha_u / ...
+                    agents{i}.rho(2) * (u{i,j}-uC{j});
             end
         end
 %         if 0
@@ -302,32 +301,39 @@ for i_sim = 1:simulation_steps
 %             plot(error_policy_4_from_3(1,:))
 %             hold on
 % %             plot(error_policy_4_from_3(2,:))
-%         if 1
-%             figure(iter)
-%             for agent_i=1:4
-%                 subplot(2,2,agent_i)
-%                 for agent_j=1:4
-%                     if agent_i == agent_j
-%                         pattern = '.';
-%                     else
-%                         pattern = '-';
-%                     end
-%                     plot(1:horizonSteps-1,squeeze(u{agent_j}(agent_i,1,:)),pattern)
-%                     hold on
-%                     plot(1:horizonSteps-1,squeeze(u{agent_j}(agent_i,2,:)),pattern)
-%                     hold on
-%                 end
-%                 title(strcat('Policy of agent ',num2str(agent_i)))
-%             end
-%         end
-        if finished{1} && finished{2} && finished{3} && finished{4} 
-            break;
+        if 1
+            figure(iter)
+            for agent_i=1:4
+                subplot(2,2,agent_i)
+                for agent_j=1:4
+                    
+                    if agent_i == agent_j
+                        pattern = '.';
+                    else
+                        pattern = '-';
+                    end
+                    if agent_i ~= agent_j&&finished{agent_j}
+                        % those agents who has finished do not update their
+                        % estimation about agent i any more
+                    else
+                        plot(1:horizonSteps-1,squeeze(u{agent_j,agent_i}(1,:)),pattern)
+                        hold on
+                        plot(1:horizonSteps-1,squeeze(u{agent_j,agent_i}(2,:)),pattern)
+                        hold on
+                    end
+                end
+                title(strcat('Policy of agent ',num2str(agent_i)))
+            end
         end
+        
         for i = 1:size(interfDiGr.Nodes,1)
             % iLQG iteration finished, take the policy to execute
             agents{i}.updatePolicy(b(i,:),u(i,:),L_opt{i});
             % guess value only used for the first iteration of each MPC iteration
         end% guess value only used for the first iteration of each MPC iteration
+        if finished{1} && finished{2} && finished{3} && finished{4} 
+            break;
+        end
         time_past = (i_sim-1) * mpc_update_period;
         draw_ball=false;
         [~, ~, ~] = animateHeteroMultiagent(interfDiGr,agents, b0, x_true,update_steps,time_past, show_mode,draw_ball);

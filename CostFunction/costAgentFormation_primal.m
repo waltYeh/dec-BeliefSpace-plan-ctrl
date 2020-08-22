@@ -119,8 +119,8 @@ else
             P(:,d) = b(j,d*stDim+1:(d+1)*stDim, 1);
         end
         uc = uc + 0.5*rij_control*(transpose(u(j,:))'*transpose(u(j,:)));
-        formation_error = x_idx-x-(D.Edges.nom_formation_2(edge_row,:))';
-        sc = sc + 0.1*q_formation*(formation_error'*formation_error);
+%         formation_error = x_idx-x-(D.Edges.nom_formation_2(edge_row,:))';
+%         sc = sc + 0.1*q_formation*(formation_error'*formation_error);
         uc = uc + rho(2)/2*norm(u(j,:)-uC_lambda(j,:))^2;
         
 

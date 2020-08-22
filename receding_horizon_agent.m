@@ -142,7 +142,7 @@ for i=1:size(interfDiGr.Nodes,1)
     u_guess{i,1} = zeros(agents{1}.total_uDim,horizonSteps-1);
     u_guess{i,1}(1,:) = -0.15;
     u_guess{i,2} = zeros(agents{2}.total_uDim,horizonSteps-1);
-    u_guess{i,2}(1,:) = 1.0;
+    u_guess{i,2}(1,:) = 0.1;
     u_guess{i,3} = zeros(agents{3}.total_uDim,horizonSteps-1);
     u_guess{i,3}(1,:) = -1.0;
     u_guess{i,4} = zeros(agents{4}.total_uDim,horizonSteps-1);
@@ -316,10 +316,14 @@ for i_sim = 1:simulation_steps
                         % those agents who has finished do not update their
                         % estimation about agent i any more
                     else
-                        plot(1:horizonSteps-1,squeeze(u{agent_j,agent_i}(1,:)),pattern)
-                        hold on
-                        plot(1:horizonSteps-1,squeeze(u{agent_j,agent_i}(2,:)),pattern)
-                        hold on
+                        try
+                            plot(1:horizonSteps-1,squeeze(u{agent_j,agent_i}(1,:)),pattern)
+                            hold on
+                            plot(1:horizonSteps-1,squeeze(u{agent_j,agent_i}(2,:)),pattern)
+                            hold on
+                        catch ME
+                            keyboard
+                        end
                     end
                 end
                 title(strcat('Policy of agent ',num2str(agent_i)))

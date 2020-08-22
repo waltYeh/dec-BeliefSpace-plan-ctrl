@@ -95,7 +95,6 @@ end
   
 %====== STEP 1: differentiate dynamics and cost along new trajectory
 if flgChange
-    t_diff = tic;
     enlonged_u = u;
     enlonged_uC_lambda = uC_lambda;
     for i=1:size(D.Nodes,1)
@@ -146,8 +145,6 @@ end
 %====== STEP 2: backward pass, compute optimal control law and cost-to-go
 backPassDone   = 0;
 while ~backPassDone
-
-    t_back   = tic;
     [diverge, Vx, Vxx, l, L, dV, Ku] = back_pass(D,idx,c_bi,c_ui,c_bi_bi,...
         c_bi_ui,c_ui_ui,c_ui_uj,fx,fu,fxx,fxu,fuu,lambda,Op.regType,u_lims,u);
     % l is the feedforward term (42), 
@@ -202,7 +199,6 @@ end
 % [~,~,cost]  = forward_pass(D,idx,x0,u,[],[],[],[],1,DYNCST,u_lims,[]);
 fwdPassDone  = 0;
 if backPassDone
-    t_fwd = tic;
     if Op.parallel  % parallel line-search
         %only u is different for case of consensus and direct exchange
         [xnew,unew,costnew] = forward_pass(D,idx,x0 ,u, L, x, l, Ku,...
@@ -248,9 +244,9 @@ if backPassDone
                 xnew{i}        = xnew{i}(:,:,w);
                 unew{i}        = unew{i}(:,:,w);
             end
-        else
+        else%still move a tiny step to avoid stucking in local places
             w=11;
-            fwdPassDone = 0;
+%             fwdPassDone = 0;
             costnew     = costnew(:,:,:,w);
             for i=1:size(D.Nodes,1)
                 xnew{i}        = xnew{i}(:,:,w);
@@ -268,7 +264,7 @@ end
 
 % print headings
 if verbosity > 1
-    fprintf('%-12s','idx','iteration','cost','reduction','alpha','expected','gradient','log10(lambda)')
+    fprintf('%-12s','idx','iteration','cost','reduction','alpha','expected','gradient','lambda');
     fprintf('\n');
 end
 
@@ -277,8 +273,8 @@ if fwdPassDone
 
     % print status
     if verbosity > 1
-        fprintf('%-12d%-12d%-12.6g%-12.2f%-12.3f%-12d%-12.3g%-12.3g%-12.1f\n', ...
-           idx, iter, sum(cost(:)), dcost,alpha,expected, g_norm, log10(lambda));
+        fprintf('%-12d%-12d%-12.3g%-12.3g%-12.3g%-12d%-12.3g%-12.3g%-12.3g\n', ...
+           idx, iter, sum(cost(:)), dcost,alpha,expected, g_norm, lambda);
     end
     % maybe step 13 in Algorithm
     % decrease lambda
@@ -306,18 +302,18 @@ else % no cost improvement
     
     derivatives_cell =  { fx,fu,fxx,fxu,fuu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj};
     % increase lambda
-%     dlambda  = max(dlambda * Op.lambdaFactor, Op.lambdaFactor);
-%     lambda   = max(lambda * dlambda, Op.lambdaMin);
+    dlambda  = max(dlambda * Op.lambdaFactor, Op.lambdaFactor);
+    lambda   = max(lambda * dlambda, Op.lambdaMin);
 %     dlambda   = min(dlambda / Op.lambdaFactor, 1/Op.lambdaFactor);
 %     lambda    = lambda * dlambda * (lambda > Op.lambdaMin);
     u              = unew;
     x              = xnew;
     cost           = costnew;
-    flgChange      = 1;
+    flgChange      = 1;% do the der again, because the consensus will help improve
     % print status
     if verbosity > 1
-        fprintf('%-12d%-12d%-12s%-12.3g%-12.3g%-12.3g%-12.1f\n', ...
-            idx, iter,'NO STEP', dcost, expected, g_norm, log10(lambda));           
+        fprintf('%-12d%-12d%-12s%-12.3g%-12.3g%-12.3g%-12.3g%-12.3g\n', ...
+            idx, iter,'NO STEP', dcost, alpha,expected, g_norm, lambda);           
     end     
 
     % terminate ?

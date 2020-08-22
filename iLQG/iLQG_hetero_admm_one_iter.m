@@ -14,7 +14,7 @@ defaults = {'lims',           [],...            control limits
             'maxIter',        50,...           maximum iterations            
             'lambda',         1,...             initial value for lambda
             'dlambda',        1,...             initial value for dlambda
-            'rho',            [1,1],...         rho_x and rho_u
+            'rho',            [10,10],...        %too large, converge slow,  rho_x and rho_u
             'lambdaFactor',   1.4,...           lambda scaling factor
             'lambdaMax',      1e16,...          lambda maximum value
             'lambdaMin',      1e-6,...          below this value lambda = 0

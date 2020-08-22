@@ -79,7 +79,7 @@ simulation_steps = simulation_time/mpc_update_period;
 % mm = HumanMind(dt); % motion model
 
 % om = HumanReactionModel(); % observation model
-
+use_admm = true;
 
 
 sd = [2 2 3 1];%edges start from
@@ -211,10 +211,17 @@ for i_sim = 1:simulation_steps
                     uC_lambda{j} = uC{j}-u_lambda{i,j};
                 end
                 %% 
-                [bi,ui,cost{i},L_opt{i},~,~, finished{i}] ...
+                if use_admm
+                    [bi,ui,cost{i},L_opt{i},~,~, finished{i}] ...
                     = agents{i}.iLQG_one_it...
                     (interfDiGr, b0(i,:), Op,  iter,u_guess(i,:),...
                     uC_lambda,uC,b(i,:), cost{i});
+                else
+                    [bi,ui,cost{i},L_opt{i},~,~, finished{i}] ...
+                        = agents{i}.iLQG_one_it...
+                        (interfDiGr, b0(i,:), Op,  iter,u_guess(i,:),...
+                        uC_lambda,u(i,:),b(i,:), cost{i});
+                end
                 %% 
                 for j=1:size(interfDiGr.Nodes,1)
                     u{i,j} = ui{j};
@@ -244,52 +251,55 @@ for i_sim = 1:simulation_steps
                 % as long as all agents are connected by comm graph
             end
         end
-        for i = 1:4
-            uC{i} = u{i,i};
-        end
-        alpha_u = 1.0;
-        for i = 1:4
-            for j = 1:4
-                u_lambda{i,j} = u_lambda{i,j} + alpha_u / ...
-                    agents{i}.rho(2) * (u{i,j}-uC{j});
+        if use_admm
+            for i = 1:4
+                uC{i} = u{i,i};
+            end
+            alpha_u = 1.0;
+            for i = 1:4
+                for j = 1:4
+                    u_lambda{i,j} = u_lambda{i,j} + alpha_u / ...
+                        agents{i}.rho(2) * (u{i,j}-uC{j});
+                end
+            end
+        else
+        if 1
+            for i = 1:4
+                for j=1:4
+                    if i==j
+%                             d_u_est{i,1}(j,:,:) = zeros(1,2,horizonSteps-1);
+                    else
+                        u{i,j}(:,:) = u{j,j}(:,:);
+%                              u{i}(j,:,:) = 0.3*u{j}(j,:,:) + 0.7*u{i}(j,:,:);
+                    end
+                end
+            end
+        else
+            for ii =1:1
+                d_u_est = u;%only to make the size the same, values will not be used
+                for i = 1:size(interfDiGr.Nodes,1)
+                    for j=1:size(interfDiGr.Nodes,1)
+                        if i==j
+                            d_u_est{i,j}(:,:) = zeros(size(u{i,j},1),horizonSteps-1);
+                        else
+                            sum_est = zeros(size(u{i,j},1),horizonSteps-1);
+                            for k=1:size(interfDiGr.Nodes,1)
+                                u_ij = u{i,j};
+                                u_kj = u{k,j};
+                                sum_est = sum_est+adjGr(i,k)*(u_ij-u_kj);
+                            end
+                            d_u_est{i,j}(:,:)=-(sum_est+adjGr(i,j)*(u{i,j}-u{j,j}));
+                        end
+                    end
+                end
+                for i = 1:size(interfDiGr.Nodes,1)
+                    for j = 1:size(interfDiGr.Nodes,1)
+                        u{i,j} = u{i,j} + 0.4*d_u_est{i,j};
+                    end
+                end
             end
         end
-%         if 0
-%             for i = 1:4
-%                 for j=1:4
-%                     if i==j
-% %                             d_u_est{i,1}(j,:,:) = zeros(1,2,horizonSteps-1);
-%                     else
-%                         u{i}(j,:,:) = u{j}(j,:,:);
-% %                              u{i}(j,:,:) = 0.3*u{j}(j,:,:) + 0.7*u{i}(j,:,:);
-%                     end
-%                 end
-%             end
-%         else
-%             for ii =1:1
-%                 d_u_est = u;%only to make the size the same, values will not be used
-%                 for i = 1:size(interfDiGr.Nodes,1)
-%                     for j=1:size(interfDiGr.Nodes,1)
-%                         if i==j
-%                             d_u_est{i,j}(:,:) = zeros(size(u{i,j},1),horizonSteps-1);
-%                         else
-%                             sum_est = zeros(size(u{i,j},1),horizonSteps-1);
-%                             for k=1:size(interfDiGr.Nodes,1)
-%                                 u_ij = u{i,j};
-%                                 u_kj = u{k,j};
-%                                 sum_est = sum_est+adjGr(i,k)*(u_ij-u_kj);
-%                             end
-%                             d_u_est{i,j}(:,:)=-(sum_est+adjGr(i,j)*(u{i,j}-u{j,j}));
-%                         end
-%                     end
-%                 end
-%                 for i = 1:size(interfDiGr.Nodes,1)
-%                     for j = 1:size(interfDiGr.Nodes,1)
-%                         u{i,j} = u{i,j} + 0.4*d_u_est{i,j};
-%                     end
-%                 end
-%             end
-%         end
+        end
 
 %             error_policy_3_from_1 = squeeze(u{3,1}(1,:,:)-u{1,1}(1,:,:));
 %             error_policy_4_from_3 = squeeze(u{4,1}(3,:,:)-u{3,1}(3,:,:));
@@ -316,14 +326,10 @@ for i_sim = 1:simulation_steps
                         % those agents who has finished do not update their
                         % estimation about agent i any more
                     else
-                        try
                             plot(1:horizonSteps-1,squeeze(u{agent_j,agent_i}(1,:)),pattern)
                             hold on
                             plot(1:horizonSteps-1,squeeze(u{agent_j,agent_i}(2,:)),pattern)
                             hold on
-                        catch ME
-                            keyboard
-                        end
                     end
                 end
                 title(strcat('Policy of agent ',num2str(agent_i)))

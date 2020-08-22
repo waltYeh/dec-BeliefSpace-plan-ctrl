@@ -131,7 +131,14 @@ agents{4} = AgentArm(dt,horizonSteps,4,belief_dyns);
 %% Setup start and goal/target state
 
 u_guess=cell(size(interfDiGr.Nodes,1),size(interfDiGr.Nodes,1));
+u_lambda = cell(size(interfDiGr.Nodes,1),size(interfDiGr.Nodes,1));
+uC = cell(size(interfDiGr.Nodes,1),1);
 for i=1:size(interfDiGr.Nodes,1)
+    u_lambda{i,1} = zeros(agents{1}.total_uDim,horizonSteps-1);
+    u_lambda{i,2} = zeros(agents{2}.total_uDim,horizonSteps-1);
+    u_lambda{i,3} = zeros(agents{3}.total_uDim,horizonSteps-1);
+    u_lambda{i,4} = zeros(agents{4}.total_uDim,horizonSteps-1);
+    
     u_guess{i,1} = zeros(agents{1}.total_uDim,horizonSteps-1);
     u_guess{i,1}(1,:) = -0.15;
     u_guess{i,2} = zeros(agents{2}.total_uDim,horizonSteps-1);
@@ -139,6 +146,7 @@ for i=1:size(interfDiGr.Nodes,1)
     u_guess{i,3} = zeros(agents{3}.total_uDim,horizonSteps-1);
     u_guess{i,3}(1,:) = -1.0;
     u_guess{i,4} = zeros(agents{4}.total_uDim,horizonSteps-1);
+    uC{i} = u_guess{i,i};
 end% initial guess, less iterations needed if given well
 % guess all agents for every agent, 4x4x2x40
 % u_guess(:,1,1,:)=1.0;
@@ -198,9 +206,14 @@ for i_sim = 1:simulation_steps
 
         for i = 1:size(interfDiGr.Nodes,1)
             if finished{i}~=true
+                uC_lambda = uC;
+                for j=1:size(interfDiGr.Nodes,1)
+                    uC_lambda{j} = uC{j}-u_lambda{i,j};
+                end
                 [bi,ui,cost{i},L_opt{i},~,~, finished{i}] ...
                     = agents{i}.iLQG_one_it...
                     (interfDiGr, b0(i,:), Op,  iter,u_guess(i,:),...
+                    uC_lambda,...
                     u(i,:),b(i,:), cost{i});
                 for j=1:size(interfDiGr.Nodes,1)
                     u{i,j} = ui{j};
@@ -230,42 +243,54 @@ for i_sim = 1:simulation_steps
                 % as long as all agents are connected by comm graph
             end
         end
-        if 0
+        if 1
             for i = 1:4
-                for j=1:4
-                    if i==j
-%                             d_u_est{i,1}(j,:,:) = zeros(1,2,horizonSteps-1);
-                    else
-                        u{i}(j,:,:) = u{j}(j,:,:);
-%                              u{i}(j,:,:) = 0.3*u{j}(j,:,:) + 0.7*u{i}(j,:,:);
-                    end
-                end
+                uC{i} = u{i,i};
             end
-        else
-            for ii =1:1
-                d_u_est = u;%only to make the size the same, values will not be used
-                for i = 1:size(interfDiGr.Nodes,1)
-                    for j=1:size(interfDiGr.Nodes,1)
-                        if i==j
-                            d_u_est{i,j}(:,:) = zeros(size(u{i,j},1),horizonSteps-1);
-                        else
-                            sum_est = zeros(size(u{i,j},1),horizonSteps-1);
-                            for k=1:size(interfDiGr.Nodes,1)
-                                u_ij = u{i,j};
-                                u_kj = u{k,j};
-                                sum_est = sum_est+adjGr(i,k)*(u_ij-u_kj);
-                            end
-                            d_u_est{i,j}(:,:)=-(sum_est+adjGr(i,j)*(u{i,j}-u{j,j}));
-                        end
-                    end
-                end
-                for i = 1:size(interfDiGr.Nodes,1)
-                    for j = 1:size(interfDiGr.Nodes,1)
-                        u{i,j} = u{i,j} + 0.4*d_u_est{i,j};
-                    end
+            alpha_u = 1;
+            for i = 1:4
+                for j = 1:4
+                    u_lambda{i,j} = u_lambda{i,j} + alpha_u / agents{i}.rho(2) *...
+                        (u{i,j}-uC{j});
                 end
             end
         end
+%         if 0
+%             for i = 1:4
+%                 for j=1:4
+%                     if i==j
+% %                             d_u_est{i,1}(j,:,:) = zeros(1,2,horizonSteps-1);
+%                     else
+%                         u{i}(j,:,:) = u{j}(j,:,:);
+% %                              u{i}(j,:,:) = 0.3*u{j}(j,:,:) + 0.7*u{i}(j,:,:);
+%                     end
+%                 end
+%             end
+%         else
+%             for ii =1:1
+%                 d_u_est = u;%only to make the size the same, values will not be used
+%                 for i = 1:size(interfDiGr.Nodes,1)
+%                     for j=1:size(interfDiGr.Nodes,1)
+%                         if i==j
+%                             d_u_est{i,j}(:,:) = zeros(size(u{i,j},1),horizonSteps-1);
+%                         else
+%                             sum_est = zeros(size(u{i,j},1),horizonSteps-1);
+%                             for k=1:size(interfDiGr.Nodes,1)
+%                                 u_ij = u{i,j};
+%                                 u_kj = u{k,j};
+%                                 sum_est = sum_est+adjGr(i,k)*(u_ij-u_kj);
+%                             end
+%                             d_u_est{i,j}(:,:)=-(sum_est+adjGr(i,j)*(u{i,j}-u{j,j}));
+%                         end
+%                     end
+%                 end
+%                 for i = 1:size(interfDiGr.Nodes,1)
+%                     for j = 1:size(interfDiGr.Nodes,1)
+%                         u{i,j} = u{i,j} + 0.4*d_u_est{i,j};
+%                     end
+%                 end
+%             end
+%         end
 
 %             error_policy_3_from_1 = squeeze(u{3,1}(1,:,:)-u{1,1}(1,:,:));
 %             error_policy_4_from_3 = squeeze(u{4,1}(3,:,:)-u{3,1}(3,:,:));

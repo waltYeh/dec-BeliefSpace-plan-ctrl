@@ -35,8 +35,11 @@ classdef AgentArm < AgentBase
         derivatives;
         lambda; 
         dlambda;
+        rho;
+        uC_lambda_last;
         flgChange;
         P_feedback = 0.2;
+        dyn_cst_primal;
     end
     
     methods 
@@ -48,26 +51,40 @@ classdef AgentArm < AgentBase
             obj.motionModel = TwoDPointRobot(dt_input); % motion model
             obj.obsModel = TwoDSimpleObsModel(); % observation model
             svc = @(xi,ri, xj, rj)isStateValid_multiagent(xi,ri, xj, rj);
-            obj.dyn_cst  = @(D,idx,b,u,i) beliefDynCost_crane(D,idx,b,u,horizonSteps,false,obj.motionModel,obj.obsModel, belief_dyns, svc);
+            obj.dyn_cst  = @(D,idx,b,u,i) beliefDynCost_crane(D,idx,b,u,...
+                horizonSteps,false,obj.motionModel,obj.obsModel, belief_dyns, svc);
+            obj.dyn_cst_primal = @(D,idx,b,u,rho,uC_lambda,i) beliefDynCost_crane_primal...
+                (D,idx,b,u,uC_lambda,rho,horizonSteps,false,obj.motionModel,obj.obsModel, belief_dyns, svc);
             obj.lambda = []; 
             obj.dlambda = [];
+            obj.rho = [];
+            
             obj.flgChange = [];
         end
         
         function [b_nom,u_nom,L_opt,Vx,Vxx,cost]= iLQG_agent(obj,D, b0, u_guess, Op)
-            [b_nom,u_nom,L_opt,Vx,Vxx,cost,~,~,tt, nIter]= iLQG_multiagent(D,obj.digraph_idx,obj.dyn_cst, b0, u_guess, Op);
+            [b_nom,u_nom,L_opt,Vx,Vxx,cost,~,~,tt, nIter]...
+            = iLQG_multiagent(D,obj.digraph_idx,obj.dyn_cst, b0, u_guess, Op);
         end
-        function [x, u, cost, L, Vx, Vxx, finished]= ...
-                iLQG_one_it...
-                (obj,D, b0, Op, iter, u_guess, u_last,x_last, cost_last)
+        function [x, u, cost, L, Vx, Vxx, finished]...
+                =iLQG_one_it...
+                (obj,D, b0, Op, iter, u_guess,uC_lambda,...
+                u_last,x_last, cost_last)
             if iter == 1
                 obj.lambda = [];
                 obj.dlambda = [];
+                obj.rho = [];
+                
                 obj.flgChange = [];
             end
-            [x, u, L, Vx, Vxx, cost, obj.lambda, obj.dlambda, finished,obj.flgChange,derivatives_cell] = ...
-                iLQG_hetero_multiagent_one_iter(D,obj.digraph_idx,obj.dyn_cst, b0, Op, iter,...
-                u_guess,obj.lambda, obj.dlambda, u_last,x_last, cost_last,obj.flgChange,obj.derivatives, obj.u_lims);
+            [x, u, L, Vx, Vxx, cost, obj.lambda, obj.dlambda,obj.rho, finished,...
+                obj.flgChange,derivatives_cell] ...
+                = iLQG_hetero_admm_one_iter(...
+                D,obj.digraph_idx,obj.dyn_cst,...
+                obj.dyn_cst_primal, b0, Op, iter,...
+                u_guess,uC_lambda,obj.lambda, obj.dlambda,obj.rho, ...
+                u_last,x_last, cost_last,...
+                obj.flgChange,obj.derivatives, obj.u_lims);
             obj.derivatives = derivatives_cell;
         end
         function updatePolicy(obj,b_n_idx,u_n_idx,L)

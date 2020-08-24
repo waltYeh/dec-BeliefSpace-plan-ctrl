@@ -85,19 +85,14 @@ simulation_steps = simulation_time/mpc_update_period;
 
 
 
-sd = [2  3 1 1 1];%edges start from
-td = [1  4 3 2 4];%edges go to
-nom_formation_2=[0.0,0.0;
-    %-0.5,-0.5;
-    -0.5,-0.5;
-    -1,-1;
-    -0.0,-0.0;];%-- formation
-nom_formation_2=[-0,0;
+sd = [2  3 4];%edges start from
+td = [1  1 1];%edges go to
+
+nom_formation_2=[0.5,0.5;
     %-2,0;
-    1,-1;
-    -0.1,-0.1;
-    0,-0;
-    0.9,-1.1];%z formation
+    0.5,-0.5;
+    -0.5,-0.5;
+    ];%z formation
 %control cost of node sd in opt of td
 rii_control = [0.8;0.8;0.8;0.8];
 incoming_edges = zeros(4,4);
@@ -140,8 +135,8 @@ agents{4} = AgentAssistAdmm(dt,horizonSteps,4,belief_dyns);
 u_guess=cell(size(interfDiGr.Nodes,1),size(interfDiGr.Nodes,1));
 for i=1:size(interfDiGr.Nodes,1)
     u_guess{i,1} = zeros(agents{1}.total_uDim,horizonSteps-1);
-    u_guess{i,1}(1,:) = (mu_a1(1)-mu_a1(3))/horizon;
-    u_guess{i,1}(2,:) = (mu_a1(2)-mu_a1(4))/horizon;
+    u_guess{i,1}(5,:) = (mu_a1(1)-mu_a1(3))/horizon;
+    u_guess{i,1}(6,:) = (mu_a1(2)-mu_a1(4))/horizon;
     u_guess{i,2} = zeros(agents{2}.total_uDim,horizonSteps-1);
     u_guess{i,2}(1,:) = (mu_a1(1)-mu_b(1))/horizon;
     u_guess{i,2}(2,:) = (mu_a1(2)-mu_b(2))/horizon;
@@ -199,8 +194,9 @@ for i_sim = 1:simulation_steps
     for i = 1:size(interfDiGr.Nodes,1)
         finished{i}= false;
     end
-    lam_d = zeros(size(interfDiGr.Nodes,1),1);
-    lam_up=0;
+    Dim_lam_in_xy = 2;
+    lam_d = zeros(size(interfDiGr.Nodes,1)-1,Dim_lam_in_xy,horizonSteps);
+    lam_up=zeros(1,Dim_lam_in_xy,horizonSteps-1);
     for iter = 1:20
         if iter == 1
             for i = 1:size(interfDiGr.Nodes,1)

@@ -84,7 +84,6 @@ for i_comp=1:components_amount
     if any(final)
 
       sc = delta_x'*Qerr_l*delta_x;
-%         delta_x
       ic = trace(P{i_comp}*Qcov_l*P{i_comp});
 
     else

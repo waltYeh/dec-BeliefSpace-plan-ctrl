@@ -1,7 +1,7 @@
 function [x, u,L, Vx, Vxx, cost,  ...
     lambda, dlambda, rho, finished,flgChange,derivatives_cell] ...
     = iLQG_admm_one_iter(D,idx,DYNCST,DYNCST_primal,DYNCST_primal_diff, x0, Op, iter,...
-    u_guess,lam_di,lam_up,rho_d,rho_up,lambda_last, dlambda_last, ...
+    u_guess,lam_di,lam_up,lambda_last, dlambda_last, ...
     u_last, x_last, cost_last,...
     flg_last, derivatives_cell_last, u_lims)
 
@@ -62,7 +62,7 @@ if iter == 1
             alpha_u{i} = alpha*u{i};
         end
         [x,un,cost]  = forward_pass(D,idx,x0,alpha_u,[],[],[],[],1,DYNCST,...
-            DYNCST_primal,u_lims,[],rho,uC_lambda);
+            DYNCST_primal,u_lims,[],lam_di,lam_up);
         incoming_nbrs_idces = predecessors(D,idx)';
         diverges = false;
         for j = [idx,incoming_nbrs_idces]
@@ -95,19 +95,19 @@ end
 %====== STEP 1: differentiate dynamics and cost along new trajectory
 if flgChange
     enlonged_u = u;
-    enlonged_uC_lambda = uC_lambda;
+%     enlonged_uC_lambda = uC_lambda;
     for i=1:size(D.Nodes,1)
         ctrl_dim = size(u{i},1);
         enlonged_u{i}=cat(2,u{i},nan(ctrl_dim,1));
-        enlonged_uC_lambda{i}=cat(2,uC_lambda{i},nan(ctrl_dim,1));
+%         enlonged_uC_lambda{i}=cat(2,uC_lambda{i},nan(ctrl_dim,1));
     end
     % only considers agent idx itself fx: 6x6x41, fu 6x2x41, c_bi 6x41, cui
     % 2x41, ... 6x6x41, 6x2x41, 2x2x41, c_ui_uj 4x2x2x41
     [~,~,fx,fu,fxx,fxu,fuu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj] ...
         = DYNCST(D,idx,x, enlonged_u, 1:N+1);
     [c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj] ...
-        = derive_cost_admm(D,idx,x,enlonged_u,c_bi,c_ui,...
-        c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,rho, enlonged_uC_lambda);
+        = DYNCST_primal_diff(D,idx,x,enlonged_u,c_bi,c_ui,...
+        c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,lam_di,lam_up);
 
     flgChange   = 0;
 else
@@ -201,7 +201,7 @@ if backPassDone
     if Op.parallel  % parallel line-search
         %only u is different for case of consensus and direct exchange
         [xnew,unew,costnew] = forward_pass(D,idx,x0 ,u, L, x, l, Ku,...
-            Op.Alpha, DYNCST,DYNCST_primal,u_lims,Op.diffFn,rho,uC_lambda);
+            Op.Alpha, DYNCST,DYNCST_primal,u_lims,Op.diffFn,lam_di,lam_up);
 
         if iter>1
             figure(4+50)
@@ -348,7 +348,7 @@ end
 
 % [x,un,cost]  = forward_pass(x0(:,1),alpha*u,[],[],[],1,DYNCST,Op.lims,[]);
 function [xnew,unew,cnew] = forward_pass(D,idx,x0,u,L,x,l,Ku,Alpha,DYNCST,...
-    DYNCST_primal,lims,diff,rho,uC_lambda)
+    DYNCST_primal,lims,diff,lam_d,lam_up)
 % l (Schwarting j_k^i) is taken into the function as the argument du
 % parallel forward-pass (rollout)
 % internally time is on the 3rd dimension, 
@@ -360,24 +360,31 @@ n_agent = size(D.Nodes,1);
 K        = length(Alpha);
 K1       = ones(1,K); % useful for expansion
 
-N        = size(u{1},2);
+horizon        = size(u{1},2);
 xnew = cell(n_agent,1);
 unew = cell(n_agent,1);
-uC_lambda_new = cell(n_agent,1);
+% uC_lambda_new = cell(n_agent,1);
 for i=1:n_agent
     n_b = size(x0{i},1);
     m_u = size(u{i},1);
-    xnew{i} = zeros(n_b,K,N+1);
+    xnew{i} = zeros(n_b,K,horizon+1);
     xnew{i}(:,:,1) = x0{i}(:,ones(1,K));
-    unew{i} = zeros(m_u,K,N);
-    uC_lambda_new{i} = zeros(m_u,K,N);
+    unew{i} = zeros(m_u,K,horizon);
 end
-cnew        = zeros(1,1,K,N+1);% one agent, one dim c
-for k = 1:N
+Dim_lam_in_xy = 2;
+lam_d_new = zeros(n_agent-1,Dim_lam_in_xy,K,horizon+1);
+lam_up_new = zeros(1,Dim_lam_in_xy,K,horizon);
+cnew        = zeros(1,1,K,horizon+1);% one agent, one dim c
+for k = 1:horizon
     for i=1:n_agent
         unew{i}(:,:,k) = u{i}(:,k*K1);
-        uC_lambda_new{i}(:,:,k) = uC_lambda{i}(:,k*K1);
+%         uC_lambda_new{i}(:,:,k) = uC_lambda{i}(:,k*K1);
     end
+    for i=1:n_agent-1
+        lam_d_new(i,:,:,k) = lam_d(i,:,k*K1);
+%         uC_lambda_new{i}(:,:,k) = uC_lambda{i}(:,k*K1);
+    end
+    lam_up_new(1,:,:,k) = lam_up(1,:,k*K1);
     if ~isempty(l)
         % feedforward control term should not be too agressive, Alpha < 1
         unew{idx}(:,:,k) = squeeze(unew{idx}(:,:,k)) + l(:,k)*Alpha;
@@ -418,16 +425,20 @@ for k = 1:N
 % unew of other agents is updated, causing change of formation cost, which vergiftet the cost
     xnew_k = cell(n_agent,1);
     unew_k = cell(n_agent,1);
-    uC_lambda_k = cell(n_agent,1);
-
+    lam_d_k = zeros(n_agent-1,Dim_lam_in_xy,K);
+    lam_up_k = zeros(1,Dim_lam_in_xy,K);
     for i=1:n_agent
         xnew_k{i}=xnew{i}(:,:,k);
         unew_k{i}=unew{i}(:,:,k);
-        uC_lambda_k{i} = uC_lambda_new{i}(:,:,k);
+        
 %         u_lambda_k = u{i}(:,:,k);
     end
+    for i=1:n_agent-1
+        lam_d_k(i,:,:) = lam_d_new(i,:,:,k);
+    end
+    lam_up_k(1,:,:) = lam_up_new(1,:,:,k);
     [xnew_next,~]  = DYNCST(D,idx,xnew_k, unew_k, k*K1);
-    [~,cnew_k]=DYNCST_primal(D,idx,xnew_k, unew_k, rho,uC_lambda_k,k*K1);
+    [~,cnew_k]=DYNCST_primal(D,idx,xnew_k, unew_k, lam_d_k,lam_up_k ,k*K1);
     incoming_nbrs_idces = predecessors(D,idx)';
     for i=incoming_nbrs_idces
         xnew{i}(:,:,k+1) = xnew_next{i};
@@ -439,11 +450,15 @@ end
 xnew_k = cell(n_agent,1);
     unew_k = cell(n_agent,1);
     for i=1:n_agent
-        xnew_k{i}=xnew{i}(:,:,N+1);
+        xnew_k{i}=xnew{i}(:,:,horizon+1);
         unew_k{i}=nan(size(unew{i},1),K,1);
-        uC_lambda_k{i} = nan(size(unew{i},1),K,1);
+%         lam_d_k{i} = nan(size(unew{i},1),K,1);
     end
-[~, cnew(:,:,:,N+1)] = DYNCST_primal(D,idx,xnew_k,unew_k,rho,uC_lambda_k,k);
+    for i=1:n_agent-1
+        lam_d_k(i,:,:) = lam_d_new(i,:,:,horizon+1);
+    end
+    lam_up_k(1,:,:) = nan(Dim_lam_in_xy,K,1);
+[~, cnew(:,:,:,horizon+1)] = DYNCST_primal(D,idx,xnew_k,unew_k,lam_d_k,lam_up_k,k);
 for i=1:n_agent
     xnew{i} = permute(xnew{i}, [1 3 2 ]);
     unew{i} = permute(unew{i}, [1 3 2 ]);%unew of other agents never updated

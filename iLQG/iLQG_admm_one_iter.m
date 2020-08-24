@@ -1,5 +1,5 @@
 function [x, u,L, Vx, Vxx, cost,  ...
-    lambda, dlambda, rho, finished,flgChange,derivatives_cell] ...
+    lambda, dlambda, finished,flgChange,derivatives_cell] ...
     = iLQG_admm_one_iter(D,idx,DYNCST,DYNCST_primal,DYNCST_primal_diff, x0, Op, iter,...
     u_guess,lam_di,lam_up,lambda_last, dlambda_last, ...
     u_last, x_last, cost_last,...
@@ -53,7 +53,6 @@ if iter == 1
 %     end
     lambda   = Op.lambda;
     dlambda  = Op.dlambda;
-    rho  = Op.rho;
     for alpha = Op.Alpha
         % x, only nodes pointing towards me and myself is filled with
         % belief state predictions
@@ -88,7 +87,6 @@ else
 %     uC_lambda = uC_lambda_last;
     lambda = lambda_last; 
     dlambda = dlambda_last;
-    rho = rho_last;
     flgChange = flg_last;
 end
   

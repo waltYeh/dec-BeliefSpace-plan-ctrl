@@ -104,8 +104,6 @@ classdef AgentPlattformAdmm < AgentBase
             obj.ctrl_ptr = 1;
         end
         function u = getNextControl(obj, b)
-            
-                
             diff_b = b{obj.digraph_idx} - obj.b_nom{obj.digraph_idx}(:,obj.ctrl_ptr);
             u = obj.u_nom{obj.digraph_idx}(:,obj.ctrl_ptr) + obj.P_feedback*obj.L_opt(:,:,obj.ctrl_ptr)*diff_b;
             % dim is 6

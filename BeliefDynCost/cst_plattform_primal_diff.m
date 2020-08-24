@@ -26,7 +26,7 @@ for i_comp = 1:1
             j = nid(j_nid);
             edge_row = eid(j_nid);
             
-            xj = b{j}(1:stDim,1);
+            xj = b{j}(1:stDim,k);
             x_in_b = (i_comp-1)*single_comp_dim+3:(i_comp-1)*single_comp_dim+4;
             x_Plattform = b{idx}(x_in_b,k);
             formation_residue = xj-x_Plattform-(D.Edges.nom_formation_2(edge_row,:))';

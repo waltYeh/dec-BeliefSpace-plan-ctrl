@@ -1,5 +1,5 @@
 function [g,c]...
-    =beliefDynCost_crane_primal(D,idx,b,u,lam_di,lam_up,rho_d,rho_up,horizonSteps,full_DDP,...
+    =beliefDynCost_assist_primal(D,idx,b,u,lam_di,lam_up,rho_d,rho_up,horizonSteps,full_DDP,...
     motionModel,obsModel, belief_dyns, collisionChecker)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % A utility function that combines belief dynamics and cost
@@ -32,27 +32,28 @@ end
 % ctDim = motionModel.ctDim;% 4, only for one component
 % if only two outputs g and c are needed
 g = cell(size(D.Nodes,1),1);
-b_formation = zeros(size(D.Nodes,1),beliefDim,paralDim);
-u_formation = zeros(size(D.Nodes,1),ctrlDim,paralDim);
-
-for j = incoming_nbrs_idces
-    % the belief of agent idx about agent i
-    %the last ":" in the following is for the parallel computing, not
-    %affecting single computation
-    bj=squeeze(b{j});
-    uj = squeeze(u{j});
-    
-    g{j} = belief_dyns{j}(bj, uj);
-    b_formation(j,:,:) = bj;
-    u_formation(j,:,:) = uj;
-    
-end
-b_formation(idx,:,:) = b{idx};
-u_formation(idx,:,:) = u{idx};
+% b_formation = zeros(size(D.Nodes,1),beliefDim,paralDim);
+% u_formation = zeros(size(D.Nodes,1),ctrlDim,paralDim);
+% 
+% for j = incoming_nbrs_idces
+%     % the belief of agent idx about agent i
+%     %the last ":" in the following is for the parallel computing, not
+%     %affecting single computation
+%     bj=squeeze(b{j});
+%     uj = squeeze(u{j});
+%     
+%     g{j} = belief_dyns{j}(bj, uj);
+%     b_formation(j,:,:) = bj;
+%     u_formation(j,:,:) = uj;
+%     
+% end
+% b_formation(idx,:,:) = b{idx};
+% u_formation(idx,:,:) = u{idx};
 
 g{idx} = belief_dyns{idx}(b{idx}, u{idx});
 %     c = costAssistingRobot(b{idx}, u{idx}, horizonSteps, motionModel.stDim,components_amount);
 
-c = costAgentFormation_primal(D, idx,b_formation, u_formation,formation_err_residue, ...
-    horizonSteps, motionModel.stDim, collisionChecker,rho);
+c = cost_assist_primal(D, idx,b, u, ...
+    lam_di,lam_up,rho_d,rho_up,...
+    horizonSteps, collisionChecker);
 end

@@ -260,6 +260,7 @@ for i_sim = 1:simulation_steps
                 for j = 1:4
                     u_lambda{i,j} = u_lambda{i,j} + alpha_u / ...
                         agents{i}.rho(2) * (u{i,j}-uC{j});
+                    %residue is integrated
                 end
             end
         else
@@ -321,16 +322,19 @@ for i_sim = 1:simulation_steps
                         pattern = '.';
                     else
                         pattern = '-';
+                        plot(1:horizonSteps-1,squeeze(-u_lambda{agent_j,agent_i}(1,:)),'-.')
+                        plot(1:horizonSteps-1,squeeze(-u_lambda{agent_j,agent_i}(2,:)),'-.')
                     end
                     if agent_i ~= agent_j&&finished{agent_j}
                         % those agents who has finished do not update their
                         % estimation about agent i any more
                     else
-                            plot(1:horizonSteps-1,squeeze(u{agent_j,agent_i}(1,:)),pattern)
-                            hold on
-                            plot(1:horizonSteps-1,squeeze(u{agent_j,agent_i}(2,:)),pattern)
-                            hold on
+                        plot(1:horizonSteps-1,squeeze(u{agent_j,agent_i}(1,:)),pattern)
+                        hold on
+                        plot(1:horizonSteps-1,squeeze(u{agent_j,agent_i}(2,:)),pattern)
+                        hold on
                     end
+                    
                 end
                 title(strcat('Policy of agent ',num2str(agent_i)))
             end

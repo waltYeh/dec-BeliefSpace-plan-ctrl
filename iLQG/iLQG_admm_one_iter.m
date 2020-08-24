@@ -1,11 +1,10 @@
 function [x, u,L, Vx, Vxx, cost,  ...
     lambda, dlambda, rho, finished,flgChange,derivatives_cell] ...
-    = iLQG_hetero_admm_one_iter(D,idx,DYNCST,DYNCST_primal, x0, Op, iter,...
-    u_guess,uC_lambda,lambda_last, dlambda_last, rho_last,...
+    = iLQG_admm_one_iter(D,idx,DYNCST,DYNCST_primal,DYNCST_primal_diff, x0, Op, iter,...
+    u_guess,lam_di,lam_up,rho_d,rho_up,lambda_last, dlambda_last, ...
     u_last, x_last, cost_last,...
     flg_last, derivatives_cell_last, u_lims)
 
-%     trace(iter).iter = iter; 
 defaults = {'lims',           [],...            control limits
             'parallel',       true,...          use parallel line-search?
             'Alpha',          10.^linspace(0,-3,11),... backtracking coefficients
@@ -14,7 +13,7 @@ defaults = {'lims',           [],...            control limits
             'maxIter',        50,...           maximum iterations            
             'lambda',         1,...             initial value for lambda
             'dlambda',        1,...             initial value for dlambda
-            'rho',            [10,10],...        %too large, converge slow,  rho_x and rho_u
+            'rho',            [1,1],...        %too large, converge slow,  rho_x and rho_u
             'lambdaFactor',   1.4,...           lambda scaling factor
             'lambdaMax',      1e16,...          lambda maximum value
             'lambdaMin',      1e-6,...          below this value lambda = 0
@@ -109,7 +108,7 @@ if flgChange
     [c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj] ...
         = derive_cost_admm(D,idx,x,enlonged_u,c_bi,c_ui,...
         c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,rho, enlonged_uC_lambda);
-%     trace(iter).time_derivs = toc(t_diff);
+
     flgChange   = 0;
 else
 %     fx,fu,fxx,fxu,fuu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj = derivatives_cell_last{1};
@@ -494,11 +493,17 @@ function [c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj] ...
 horizon = size(c_bi,2);
 belief_dim = size(c_bi,1);
 ctrl_dim = size(c_ui,1);
+c_ui_inc = c_ui;
+c_ui_ui_inc = c_ui_ui;
 for k=1:horizon
 %     c_bi(:,k) = c_bi(:,k) + rho(1) * (x{idx}(:,k) - );
-    c_ui(:,k) = c_ui(:,k) + rho(2) * (u{idx}(:,k) - uC_lambda{idx}(:,k));
-    c_ui_ui(:,:,k) = c_ui_ui(:,:,k) + rho(2) * eye(ctrl_dim);
+    c_ui_inc(:,k) = rho(2) * (u{idx}(:,k) - uC_lambda{idx}(:,k));
+    c_ui_ui_inc(:,:,k) = rho(2) * eye(ctrl_dim);
+    
+    c_ui(:,k) = c_ui(:,k) + c_ui_inc(:,k);
+    c_ui_ui(:,:,k) = c_ui_ui(:,:,k) + c_ui_ui_inc(:,:,k);
 end
+a=1;
 
         
         

@@ -45,7 +45,7 @@ if nargout == 2
         g{j} = belief_dyns{j}(bj, uj);
     end
     g{idx} = belief_dyns{idx}(b{idx}, u{idx});
-    c = costAssistingRobot(b{idx}, u{idx}, horizonSteps, motionModel.stDim,components_amount);
+    c = cost_plattform(b{idx}, u{idx}, horizonSteps, components_amount);
 else
     % belief state and control indices
     ib = 1:beliefDim;
@@ -60,7 +60,7 @@ else
     [gbb,gbu,guu] = deal([]);
     %% cost first derivatives
     
-    xu_cost = @(xu) costAssistingRobot(xu(ib,:),xu(iu_begin:end,:),horizonSteps,motionModel.stDim, components_amount);    
+    xu_cost = @(xu) cost_plattform(xu(ib,:),xu(iu_begin:end,:),horizonSteps, components_amount);    
     J       = squeeze(finiteDifference(xu_cost, [b{idx}; u{idx}]));
     
     c_bi      = J(ib,:);
@@ -68,7 +68,7 @@ else
     
     %% cost second derivatives
     % first calculate Hessian excluding collision cost
-    xu_cost_nocc = @(xu) costAssistingRobot(xu(ib,:),xu(iu_begin:end,:),horizonSteps,motionModel.stDim, components_amount);
+    xu_cost_nocc = @(xu) cost_plattform(xu(ib,:),xu(iu_begin:end,:),horizonSteps, components_amount);
     xu_Jcst_nocc = @(xu) squeeze(finiteDifference(xu_cost_nocc, xu));    
     JJ      = finiteDifference(xu_Jcst_nocc, [b{idx}; u{idx}]);
     JJ      = 0.5*(JJ + permute(JJ,[2 1 3])); %symmetrize                      

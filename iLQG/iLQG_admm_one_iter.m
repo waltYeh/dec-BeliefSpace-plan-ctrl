@@ -94,10 +94,14 @@ end
 if flgChange
     enlonged_u = u;
 %     enlonged_uC_lambda = uC_lambda;
-    for i=1:size(D.Nodes,1)
-        ctrl_dim = size(u{i},1);
-        enlonged_u{i}=cat(2,u{i},nan(ctrl_dim,1));
-%         enlonged_uC_lambda{i}=cat(2,uC_lambda{i},nan(ctrl_dim,1));
+    if size(u{1},2)<size(x{1},2)
+        for i=1:size(D.Nodes,1)
+            ctrl_dim = size(u{i},1);
+            enlonged_u{i}=cat(2,u{i},nan(ctrl_dim,1));
+    %         enlonged_uC_lambda{i}=cat(2,uC_lambda{i},nan(ctrl_dim,1));
+        end
+    else
+        
     end
     % only considers agent idx itself fx: 6x6x41, fu 6x2x41, c_bi 6x41, cui
     % 2x41, ... 6x6x41, 6x2x41, 2x2x41, c_ui_uj 4x2x2x41

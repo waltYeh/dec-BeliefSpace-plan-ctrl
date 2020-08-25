@@ -1,5 +1,5 @@
 function [failed, b_f, x_true_final]...
-    = animateAdmm(D,agents, b0, x_true, nSteps,time_past, show_mode)
+    = animateAdmm(D,agents, b0, x_true, nSteps,time_past, show_mode,draw_cov)
 % longer, clear wish, shorter, less overshoot
 t_human_withdraw = 0.5;
 comp_sel =1;
@@ -147,17 +147,19 @@ for k = 1:nSteps-1
         plot(mu_save{2,1}(1,k),mu_save{2,1}(2,k),'ro')
         plot(mu_save{3,1}(1,k),mu_save{3,1}(2,k),'ko')
         plot(mu_save{4,1}(1,k),mu_save{4,1}(2,k),'go')
-        pointsToPlot = drawResultGMM([mu_save{1,1}(:,k); sig_save{1,1}(:,k)], 4);
-%         pointsToPlot = drawResult([mu_save{1,1}(:,k); sig_save{1,1}(:,k)], 2);
-        plot(pointsToPlot(1,:),pointsToPlot(2,:),'b')
-        pointsToPlot = drawResultGMM([mu_save{1,2}(:,k); sig_save{1,2}(:,k)], 4);
-        plot(pointsToPlot(1,:),pointsToPlot(2,:),'m')
-        pointsToPlot = drawResult([mu_save{2,1}(:,k); sig_save{2,1}(:,k)], 2);
-        plot(pointsToPlot(1,:),pointsToPlot(2,:),'r')
-        pointsToPlot = drawResult([mu_save{3,1}(:,k); sig_save{3,1}(:,k)], 2);
-        plot(pointsToPlot(1,:),pointsToPlot(2,:),'k')
-        pointsToPlot = drawResult([mu_save{4,1}(:,k); sig_save{4,1}(:,k)], 2);
-        plot(pointsToPlot(1,:),pointsToPlot(2,:),'g')
+        if draw_cov
+            pointsToPlot = drawResultGMM([mu_save{1,1}(:,k); sig_save{1,1}(:,k)], 4);
+    %         pointsToPlot = drawResult([mu_save{1,1}(:,k); sig_save{1,1}(:,k)], 2);
+            plot(pointsToPlot(1,:),pointsToPlot(2,:),'b')
+            pointsToPlot = drawResultGMM([mu_save{1,2}(:,k); sig_save{1,2}(:,k)], 4);
+            plot(pointsToPlot(1,:),pointsToPlot(2,:),'m')
+            pointsToPlot = drawResult([mu_save{2,1}(:,k); sig_save{2,1}(:,k)], 2);
+            plot(pointsToPlot(1,:),pointsToPlot(2,:),'r')
+            pointsToPlot = drawResult([mu_save{3,1}(:,k); sig_save{3,1}(:,k)], 2);
+            plot(pointsToPlot(1,:),pointsToPlot(2,:),'k')
+            pointsToPlot = drawResult([mu_save{4,1}(:,k); sig_save{4,1}(:,k)], 2);
+            plot(pointsToPlot(1,:),pointsToPlot(2,:),'g')
+        end
         plot(z{1}(3),z{1}(4),'b*')
 %         plot(z{1}(1),z{1}(2),'b*')
         plot(z{2}(1),z{2}(2),'r*')
@@ -207,8 +209,9 @@ for k = 1:nSteps-1
     %     subplot(2,2,4)
     %     plot(time_past + agents{1}.dt*(k-1),u(3),'b.',time_past + agents{1}.dt*(k-1),u(4),'r.')
     %     hold on
-        pause(0.5);
-    
+    if draw_cov
+        pause(0.2);
+    end
 end
 figure(105)
 

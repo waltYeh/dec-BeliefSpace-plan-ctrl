@@ -147,6 +147,20 @@ for i=1:size(interfDiGr.Nodes,1)
     u_guess{i,4}(1,:) = (mu_a1(1)-mu_d(1))/horizon;
     u_guess{i,4}(2,:) = (mu_a1(2)-mu_d(2))/horizon;
 end
+% for i=1:size(interfDiGr.Nodes,1)
+%     u_guess{i,1} = zeros(agents{1}.total_uDim,horizonSteps-1);
+%     u_guess{i,1}(5,:) = 0;
+%     u_guess{i,1}(6,:) = 0;
+%     u_guess{i,2} = zeros(agents{2}.total_uDim,horizonSteps-1);
+%     u_guess{i,2}(1,:) = 0;
+%     u_guess{i,2}(2,:) = 0;
+%     u_guess{i,3} = zeros(agents{3}.total_uDim,horizonSteps-1);
+%     u_guess{i,3}(1,:) = 0;
+%     u_guess{i,3}(2,:) = 0;
+%     u_guess{i,4} = zeros(agents{4}.total_uDim,horizonSteps-1);
+%     u_guess{i,4}(1,:) = 0;
+%     u_guess{i,4}(2,:) = 0;
+% end
 % initial guess, less iterations needed if given well
 % guess all agents for every agent, 4x4 x uDim x horiz
 
@@ -197,7 +211,7 @@ for i_sim = 1:simulation_steps
     Dim_lam_in_xy = 2;
     lam_d = zeros(size(interfDiGr.Nodes,1)-1,Dim_lam_in_xy,horizonSteps);
     lam_up=zeros(1,Dim_lam_in_xy,horizonSteps-1);
-    for iter = 1:15
+    for iter = 1:25
         if iter == 1
             for i = 1:size(interfDiGr.Nodes,1)
                 for j = 1:size(interfDiGr.Nodes,1)
@@ -205,6 +219,13 @@ for i_sim = 1:simulation_steps
                     b{i,j} = [];
                 end
                 cost{i} = [];
+                agents{i}.rho_d = 0.5;
+                agents{i}.rho_up = 2.0;
+            end
+        else
+            for i = 1:size(interfDiGr.Nodes,1)
+                agents{i}.rho_d = 0.5;
+                agents{i}.rho_up = 2.0;
             end
         end
 
@@ -213,7 +234,7 @@ for i_sim = 1:simulation_steps
                 if i==1
                     Op.tolFun = 0.1;
                 else
-                    Op.tolFun = 0.25;
+                    Op.tolFun = 0.1;
                 end
                 [bi,ui,cost{i},L_opt{i},~,~, finished{i}] ...
                     = agents{i}.iLQG_one_it...
@@ -262,33 +283,39 @@ for i_sim = 1:simulation_steps
         for k=1:horizonSteps-1
             dyncouple_residue(1,:,k) = 3*u{1,1}(5:6,k)-u{2,2}(:,k)-u{3,3}(:,k)-u{4,4}(:,k);
         end
-        lam_d = lam_d + 0.2*formation_residue;
-        lam_up = lam_up + 0.2*dyncouple_residue;
+        lam_d = lam_d + 0.5*formation_residue;
+        lam_up = lam_up + 0.5*dyncouple_residue;
+        lam_d(lam_d>1.0)=1.0;
+        lam_d(lam_d<-1.0)=-1.0;
         %% 
         figure(20)
         subplot(2,2,2)
-        title('agent 2')
+        title('agent 2 residue')
         plot(1:horizonSteps,squeeze(formation_residue(1,1,:)),'b')
         hold on
         plot(1:horizonSteps,squeeze(formation_residue(1,2,:)),'k')
         subplot(2,2,3)
-        title('agent 3')
+        title('agent 3 residue')
         plot(1:horizonSteps,squeeze(formation_residue(2,1,:)),'b')
         hold on
         plot(1:horizonSteps,squeeze(formation_residue(2,2,:)),'k')
         subplot(2,2,4)
-        title('agent 4')
+        title('agent 4 residue')
         plot(1:horizonSteps,squeeze(formation_residue(3,1,:)),'b')
         hold on
         plot(1:horizonSteps,squeeze(formation_residue(3,2,:)),'k')
         
         figure(21)
         
-        title('force')
+        title('force balance residue')
         plot(1:horizonSteps-1,squeeze(dyncouple_residue(1,1,:)),'b')
         hold on
         plot(1:horizonSteps-1,squeeze(dyncouple_residue(1,2,:)),'k')
-        
+        for i = 1:size(interfDiGr.Nodes,1)
+        % iLQG iteration finished, take the policy to execute
+            agents{i}.updatePolicy(b(i,:),u(i,:),L_opt{i});
+            % guess value only used for the first iLQG iteration of each MPC iteration
+        end
         if finished{1} && finished{2} && finished{3} && finished{4} 
             break;
         end
@@ -302,11 +329,13 @@ for i_sim = 1:simulation_steps
 %             plot(error_policy_4_from_3(1,:))
 %             hold on
 %             plot(error_policy_4_from_3(2,:))
-    end
+        
+%         time_past = (i_sim-1) * mpc_update_period;
+%         [~, ~, ~] = animateAdmm(interfDiGr,agents, b0, x_true,update_steps,time_past, show_mode,false);
+
+    end%iLQG iter
 
     for i = 1:size(interfDiGr.Nodes,1)
-        % iLQG iteration finished, take the policy to execute
-        agents{i}.updatePolicy(b(i,:),u(i,:),L_opt{i});
         u_guess(i,:) = u(i,:);
         % guess value only used for the first iLQG iteration of each MPC iteration
     end
@@ -326,7 +355,7 @@ for i_sim = 1:simulation_steps
     for i = 1:size(interfDiGr.Nodes,1)
         agents{i}.ctrl_ptr = 1;
     end
-    [~, b0_next, x_true_next] = animateAdmm(interfDiGr,agents, b0, x_true,update_steps,time_past, show_mode);
+    [~, b0_next, x_true_next] = animateAdmm(interfDiGr,agents, b0, x_true,update_steps,time_past, show_mode,true);
 %     b0{1}(1:2) = x_true_final(1:2);
     b0 = b0_next;
     x_true = x_true_next;

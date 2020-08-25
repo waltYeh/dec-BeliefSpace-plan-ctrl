@@ -121,7 +121,7 @@ cost = cost + uc;
 plattform_idx = 1;
 [eid,~] = inedges(D,plattform_idx);
 
-edge_row = eid(idx-1);
+edge_row = idx-1;
 formation_residue = x_idx-x_platf-(D.Edges.nom_formation_2(edge_row,:))';
 cost = cost + rho_d/2*norm(formation_residue + transpose(lam_di(idx-1,:)))^2;
 

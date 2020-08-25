@@ -52,10 +52,10 @@ switch show_mode
         weight_a2 = 0.95;
 end
 %% tuned parameters
-mu_a1 = [8.5, 2.0, 5.0, 0.0]';
+mu_a1 = [8.5, 0.0, 5.0, 0.0]';
 mu_a2 = [3, 0.5, 5.0, 0.0]';
-mu_b = [4, -1.0]';
-mu_c = [4, 1]';
+mu_b = [3, -1.0]';
+mu_c = [4, 1.5]';
 mu_d = [6.0, 1.0]';
 sig_a1 = diag([0.01, 0.01, 0.1, 0.1]);%sigma
 sig_a2 = diag([0.01, 0.01, 0.1, 0.1]);
@@ -88,10 +88,10 @@ simulation_steps = simulation_time/mpc_update_period;
 sd = [2  3 4];%edges start from
 td = [1  1 1];%edges go to
 
-nom_formation_2=[-0.5,-0.5;
+nom_formation_2=[-1,-1;
     %-2,0;
-    -0.5,0.5;
-    0.5,0.5;
+    -1,1;
+    1,1;
     ];%z formation
 %control cost of node sd in opt of td
 rii_control = [0.8;0.8;0.8;0.8];
@@ -138,14 +138,14 @@ for i=1:size(interfDiGr.Nodes,1)
     u_guess{i,1}(5,:) = (mu_a1(1)-mu_a1(3))/horizon;
     u_guess{i,1}(6,:) = (mu_a1(2)-mu_a1(4))/horizon;
     u_guess{i,2} = zeros(agents{2}.total_uDim,horizonSteps-1);
-    u_guess{i,2}(1,:) = (mu_a1(1)-mu_b(1))/horizon;
-    u_guess{i,2}(2,:) = (mu_a1(2)-mu_b(2))/horizon;
+    u_guess{i,2}(1,:) = 0;
+    u_guess{i,2}(2,:) = 0;
     u_guess{i,3} = zeros(agents{3}.total_uDim,horizonSteps-1);
-    u_guess{i,3}(1,:) = (mu_a1(1)-mu_c(1))/horizon;
-    u_guess{i,3}(2,:) = (mu_a1(2)-mu_c(2))/horizon;
+    u_guess{i,3}(1,:) = 0;
+    u_guess{i,3}(2,:) = 0;
     u_guess{i,4} = zeros(agents{4}.total_uDim,horizonSteps-1);
-    u_guess{i,4}(1,:) = (mu_a1(1)-mu_d(1))/horizon;
-    u_guess{i,4}(2,:) = (mu_a1(2)-mu_d(2))/horizon;
+    u_guess{i,4}(1,:) = 0;
+    u_guess{i,4}(2,:) = 0;
 end
 % for i=1:size(interfDiGr.Nodes,1)
 %     u_guess{i,1} = zeros(agents{1}.total_uDim,horizonSteps-1);
@@ -211,7 +211,7 @@ for i_sim = 1:simulation_steps
     Dim_lam_in_xy = 2;
     lam_d = zeros(size(interfDiGr.Nodes,1)-1,Dim_lam_in_xy,horizonSteps);
     lam_up=zeros(1,Dim_lam_in_xy,horizonSteps-1);
-    for iter = 1:25
+    for iter = 1:35
         if iter == 1
             for i = 1:size(interfDiGr.Nodes,1)
                 for j = 1:size(interfDiGr.Nodes,1)
@@ -219,13 +219,23 @@ for i_sim = 1:simulation_steps
                     b{i,j} = [];
                 end
                 cost{i} = [];
-                agents{i}.rho_d = 0.5;
-                agents{i}.rho_up = 2.0;
+                agents{i}.rho_d = 0.0;
+                agents{i}.rho_up = 0.0;
+            end
+        elseif iter <= 5
+            for i = 2:size(interfDiGr.Nodes,1)
+                agents{i}.rho_d = 0;
+                agents{i}.rho_up = 0.0;
+            end
+        elseif iter<=25
+            for i = 2:size(interfDiGr.Nodes,1)
+                agents{i}.rho_d = 50;
+                agents{i}.rho_up = 15.0;
             end
         else
             for i = 1:size(interfDiGr.Nodes,1)
-                agents{i}.rho_d = 0.5;
-                agents{i}.rho_up = 2.0;
+                agents{i}.rho_d = 50;
+                agents{i}.rho_up = 15;
             end
         end
 
@@ -240,83 +250,65 @@ for i_sim = 1:simulation_steps
                     = agents{i}.iLQG_one_it...
                     (interfDiGr, b0(i,:), Op, iter,u_guess(i,:),...
                     lam_d,lam_up,u(i,:),b(i,:), cost{i});
+%                 for j=1:size(interfDiGr.Nodes,1)
+%                     %update all the est of u and b of agent i itself
+%                     u{i,j} = ui{j};%only ui{i} is different from u_guess
+%                     b{i,j} = bi{j};
+%                 end
                 for j=1:size(interfDiGr.Nodes,1)
-                    %update all the est of u and b of agent i itself
-                    u{i,j} = ui{j};%only ui{i} is different from u_guess
-                    b{i,j} = bi{j};
-                end
-                for j=1:size(interfDiGr.Nodes,1)
-                    if j~=i
+%                     if j~=i
                         u{j,i} = ui{i};
                         b{j,i} = bi{i};
                         if iter ==1
                             u_guess{j,i} = ui{i};
                         end
-                    end
+%                     end
                 end
             end% if not finished
         end% for every agent
         %% 
-        formation_residue = zeros(3,2,horizonSteps);
-        dyncouple_residue = zeros(1,2,horizonSteps-1);
+        if mod(iter,5)==0
+            [lam_d,lam_up,formation_residue,dyncouple_residue]=update_lam(interfDiGr,b,u, lam_d,lam_up,horizonSteps);
+            finished{1} = false;
+            finished{2} = false;
+            finished{3} = false;
+            finished{4} = false;
+            figure(20)
+            subplot(2,2,2)
+            title('agent 2 residue')
+            plot(1:horizonSteps,squeeze(formation_residue(1,1,:)),'b')
+            hold on
+            plot(1:horizonSteps,squeeze(formation_residue(1,2,:)),'k')
+            subplot(2,2,3)
+            title('agent 3 residue')
+            plot(1:horizonSteps,squeeze(formation_residue(2,1,:)),'b')
+            hold on
+            plot(1:horizonSteps,squeeze(formation_residue(2,2,:)),'k')
+            subplot(2,2,4)
+            title('agent 4 residue')
+            plot(1:horizonSteps,squeeze(formation_residue(3,1,:)),'b')
+            hold on
+            plot(1:horizonSteps,squeeze(formation_residue(3,2,:)),'k')
+            figure(21)
         
-        components_amount=2;
-        stDim_platf = 4;
-        stDim=2;
-        x_platf = zeros(2,horizonSteps);
-        for k=1:horizonSteps
-            [x_platf_comp, P_platf, w] = b2xPw(b{1,1}(:,k), stDim_platf, components_amount);
-
-            x_platf_weighted = zeros(2,components_amount);
-            for i=1:components_amount
-                x_platf_weighted(:,i)=transpose(x_platf_comp{i}(3:4)*w(i));
-            end
-            x_platf(:,k)= [sum(x_platf_weighted(1,:));sum(x_platf_weighted(2,:))];
-            
+            title('force balance residue')
+            plot(1:horizonSteps-1,squeeze(dyncouple_residue(1,1,:)),'b')
+            hold on
+            plot(1:horizonSteps-1,squeeze(dyncouple_residue(1,2,:)),'k')
         end
-        for i=2:4
-            edge_row = i-1;
-            for k=1:horizonSteps
-                formation_residue(i-1,:,k) = b{i,i}(1:stDim,k)-x_platf(:,k)-(interfDiGr.Edges.nom_formation_2(edge_row,:))';
-            end
-        end
-        for k=1:horizonSteps-1
-            dyncouple_residue(1,:,k) = 3*u{1,1}(5:6,k)-u{2,2}(:,k)-u{3,3}(:,k)-u{4,4}(:,k);
-        end
-        lam_d = lam_d + 0.5*formation_residue;
-        lam_up = lam_up + 0.5*dyncouple_residue;
-        lam_d(lam_d>1.0)=1.0;
-        lam_d(lam_d<-1.0)=-1.0;
+        
+%         lam_d(lam_d>1.0)=1.0;
+%         lam_d(lam_d<-1.0)=-1.0;
         %% 
-        figure(20)
-        subplot(2,2,2)
-        title('agent 2 residue')
-        plot(1:horizonSteps,squeeze(formation_residue(1,1,:)),'b')
-        hold on
-        plot(1:horizonSteps,squeeze(formation_residue(1,2,:)),'k')
-        subplot(2,2,3)
-        title('agent 3 residue')
-        plot(1:horizonSteps,squeeze(formation_residue(2,1,:)),'b')
-        hold on
-        plot(1:horizonSteps,squeeze(formation_residue(2,2,:)),'k')
-        subplot(2,2,4)
-        title('agent 4 residue')
-        plot(1:horizonSteps,squeeze(formation_residue(3,1,:)),'b')
-        hold on
-        plot(1:horizonSteps,squeeze(formation_residue(3,2,:)),'k')
         
-        figure(21)
         
-        title('force balance residue')
-        plot(1:horizonSteps-1,squeeze(dyncouple_residue(1,1,:)),'b')
-        hold on
-        plot(1:horizonSteps-1,squeeze(dyncouple_residue(1,2,:)),'k')
         for i = 1:size(interfDiGr.Nodes,1)
         % iLQG iteration finished, take the policy to execute
             agents{i}.updatePolicy(b(i,:),u(i,:),L_opt{i});
             % guess value only used for the first iLQG iteration of each MPC iteration
+            
         end
-        if finished{1} && finished{2} && finished{3} && finished{4} 
+        if finished{1} && finished{2} && finished{3} && finished{4} && iter>5
             break;
         end
 %             error_policy_3_from_1 = squeeze(u{3,1}(1,:,:)-u{1,1}(1,:,:));
@@ -366,4 +358,35 @@ end
 % figure(4)
 % plot(error_policy_4_from_3(1,:),'.k')
 % plot(error_policy_4_from_3(2,:),'.k')
+end
+function [lam_d_new,lam_up_new,formation_residue,dyncouple_residue]=update_lam(D,b,u, lam_d,lam_up,horizonSteps)
+    formation_residue = zeros(3,2,horizonSteps);
+    dyncouple_residue = zeros(1,2,horizonSteps-1);
+
+    components_amount=2;
+    stDim_platf = 4;
+    stDim=2;
+    x_platf = zeros(2,horizonSteps);
+    for k=1:horizonSteps
+        [x_platf_comp, P_platf, w] = b2xPw(b{1,1}(:,k), stDim_platf, components_amount);
+
+        x_platf_weighted = zeros(2,components_amount);
+        for i=1:components_amount
+            x_platf_weighted(:,i)=transpose(x_platf_comp{i}(3:4)*w(i));
+        end
+        x_platf(:,k)= [sum(x_platf_weighted(1,:));sum(x_platf_weighted(2,:))];
+
+    end
+    for i=2:4
+        edge_row = i-1;
+        for k=1:horizonSteps
+            formation_residue(i-1,:,k) = b{i,i}(1:stDim,k)-x_platf(:,k)-(D.Edges.nom_formation_2(edge_row,:))';
+        end
+    end
+    for k=1:horizonSteps-1
+        dyncouple_residue(1,:,k) = 3*u{1,1}(5:6,k)-u{2,2}(:,k)-u{3,3}(:,k)-u{4,4}(:,k);
+    end
+    lam_d_new = lam_d + formation_residue;
+    lam_up_new = lam_up + dyncouple_residue;
+
 end

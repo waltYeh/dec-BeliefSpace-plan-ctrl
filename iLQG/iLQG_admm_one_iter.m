@@ -239,6 +239,9 @@ if backPassDone
             warning('non-positive expected reduction: should not occur');
         end
         if (z > Op.zMin)
+            if w==11
+%                 w=1;
+            end
             fwdPassDone = 1;
             costnew     = costnew(:,:,:,w);
             for i=1:size(D.Nodes,1)
@@ -314,7 +317,7 @@ else % no cost improvement
     % print status
     if verbosity > 1
         fprintf('%-12d%-12d%-12s%-12.3g%-12.3g%-12.3g%-12.3g%-12.3g\n', ...
-            idx, iter,'NO STEP', dcost, alpha,expected, g_norm, lambda);           
+            idx, iter,sum(cost(:)), dcost, alpha,expected, g_norm, lambda);           
     end     
 
     % terminate ?
@@ -326,6 +329,10 @@ else % no cost improvement
         return;
     end
 end
+figure(31)
+subplot(2,2,idx)
+plot(iter,sum(cost(:)),'.')
+hold on
 
 % if ~isempty(lambda_last)
 %     figure(52)

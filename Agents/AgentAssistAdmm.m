@@ -41,8 +41,8 @@ classdef AgentAssistAdmm < AgentBase
         P_feedback = 1.0;
         cst_primal;
         cst_primal_diff;
-        rho_d = 0.5;
-        rho_up = 5.0;
+        rho_d = 5;
+        rho_up = 1.0;
     end
     
     methods 

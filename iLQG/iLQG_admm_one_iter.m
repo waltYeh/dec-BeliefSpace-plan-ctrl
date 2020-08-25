@@ -500,28 +500,6 @@ cnew = permute(cnew, [1 2 4 3 ]);
 
 % put the time dimension in the columns
 
-function [c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj] ...
-        = derive_cost_admm(D,idx,x,u,c_bi,c_ui,...
-        c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,rho, uC_lambda)
-horizon = size(c_bi,2);
-belief_dim = size(c_bi,1);
-ctrl_dim = size(c_ui,1);
-c_ui_inc = c_ui;
-c_ui_ui_inc = c_ui_ui;
-for k=1:horizon
-%     c_bi(:,k) = c_bi(:,k) + rho(1) * (x{idx}(:,k) - );
-    c_ui_inc(:,k) = rho(2) * (u{idx}(:,k) - uC_lambda{idx}(:,k));
-    c_ui_ui_inc(:,:,k) = rho(2) * eye(ctrl_dim);
-    
-    c_ui(:,k) = c_ui(:,k) + c_ui_inc(:,k);
-    c_ui_ui(:,:,k) = c_ui_ui(:,:,k) + c_ui_ui_inc(:,:,k);
-end
-a=1;
-
-        
-        
-
-
 
 function [diverge, Vx, Vxx, k, K, dV, Ku] = back_pass(D,idx,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,fx,fu,fxx,fxu,fuu,lambda,regType,lims,u)
 % Perform the Ricatti-Mayne backward pass

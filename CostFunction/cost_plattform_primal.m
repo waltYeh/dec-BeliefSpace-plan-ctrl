@@ -82,6 +82,7 @@ for j = [idx, incoming_nbrs_idces]
 end
 % u{idx}(:,final)  = 0;
 Qerr_l = 10*L*eye(2);
+Qerr_t = 0.05*eye(2);
 Qcov_l = 10000000*eye(4); % penalize terminal covar
 Qcov_l(1,1) = 0;
 Qcov_l(2,2) = 0;
@@ -102,7 +103,7 @@ for i_comp=1:1%components_amount
         sc = delta_x'*Qerr_l*delta_x;
         ic = trace(P_idx{i_comp}*Qcov_l*P_idx{i_comp});
     else
-
+%         sc = delta_x'*Qerr_t*delta_x;
     end
     component_cost(i_comp) = sc + ic + uc + w_cc*cc;
     cost = cost + component_cost(i_comp) * w(i_comp)^2;

@@ -54,9 +54,9 @@ end
 %% tuned parameters
 mu_a1 = [8.5, 0.0, 5.0, 0.0]';
 mu_a2 = [3, 0.5, 5.0, 0.0]';
-mu_b = [3, -1.0]';
-mu_c = [4, 1.5]';
-mu_d = [6.0, 1.0]';
+mu_b = [3, -1.3]';
+mu_c = [4.5, 1.5]';
+mu_d = [7.0, 1.5]';
 sig_a1 = diag([0.01, 0.01, 0.1, 0.1]);%sigma
 sig_a2 = diag([0.01, 0.01, 0.1, 0.1]);
 sig_b = diag([0.02, 0.02]);%sigma
@@ -222,20 +222,20 @@ for i_sim = 1:simulation_steps
                 agents{i}.rho_d = 0.0;
                 agents{i}.rho_up = 0.0;
             end
-        elseif iter <= 5
-            for i = 2:size(interfDiGr.Nodes,1)
+        elseif iter <= 3
+            for i = 1:size(interfDiGr.Nodes,1)
                 agents{i}.rho_d = 0;
                 agents{i}.rho_up = 0.0;
             end
         elseif iter<=25
             for i = 2:size(interfDiGr.Nodes,1)
-                agents{i}.rho_d = 50;
-                agents{i}.rho_up = 15.0;
+                agents{i}.rho_d = 5;
+                agents{i}.rho_up = 0.0;
             end
         else
-            for i = 1:size(interfDiGr.Nodes,1)
-                agents{i}.rho_d = 50;
-                agents{i}.rho_up = 15;
+            for i = 2:size(interfDiGr.Nodes,1)
+                agents{i}.rho_d = 5;
+                agents{i}.rho_up = 0;
             end
         end
 
@@ -267,7 +267,7 @@ for i_sim = 1:simulation_steps
             end% if not finished
         end% for every agent
         %% 
-        if mod(iter,5)==0
+        if mod(iter,4)==0
             [lam_d,lam_up,formation_residue,dyncouple_residue]=update_lam(interfDiGr,b,u, lam_d,lam_up,horizonSteps);
             finished{1} = false;
             finished{2} = false;

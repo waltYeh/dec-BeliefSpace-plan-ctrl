@@ -28,8 +28,9 @@ for k=1:horizon
     edge_row = idx-1;
     formation_residue = b{idx}(1:stDim,k)-x_platf-(D.Edges.nom_formation_2(edge_row,:))';
     x_in_b = 1:2;
+    inc_c_bi = (formation_residue + transpose(lam_di(idx-1,:,k)));
     c_bi(x_in_b,k) = c_bi(x_in_b,k) ...
-                + rho_d * (formation_residue + transpose(lam_di(idx-1,:,k)));
+                + rho_d * inc_c_bi;
     c_bi_bi(x_in_b,x_in_b,k) = c_bi_bi(x_in_b,x_in_b,k) ...
                 + rho_d * eye(stDim);
 end

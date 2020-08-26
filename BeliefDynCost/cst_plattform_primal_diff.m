@@ -30,8 +30,8 @@ for i_comp = 1:1
             x_in_b = (i_comp-1)*single_comp_dim+3:(i_comp-1)*single_comp_dim+4;
             x_Plattform = b{idx}(x_in_b,k);
             formation_residue = xj-x_Plattform-(D.Edges.nom_formation_2(edge_row,:))';
-            c_bi(x_in_b,k) = c_bi(x_in_b,k) ...
-                - rho_d * (formation_residue + transpose(lam_di(j-1,:,k)));
+            inc_c_bi = - (formation_residue + transpose(lam_di(j-1,:,k)));
+            c_bi(x_in_b,k) = c_bi(x_in_b,k) + rho_d * inc_c_bi;
             c_bi_bi(x_in_b,x_in_b,k) = c_bi_bi(x_in_b,x_in_b,k) ...
                 + rho_d * eye(stDim);
         end

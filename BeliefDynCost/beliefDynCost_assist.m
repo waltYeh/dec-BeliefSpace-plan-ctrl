@@ -44,7 +44,9 @@ g = cell(size(D.Nodes,1),1);
 b_formation = zeros(size(D.Nodes,1),beliefDim,paralDim);
 u_formation = zeros(size(D.Nodes,1),ctrlDim,paralDim);
 if nargout == 2
-    for j = incoming_nbrs_idces
+    agents_idces = [1,2,3,4];
+    agents_idces(idx) = [];
+    for j = agents_idces
         % the belief of agent idx about agent i
         %the last ":" in the following is for the parallel computing, not
         %affecting single computation

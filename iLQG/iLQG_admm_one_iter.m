@@ -15,7 +15,7 @@ defaults = {'lims',           [],...            control limits
             'dlambda',        1,...             initial value for dlambda
             'rho',            [1,1],...        %too large, converge slow,  rho_x and rho_u
             'lambdaFactor',   1.4,...           lambda scaling factor
-            'lambdaMax',      1e16,...          lambda maximum value
+            'lambdaMax',      1e5,...          lambda maximum value
             'lambdaMin',      1e-6,...          below this value lambda = 0
             'regType',        1,...             regularization type 1: q_uu+lambda*eye(); 2: V_xx+lambda*eye()
             'zMin',           0,...             minimal accepted reduction ratio
@@ -91,7 +91,7 @@ else
 end
   
 %====== STEP 1: differentiate dynamics and cost along new trajectory
-if flgChange
+% if flgChange
     enlonged_u = u;
 %     enlonged_uC_lambda = uC_lambda;
     if size(u{1},2)<size(x{1},2)
@@ -111,21 +111,21 @@ if flgChange
         = DYNCST_primal_diff(D,idx,x,enlonged_u,c_bi,c_ui,...
         c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,lam_di,lam_up);
 
-    flgChange   = 0;
-else
-%     fx,fu,fxx,fxu,fuu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj = derivatives_cell_last{1};
-    fx = derivatives_cell_last{1};
-    fu = derivatives_cell_last{2};
-    fxx = derivatives_cell_last{3};
-    fxu = derivatives_cell_last{4};
-    fuu = derivatives_cell_last{5};
-    c_bi = derivatives_cell_last{6};
-    c_ui = derivatives_cell_last{7};
-    c_bi_bi = derivatives_cell_last{8};
-    c_bi_ui = derivatives_cell_last{9};
-    c_ui_ui = derivatives_cell_last{10};
-    c_ui_uj = derivatives_cell_last{11};
-end
+%     flgChange   = 0;
+% else
+% %     fx,fu,fxx,fxu,fuu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj = derivatives_cell_last{1};
+%     fx = derivatives_cell_last{1};
+%     fu = derivatives_cell_last{2};
+%     fxx = derivatives_cell_last{3};
+%     fxu = derivatives_cell_last{4};
+%     fuu = derivatives_cell_last{5};
+%     c_bi = derivatives_cell_last{6};
+%     c_ui = derivatives_cell_last{7};
+%     c_bi_bi = derivatives_cell_last{8};
+%     c_bi_ui = derivatives_cell_last{9};
+%     c_ui_ui = derivatives_cell_last{10};
+%     c_ui_uj = derivatives_cell_last{11};
+% end
 % convergence or not, these plots are the same!
 % figure(1+50)
 % subplot(2,2,idx)
@@ -268,8 +268,11 @@ end
 
 % print headings
 if verbosity > 1
-    fprintf('%-12s','idx','iteration','cost','reduction','alpha','expected','gradient','lambda');
-    fprintf('\n');
+    if idx==1
+        fprintf('\n');
+        fprintf('%-12s','idx','iteration','cost','reduction','alpha','expected','gradient','lambda');
+        fprintf('\n');
+    end
 end
 
 if fwdPassDone
@@ -277,7 +280,7 @@ if fwdPassDone
 
     % print status
     if verbosity > 1
-        fprintf('%-12d%-12d%-12.3g%-12.3g%-12.3g%-12d%-12.3g%-12.3g%-12.3g\n', ...
+        fprintf('\n%-12d%-12d%-12.3g%-12.3g%-12.3g%-12d%-12.3g%-12.3g%-12.3g\n', ...
            idx, iter, sum(cost(:)), dcost,alpha,expected, g_norm, lambda);
     end
     % maybe step 13 in Algorithm
@@ -316,7 +319,7 @@ else % no cost improvement
     flgChange      = 1;% do the der again, because the consensus will help improve
     % print status
     if verbosity > 1
-        fprintf('%-12d%-12d%-12s%-12.3g%-12.3g%-12.3g%-12.3g%-12.3g\n', ...
+        fprintf('\n%-12d%-12d%-12s%-12.3g%-12.3g%-12.3g%-12.3g%-12.3g\n', ...
             idx, iter,sum(cost(:)), dcost, alpha,expected, g_norm, lambda);           
     end     
 
@@ -449,7 +452,7 @@ for k = 1:horizon
     [xnew_next,~]  = DYNCST(D,idx,xnew_k, unew_k, k*K1);
     [~,cnew_k]=DYNCST_primal(D,idx,xnew_k, unew_k, lam_d_k,lam_up_k ,k*K1);
     incoming_nbrs_idces = predecessors(D,idx)';
-    for i=incoming_nbrs_idces
+    for i=1:n_agent
         xnew{i}(:,:,k+1) = xnew_next{i};
         
     end

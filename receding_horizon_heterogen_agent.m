@@ -199,7 +199,7 @@ for i_sim = 1:simulation_steps
     for i = 1:size(interfDiGr.Nodes,1)
         finished{i}= false;
     end
-    for iter = 1:20
+    for iter = 1:5
         if iter == 1
             for i = 1:size(interfDiGr.Nodes,1)
                 for j = 1:size(interfDiGr.Nodes,1)

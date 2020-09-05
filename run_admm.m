@@ -228,12 +228,12 @@ for i_sim = 1:simulation_steps
                 agents{i}.rho_up = 0.0;
             end
         elseif iter<=25
-            for i = 2:size(interfDiGr.Nodes,1)
+            for i = 1:size(interfDiGr.Nodes,1)
                 agents{i}.rho_d = 5;
                 agents{i}.rho_up = 0.0;
             end
         else
-            for i = 2:size(interfDiGr.Nodes,1)
+            for i = 1:size(interfDiGr.Nodes,1)
                 agents{i}.rho_d = 5;
                 agents{i}.rho_up = 0;
             end

@@ -84,7 +84,8 @@ sig_save = cell(components_amount,1);
 weight_save = cell(components_amount,1);
 x_save = [];
 x_true = [];
-[mu, sig, weight] = b2xPw(b0(1:42), component_stDim, components_amount);
+[mu_platf, sig_platf, weight] = b2xPw(b0(1:42), component_stDim, components_amount);
+mu_assist = [b0(43);b0(44);b0(49);b0(50);b0(55);b0(56)];
 for i_comp=1:components_amount
 %     b0_comp = b0((i_comp-1)*component_bDim+1:i_comp*component_bDim);
 %     mu{i_comp} = b0_comp(1:component_stDim);
@@ -93,16 +94,16 @@ for i_comp=1:components_amount
 %     end
 %     weight(i_comp) = b0_comp(end);
     if comp_sel == i_comp
-        x_true = mu{i_comp};% + chol(sig{i_comp})' * randn(component_stDim,1);
+        x_true = [mu_platf{i_comp};mu_assist];% + chol(sig{i_comp})' * randn(component_stDim,1);
         x_save = x_true;
     end
-    mu_save{i_comp} = mu{i_comp};
-    sig_save{i_comp} = sig{i_comp}(:);
+    mu_save{i_comp} = mu_platf{i_comp};
+    sig_save{i_comp} = sig_platf{i_comp}(:);
     weight_save{i_comp} = weight(i_comp);
 end
 
 failed = 0;
-
+b_k=b0;
 for k = 1:nSteps-1
 
 %     b = zeros(component_bDim*components_amount,1); % current belief
@@ -111,13 +112,13 @@ for k = 1:nSteps-1
 %         b((i_comp-1)*component_bDim+component_stDim+1:(i_comp-1)*component_bDim+component_stDim+component_stDim*component_stDim)=sig{i_comp};
 %         b((i_comp)*component_bDim)=weight(i_comp);
 %     end
-    b = xPw2b(mu, sig, weight, component_stDim, components_amount);
+%     b_
     v_ball = [-0.3;-1.4];
     v_rest = [0.0;0.0];
     v_aid_man = [0.0;0.0];
     u = [v_ball;v_rest;v_aid_man];
     if ~isempty(u_nom)
-        u = u_nom(:,k) + P_feedback*L(:,:,k)*(b - b_nom(:,k));
+        u = u_nom(:,k) + P_feedback*L(:,:,k)*(b_k - b_nom(:,k));
         % dim is 6
         for i_u = 1:length(u)
             u(i_u)=min(lims(i_u,2), max(lims(i_u,1), u(i_u)));
@@ -128,8 +129,16 @@ for k = 1:nSteps-1
     zeroProcessNoise = zeros(4,1);
     % here we only use the input of comp_sel, drop the other target
     % u_for_true includes one target and the assist
-    u_for_true = [u((comp_sel-1)*components_amount + 1:comp_sel*components_amount);u(end-1:end)];
-    x_next_no_spec_human_motion = motionModel.evolve(x_true,u_for_true,zeroProcessNoise);
+%     u_for_true = [u((comp_sel-1)*components_amount + 1:comp_sel*components_amount);u(end-1:end)];
+    dim_xy = 2;
+    n_assist = 3;
+    u_assist = zeros(n_assist,dim_xy);
+    for i = 1:n_assist
+        u_assist(i,:) = u(end-(n_assist-i)*2-1:end-(n_assist-i)*2)';
+    end
+    u_all_assists = sum(u_assist,1)./3;
+    u_for_true = [u((comp_sel-1)*components_amount + 1:comp_sel*components_amount);u_all_assists'];
+    x_next_no_spec_human_motion = motionModel.evolve(x_true(1:4),u_for_true,zeroProcessNoise);
         
     good_man_for_ball_should_output = obsModel.getObservation(x_true,'nonoise');
     good_man_speed_angle=good_man_for_ball_should_output(1:2);
@@ -156,38 +165,53 @@ for k = 1:nSteps-1
             v_man=[0;0];
         end
     end
+    
     last_human_pos = x_true(3:4);
     x_true(1:2) = x_next_no_spec_human_motion(1:2);
     x_true(3:4) = last_human_pos + motionModel.dt*v_man + motionModel.dt*u_for_true(3:4);
-    
+    simpleMotionModel=TwoDPointRobot(motionModel.dt);
+    simpleObsModel=TwoDSimpleObsModel();
+    x_true_assist = x_true;
+    for i=1:n_assist
+        x_true_assist(i*2+3:i*2+4) = simpleMotionModel.evolve(x_true(i*2+3:i*2+4),u(i*2+3:i*2+4),zeros(2,1));
+    end
+    x_true = x_true_assist;
         % Get observation model jacobians
-    z = obsModel.getObservation(x_true,'truenoise'); % true observation
+    z_human_react = obsModel.getObservation(x_true(1:4),'truenoise'); % true observation
     %truely observed output is not the one modeled by ekf
     speed_man = norm(v_man);
     direction_man = atan2(v_man(2),v_man(1));
     %very problematic when human gives no more output
-    z(1:2)=[speed_man;direction_man] + chol(obsModel.R_speed)' * randn(2,1);
-    
+    z_human_react(1:2)=[speed_man;direction_man] + chol(obsModel.R_speed)' * randn(2,1);
+    z_assists = zeros(n_assist * dim_xy,1);
+    for i=1:n_assist
+        z_assists(i*2-1:i*2) = simpleObsModel.getObservation(x_true(i*2+3:i*2+4), 'truenoise');
+    end
     %% now do the machine part
     z_mu = cell(components_amount);
     z_sig = cell(components_amount);
     for i_comp = 1:components_amount
         %u = [v_ball;v_rest;v_aid_man];
-        u_for_comp = [u((i_comp-1)*components_amount + 1:i_comp*components_amount);u(end-1:end)];
+        u_assist = zeros(n_assist,dim_xy);
+        for i = 1:n_assist
+            u_assist(i,:) = u(end-(n_assist-i)*2-1:end-(n_assist-i)*2)';
+        end
+        u_all_assists = sum(u_assist,1)./3;
+        u_for_comp = [u((i_comp-1)*components_amount + 1:i_comp*components_amount);u_all_assists'];
             % Get motion model jacobians and predict pose
     %     zeroProcessNoise = motionModel.generateProcessNoise(mu{i_comp},u_for_comp); % process noise
         zeroProcessNoise = zeros(motionModel.stDim,1);
-        x_prd = motionModel.evolve(mu{i_comp},u_for_comp,zeroProcessNoise); % predict robot pose
-        A = motionModel.getStateTransitionJacobian(mu{i_comp},u_for_comp,zeroProcessNoise);
-        G = motionModel.getProcessNoiseJacobian(mu{i_comp},u_for_comp,zeroProcessNoise);
-        Q = motionModel.getProcessNoiseCovariance(mu{i_comp},u_for_comp);
-        P_prd = A*sig{i_comp}*A' + G*Q*G';
+        x_prd = motionModel.evolve(mu_platf{i_comp},u_for_comp,zeroProcessNoise); % predict robot pose
+        A = motionModel.getStateTransitionJacobian(mu_platf{i_comp},u_for_comp,zeroProcessNoise);
+        G = motionModel.getProcessNoiseJacobian(mu_platf{i_comp},u_for_comp,zeroProcessNoise);
+        Q = motionModel.getProcessNoiseCovariance(mu_platf{i_comp},u_for_comp);
+        P_prd = A*sig_platf{i_comp}*A' + G*Q*G';
 
         z_prd = obsModel.getObservation(x_prd,'nonoise'); % predicted observation
-        zerObsNoise = zeros(length(z),1);
-        H = obsModel.getObservationJacobian(mu{i_comp},zerObsNoise);
+        zerObsNoise = zeros(length(z_human_react),1);
+        H = obsModel.getObservationJacobian(mu_platf{i_comp},zerObsNoise);
         % M is eye
-        M = obsModel.getObservationNoiseJacobian(mu{i_comp},zerObsNoise,z);
+        M = obsModel.getObservationNoiseJacobian(mu_platf{i_comp},zerObsNoise,z_human_react);
     %     R = obsModel.getObservationNoiseCovariance(x,z);
     %     R = obsModel.R_est;
         % update P
@@ -195,23 +219,23 @@ for k = 1:nSteps-1
     %     S = H*P_prd*H' + M*R*M';
         K = (P_prd*H')/(HPH + M*obsModel.R_est*M');
         z_ratio = 1;
-        if abs(z(1))<1
-            z_ratio = abs(z(1));
+        if abs(z_human_react(1))<1
+            z_ratio = abs(z_human_react(1));
         end
         weight_adjust = [z_ratio*weight(i_comp),z_ratio*weight(i_comp),1,1]';
 %         K=weight_adjust.*K;
         P = (eye(motionModel.stDim) - K*H)*P_prd;
-        x = x_prd + weight_adjust.*K*(z - z_prd);
+        x = x_prd + weight_adjust.*K*(z_human_react - z_prd);
         z_mu{i_comp} = z_prd;
         z_sig{i_comp} = HPH;
-        mu{i_comp} = x;
-        sig{i_comp} = P;
+        mu_platf{i_comp} = x;
+        sig_platf{i_comp} = P;
     end
     
     last_w = weight;
 
     for i_comp = 1 : components_amount
-        weight(i_comp) = last_w(i_comp)*getLikelihood(z - z_mu{i_comp}, z_sig{i_comp} + obsModel.R_w);
+        weight(i_comp) = last_w(i_comp)*getLikelihood(z_human_react - z_mu{i_comp}, z_sig{i_comp} + obsModel.R_w);
     end
     sum_wk=sum(weight);
     if (sum_wk > 0)
@@ -224,24 +248,35 @@ for k = 1:nSteps-1
     for i_comp = 1 : components_amount
         weight(i_comp) = 0.99*weight(i_comp)+0.01*0.5;
     end
-    if abs(z(1))<0.25
+    if abs(z_human_react(1))<0.25
         weight = last_w;
     end
+    b_plattform = xPw2b(mu_platf, sig_platf, weight, 4, 2);
+
+    
+    [b_assist1_next,~,~] = getNextEstimation(b_k(43:48),u(5:6),z_assists(1:2)...
+        ,simpleMotionModel,simpleObsModel);
+    [b_assist2_next,~,~] = getNextEstimation(b_k(49:54),u(7:8),z_assists(3:4)...
+        ,simpleMotionModel,simpleObsModel);
+    [b_assist3_next,~,~] = getNextEstimation(b_k(55:60),u(9:10),z_assists(5:6)...
+        ,simpleMotionModel,simpleObsModel);
+    b_k = [b_plattform;b_assist1_next;b_assist2_next;b_assist3_next];
 %% now for save
     for i_comp = 1 : components_amount
-        mu_save{i_comp}(:,k+1) = mu{i_comp};
-        sig_save{i_comp}(:,k+1) = sig{i_comp}(:);
+        mu_save{i_comp}(:,k+1) = mu_platf{i_comp};
+        sig_save{i_comp}(:,k+1) = sig_platf{i_comp}(:);
         weight_save{i_comp}(:,k+1) = weight(i_comp);
     end
     x_save(:,k+1) = x_true;
     x_true_final = x_true;
 %     % final belief
-    b_f = zeros(component_bDim*components_amount,1); % current belief
-    for i_comp=1:components_amount
-        b_f((i_comp-1)*component_bDim+1:(i_comp-1)*component_bDim+component_stDim)=mu{i_comp};
-        b_f((i_comp-1)*component_bDim+component_stDim+1:(i_comp-1)*component_bDim+component_stDim+component_stDim*component_stDim)=sig{i_comp};
-        b_f((i_comp)*component_bDim)=weight(i_comp);
-    end
+    b_f = b_k;
+%     b_f = zeros(component_bDim*components_amount,1); % current belief
+%     for i_comp=1:components_amount
+%         b_f((i_comp-1)*component_bDim+1:(i_comp-1)*component_bDim+component_stDim)=mu_platf{i_comp};
+%         b_f((i_comp-1)*component_bDim+component_stDim+1:(i_comp-1)*component_bDim+component_stDim+component_stDim*component_stDim)=sig_platf{i_comp};
+%         b_f((i_comp)*component_bDim)=weight(i_comp);
+%     end
     
 %     roboTraj(:,k) = x;
 %     
@@ -274,7 +309,13 @@ for k = 1:nSteps-1
     plot(pointsToPlot(1,:),pointsToPlot(2,:),'b')
     pointsToPlot = drawResultGMM([mu_save{2}(:,k); sig_save{2}(:,k)], motionModel.stDim);
     plot(pointsToPlot(1,:),pointsToPlot(2,:),'r')
-    plot(z(3),z(4),'*')
+    pointsToPlot = drawResult([b_assist1_next(1:2); b_assist1_next(3:6)], 2);
+    plot(pointsToPlot(1,:),pointsToPlot(2,:),'k')
+    pointsToPlot = drawResult([b_assist2_next(1:2); b_assist2_next(3:6)], 2);
+    plot(pointsToPlot(1,:),pointsToPlot(2,:),'k')
+    pointsToPlot = drawResult([b_assist3_next(1:2); b_assist3_next(3:6)], 2);
+    plot(pointsToPlot(1,:),pointsToPlot(2,:),'k')
+    plot(z_human_react(3),z_human_react(4),'*')
     
 %     [x_nom, P_nom, w_nom] = b2xPw(b_nom(:,k), component_stDim, components_amount);
 %     plot(x_save(1,k),x_save(2,k),'.')
@@ -378,4 +419,46 @@ end
 figure(5)
 surf(x_m,y_m,Z-max(Z)-0.5)
 end
+end
+function [b_next,mu,sig] = getNextEstimation(b,u,z,motionModel,obsModel)
+%     component_alone_uDim = obj.motionModel.ctDim - obj.shared_uDim;
+%             components_amount = length(b)/component_bDim;
+%             [mu, sig, weight] = b2xPw(b, obj.component_stDim, obj.components_amount);
+
+    [mu, sig] = b2xP(b, 2);
+        %u = [v_ball;v_rest;v_aid_man];
+%         u_for_comp = [u((i_comp-1)*component_alone_uDim + 1:i_comp*component_alone_uDim);u(end-obj.shared_uDim+1:end)];
+            % Get motion model jacobians and predict pose
+    %     zeroProcessNoise = motionModel.generateProcessNoise(mu{i_comp},u_for_comp); % process noise
+    zeroProcessNoise = zeros(2,1);
+    x_prd = motionModel.evolve(mu,u,zeroProcessNoise); % predict robot pose
+    A = motionModel.getStateTransitionJacobian(mu,u,zeroProcessNoise);
+    G = motionModel.getProcessNoiseJacobian(mu,u,zeroProcessNoise);
+    Q = motionModel.Q_est;%getProcessNoiseCovariance(mu{i_comp},u_for_comp);
+    P_prd = A*sig*A' + G*Q*G';
+
+    z_prd = obsModel.getObservation(x_prd,'nonoise'); % predicted observation
+    zerObsNoise = zeros(length(z),1);
+    H = obsModel.getObservationJacobian(mu,zerObsNoise);
+    % M is eye
+    M = obsModel.getObservationNoiseJacobian(mu,zerObsNoise,z);
+%     R = obsModel.getObservationNoiseCovariance(x,z);
+%     R = obsModel.R_est;
+    % update P
+    HPH = H*P_prd*H';
+%     S = H*P_prd*H' + M*R*M';
+    K = (P_prd*H')/(HPH + M*obsModel.R_est*M');
+%                 z_ratio = 1;
+%                 if abs(z(1))<1
+%                     z_ratio = abs(z(1));
+%                 end
+%                 weight_adjust = [z_ratio*weight(i_comp),z_ratio*weight(i_comp),1,1]';
+%         K=weight_adjust.*K;
+    P = (eye(motionModel.stDim) - K*H)*P_prd;
+    x = x_prd + K*(z - z_prd);
+
+    mu = x;
+    sig = P;
+    b_next = [mu;sig(:)];
+
 end

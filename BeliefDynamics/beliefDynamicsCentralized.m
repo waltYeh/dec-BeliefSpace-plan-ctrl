@@ -42,14 +42,14 @@ function b_next = updateGMM(b, u, motionModel, obsModel)
     for i = 1:n_assist
         u_assist(i,:) = u(end-(n_assist-i)*2-1:end-(n_assist-i)*2)';
     end
-    u_man = sum(u_assist,1);%sum of rows, not summing x and y together, which are in cols
+    u_all_assists = sum(u_assist,1)./3;%sum of rows, not summing x and y together, which are in cols
 %     u_man = [u(end-shared_uDim+1);u(end)];
     
     b_next = b;
     for i=1:components_amount
         b_component = b((i-1)*component_bDim + 1 : i*component_bDim - 1,1);
         u_component = [u((i-1)*component_alone_uDim+1 : i*component_alone_uDim);
-            u_man'];
+            u_all_assists'];
         b_next_component = updateSingleComponentGMM(b_component, u_component, motionModel, obsModel);
         b_next((i-1)*component_bDim + 1 : i*component_bDim - 1,1) = b_next_component;
         % the weight of each component remains unchanged

@@ -84,7 +84,7 @@ end
 R_t = diag([0.2, 4.0, 0.2, 0.2,0.1,0.1]);
 Qerr_l = 10*L*eye(2);
 Qerr_t = 0.05*eye(2);
-Qcov_l = 10000000*eye(4); % penalize terminal covar
+Qcov_l = 100000000*eye(4); % penalize terminal covar
 Qcov_l(1,1) = 0;
 Qcov_l(2,2) = 0;
 component_cost = zeros(components_amount,1);

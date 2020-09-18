@@ -129,7 +129,7 @@ else
 %     for j=incoming_nbrs_idces
 %         cc = cc-log(chi2cdf(nSigma(j)^2, stDim));
 %     end
-    uc = uc + 0.5*rii_control*(transpose(u(idx,:))'*transpose(u(idx,:)));
+    uc = uc + rii_control*(transpose(u(idx,:))'*transpose(u(idx,:)));
 end
 
 w_cc = 1.0;

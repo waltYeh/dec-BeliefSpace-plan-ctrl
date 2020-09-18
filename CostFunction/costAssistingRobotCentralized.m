@@ -58,8 +58,9 @@ Qerr_t = 0.0*eye(2);
 Qerr_l = 100*L*eye(2); % penalize terminal error
 Q_formation = 10*eye(2);
 Qcov_t = 0*eye(4);
-Qcov_l = 100000000*eye(4); % penalize terminal covar
-
+Qcov_l = 1e8*eye(4); % penalize terminal covar
+Qcov_l(1,1) = 0;
+Qcov_l(2,2) = 0;
 w_cc = 1.0; % penalize collision
 
 

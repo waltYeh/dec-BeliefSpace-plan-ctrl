@@ -150,6 +150,9 @@ classdef AgentPlattformAdmm < AgentBase
                 end
                 weight_adjust = [z_ratio*weight(i_comp),z_ratio*weight(i_comp),1,1]';
         %         K=weight_adjust.*K;
+                if i_comp == 1
+                    weight_adjust(1) = 0;
+                end
                 P = (eye(obj.motionModel.stDim) - K*H)*P_prd;
                 x = x_prd + weight_adjust.*K*(z - z_prd);
                 z_mu{i_comp} = z_prd;

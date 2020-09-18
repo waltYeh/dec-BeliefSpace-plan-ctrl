@@ -222,21 +222,22 @@ for i_sim = 1:simulation_steps
                 agents{i}.rho_d = 0.0;
                 agents{i}.rho_up = 0.0;
             end
-        elseif iter <= 3
-            for i = 1:size(interfDiGr.Nodes,1)
-                agents{i}.rho_d = 0;
-                agents{i}.rho_up = 0.0;
-            end
-        elseif iter<=25
-            for i = 1:size(interfDiGr.Nodes,1)
-                agents{i}.rho_d = 2.5;
-                agents{i}.rho_up = 1.0;
-            end
+%         elseif iter <= 3
+%             for i = 1:size(interfDiGr.Nodes,1)
+%                 agents{i}.rho_d = 0;
+%                 agents{i}.rho_up = 0.0;
+%             end
+%         elseif iter<=25
+%             for i = 1:size(interfDiGr.Nodes,1)
+%                 agents{i}.rho_d = 2.5;
+%                 agents{i}.rho_up = 0.0;
+%             end
         else
             for i = 1:size(interfDiGr.Nodes,1)
-                agents{i}.rho_d = 2.5;
-                agents{i}.rho_up = 1;
+                agents{i}.rho_d = 25;
+                agents{i}.rho_up = 0;
             end
+            agents{1}.rho_d = 0.1;
         end
 
         for i = 1:size(interfDiGr.Nodes,1)
@@ -267,7 +268,7 @@ for i_sim = 1:simulation_steps
             end% if not finished
         end% for every agent
         %% 
-        if mod(iter,4)==0
+        if mod(iter,2)==0
             [lam_d,lam_up,formation_residue,dyncouple_residue]=update_lam(interfDiGr,b,u, lam_d,lam_up,horizonSteps);
             finished{1} = false;
             finished{2} = false;

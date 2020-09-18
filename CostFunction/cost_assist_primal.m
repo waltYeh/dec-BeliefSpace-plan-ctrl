@@ -115,7 +115,7 @@ else
 %     for j=incoming_nbrs_idces
 %         cc = cc-log(chi2cdf(nSigma(j)^2, stDim));
 %     end
-    uc = uc + 0.5*rii_control*(u{idx}(:)'*u{idx}(:));
+    uc = uc + rii_control*(u{idx}(:)'*u{idx}(:));
 end
 cost = cost + uc;
 plattform_idx = 1;

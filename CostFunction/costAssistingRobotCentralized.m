@@ -54,15 +54,12 @@ u_assists = u(5:end);
 % Q_t = 10*eye(stDim); % penalize uncertainty
 R_t = diag([0.2, 4.0, 0.2, 0.2]);%,0.1,0.1]); % penalize control effort
 R_assists_t = diag([0.1, 0.1, 0.1, 0.1, 0.1, 0.1]);
-Qerr_t = 0.05*eye(2);
-Qerr_l = 10*L*eye(2); % penalize terminal error
+Qerr_t = 0.0*eye(2);
+Qerr_l = 100*L*eye(2); % penalize terminal error
 Q_formation = 10*eye(2);
-Qcov_t = 1*eye(4);
+Qcov_t = 0*eye(4);
 Qcov_l = 100000000*eye(4); % penalize terminal covar
-Qcov_t(1,1) = 0;
-Qcov_t(2,2) = 0;
-Qcov_l(1,1) = 0;
-Qcov_l(2,2) = 0;
+
 w_cc = 1.0; % penalize collision
 
 

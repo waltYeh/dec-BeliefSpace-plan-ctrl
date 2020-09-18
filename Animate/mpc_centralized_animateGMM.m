@@ -113,10 +113,7 @@ for k = 1:nSteps-1
 %         b((i_comp)*component_bDim)=weight(i_comp);
 %     end
 %     b_
-    v_ball = [-0.3;-1.4];
-    v_rest = [0.0;0.0];
-    v_aid_man = [0.0;0.0];
-    u = [v_ball;v_rest;v_aid_man];
+    
     if ~isempty(u_nom)
         u = u_nom(:,k) + P_feedback*L(:,:,k)*(b_k - b_nom(:,k));
         % dim is 6
@@ -198,6 +195,9 @@ for k = 1:nSteps-1
         end
         u_all_assists = sum(u_assist,1)./3;
         u_for_comp = [u((i_comp-1)*components_amount + 1:i_comp*components_amount);u_all_assists'];
+%         if i_comp==1
+%             u_for_comp(1:2)
+%         end
             % Get motion model jacobians and predict pose
     %     zeroProcessNoise = motionModel.generateProcessNoise(mu{i_comp},u_for_comp); % process noise
         zeroProcessNoise = zeros(motionModel.stDim,1);
@@ -223,6 +223,9 @@ for k = 1:nSteps-1
             z_ratio = abs(z_human_react(1));
         end
         weight_adjust = [z_ratio*weight(i_comp),z_ratio*weight(i_comp),1,1]';
+        if i_comp == 1
+            weight_adjust(1) = 0;
+        end
 %         K=weight_adjust.*K;
         P = (eye(motionModel.stDim) - K*H)*P_prd;
         x = x_prd + weight_adjust.*K*(z_human_react - z_prd);

@@ -137,27 +137,27 @@ for k = 1:nSteps-1
     if k>1
         figure(105)
 
-        plot(mu_save{1,1}(1,k),mu_save{1,1}(2,k),'bo')
+        plot(mu_save{1,1}(1,k+1),mu_save{1,1}(2,k+1),'bo')
         hold on
         grid on
         axis equal
-        plot(mu_save{1,1}(3,k),mu_save{1,1}(4,k),'bo')
-        plot(mu_save{1,2}(1,k),mu_save{1,2}(2,k),'mo')
-        plot(mu_save{1,2}(3,k),mu_save{1,2}(4,k),'mo')
-        plot(mu_save{2,1}(1,k),mu_save{2,1}(2,k),'ro')
-        plot(mu_save{3,1}(1,k),mu_save{3,1}(2,k),'ko')
-        plot(mu_save{4,1}(1,k),mu_save{4,1}(2,k),'go')
+        plot(mu_save{1,1}(3,k+1),mu_save{1,1}(4,k+1),'bo')
+        plot(mu_save{1,2}(1,k+1),mu_save{1,2}(2,k+1),'mo')
+        plot(mu_save{1,2}(3,k+1),mu_save{1,2}(4,k+1),'mo')
+        plot(mu_save{2,1}(1,k+1),mu_save{2,1}(2,k+1),'ro')
+        plot(mu_save{3,1}(1,k+1),mu_save{3,1}(2,k+1),'ko')
+        plot(mu_save{4,1}(1,k+1),mu_save{4,1}(2,k+1),'go')
         if draw_cov
-            pointsToPlot = drawResultGMM([mu_save{1,1}(:,k); sig_save{1,1}(:,k)], 4);
+            pointsToPlot = drawResultGMM([mu_save{1,1}(:,k+1); sig_save{1,1}(:,k+1)], 4);
     %         pointsToPlot = drawResult([mu_save{1,1}(:,k); sig_save{1,1}(:,k)], 2);
             plot(pointsToPlot(1,:),pointsToPlot(2,:),'b')
-            pointsToPlot = drawResultGMM([mu_save{1,2}(:,k); sig_save{1,2}(:,k)], 4);
+            pointsToPlot = drawResultGMM([mu_save{1,2}(:,k+1); sig_save{1,2}(:,k+1)], 4);
             plot(pointsToPlot(1,:),pointsToPlot(2,:),'m')
-            pointsToPlot = drawResult([mu_save{2,1}(:,k); sig_save{2,1}(:,k)], 2);
+            pointsToPlot = drawResult([mu_save{2,1}(:,k+1); sig_save{2,1}(:,k+1)], 2);
             plot(pointsToPlot(1,:),pointsToPlot(2,:),'r')
-            pointsToPlot = drawResult([mu_save{3,1}(:,k); sig_save{3,1}(:,k)], 2);
+            pointsToPlot = drawResult([mu_save{3,1}(:,k+1); sig_save{3,1}(:,k+1)], 2);
             plot(pointsToPlot(1,:),pointsToPlot(2,:),'k')
-            pointsToPlot = drawResult([mu_save{4,1}(:,k); sig_save{4,1}(:,k)], 2);
+            pointsToPlot = drawResult([mu_save{4,1}(:,k+1); sig_save{4,1}(:,k+1)], 2);
             plot(pointsToPlot(1,:),pointsToPlot(2,:),'g')
         end
         plot(z{1}(3),z{1}(4),'b*')

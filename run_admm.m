@@ -211,16 +211,16 @@ for i_sim = 1:simulation_steps
     Dim_lam_in_xy = 2;
     lam_d = zeros(size(interfDiGr.Nodes,1)-1,Dim_lam_in_xy,horizonSteps);
     lam_up=zeros(1,Dim_lam_in_xy,horizonSteps-1);
-    for iter = 1:22
+    for iter = 1:8
         if iter == 1
-            for i = 1:size(interfDiGr.Nodes,1)
+            for i = 2:size(interfDiGr.Nodes,1)
                 for j = 1:size(interfDiGr.Nodes,1)
                     u{i,j} = [];
                     b{i,j} = [];
                 end
                 cost{i} = [];
-                agents{i}.rho_d = 0.0;
-                agents{i}.rho_up = 0.0;
+                agents{i}.rho_d = 5.0;
+                agents{i}.rho_up = 5.0;
             end
 %         elseif iter <= 3
 %             for i = 1:size(interfDiGr.Nodes,1)
@@ -233,11 +233,12 @@ for i_sim = 1:simulation_steps
 %                 agents{i}.rho_up = 0.0;
 %             end
         else
-            for i = 1:size(interfDiGr.Nodes,1)
-                agents{i}.rho_d = 25;
-                agents{i}.rho_up = 0;
+            for i = 2:size(interfDiGr.Nodes,1)
+                agents{i}.rho_d = 5;
+                agents{i}.rho_up = 5;
             end
-            agents{1}.rho_d = 0.1;
+            agents{1}.rho_d = 0.01;
+            agents{1}.rho_up = 0.01;
         end
 
         for i = 1:size(interfDiGr.Nodes,1)
@@ -268,7 +269,7 @@ for i_sim = 1:simulation_steps
             end% if not finished
         end% for every agent
         %% 
-        if mod(iter,2)==0
+        if mod(iter,1)==0
             [lam_d,lam_up,formation_residue,dyncouple_residue]=update_lam(interfDiGr,b,u, lam_d,lam_up,horizonSteps);
             finished{1} = false;
             finished{2} = false;

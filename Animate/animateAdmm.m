@@ -81,10 +81,15 @@ for k = 1:nSteps-1
                 x_mind = [x_true(5,:)';x_true(1,:)'];
                 x_mind_next = agents{i}.motionModel.evolve(x_mind,[u{i}(1:2);u{i}(5:6)],processNoise);
                 x_true(1,:) = x_mind_next(3:4)';
+                %1234 are agent positions, 5 is transport band
                 x_true(5,:)=x_mind_next(1:2)';
                 z{i} = agents{i}.obsModel.getObservation(x_mind_next,'truenoise');
             end
-%             
+            if k*agents{i}.motionModel.dt>t_human_withdraw
+                z{i}(1:2)=[0;0];
+            else
+%                 z_human_react(1:2)=[speed_man;direction_man] + chol(obsModel.R_speed)' * randn(2,1);
+            end
 %         elseif i==2
 % %             x_true_x_last = x_true(i,1);
 % %             x_true(i,:) = agents{i}.motionModel.evolve(x_true(i,:)',u{i},processNoise);

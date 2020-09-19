@@ -62,7 +62,7 @@ classdef HumanReactionModel < ObservationModelBase
                     x_man;
                     y_man];
             elseif nargin > 2 && strcmp('truenoise',varargin{1}) == 1 
-                v = obj.computeObservationNoiseTrue();
+                v = obj.computeObservationNoiseTrue(x);
                 z = [speed_chase;
                     direction;
                     x_man;
@@ -139,10 +139,11 @@ classdef HumanReactionModel < ObservationModelBase
                 0,0,0,1];
         end
         
-        function M = getObservationNoiseJacobian(obj,x,v,z)
-            n = length(z);
-            M = 8/(1/(norm(x(4)-[1.5])^2+0.1) + 1/norm(x(3)-[1])^2 + 1) * eye(n);
-%             M = eye(n);
+        function M = getObservationNoiseJacobian(obj,x)%,v,z)
+            n = 4;%length(z);
+            M = 8/(1/(norm(x(4)-[1.5])^2+0.05) + 1/norm(x(3)-[1])^2 + 1) * eye(n);
+%             M(1,1) = 1;
+%             M(2,2) = 1;
         end
         
         function R = getObservationNoiseCovariance(obj,x,z)
@@ -153,11 +154,11 @@ classdef HumanReactionModel < ObservationModelBase
             
         end                                                      
         
-        function v = computeObservationNoiseTrue(obj)
+        function v = computeObservationNoiseTrue(obj,x)
             
             noise_std = chol(obj.R_true)';
             
-            v = noise_std*randn(obj.obsNoiseDim,1);
+            v = obj.getObservationNoiseJacobian(x)*noise_std*randn(obj.obsNoiseDim,1);
         end
         
         function v = computeObservationNoise(obj)

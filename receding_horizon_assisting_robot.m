@@ -24,7 +24,7 @@ BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT = 6;
 REST_WISH_WITHOUT_HUMAN_INPUT = 7;
 REST_WISH_WITH_HUMAN_INPUT = 8;
 REST_WISH_WITH_OPPOSITE_HUMAN_INPUT = 9;
-show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
+show_mode = REST_WISH_WITHOUT_HUMAN_INPUT;
 switch show_mode
     case EQUAL_WEIGHT_BALANCING
         weight_1 = 0.5;
@@ -56,7 +56,7 @@ switch show_mode
 end
 %% tuned parameters
 mu_1 = [8.5, 0.0, 5.0, 0.0]';
-mu_2 = [3, 1.0, 5.0, 0.0]';
+mu_2 = [3, 0.5, 5.0, 0.0]';
 sig_1 = diag([0.01, 0.01, 0.1, 0.1]);%sigma
 sig_2 = diag([0.01, 0.01, 0.1, 0.1]);
 % weight_1 = 0.9;
@@ -118,7 +118,7 @@ for i_sim = 1:simulation_steps
         show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
     end
     time_past = (i_sim-1) * mpc_update_period;
-    [didCollide, b0, x_true_final] = mpc_animateGMM(5,6,b0, b, u_opt, L_opt, update_steps,time_past, mm, om,Op.lims, show_mode);
+    [didCollide, b0, x_true_final] = mpc_animateGMM(10,11,b0, b, u_opt, L_opt, update_steps,time_past, mm, om,Op.lims, show_mode);
     b0(1:2) = x_true_final(1:2);
 end
 

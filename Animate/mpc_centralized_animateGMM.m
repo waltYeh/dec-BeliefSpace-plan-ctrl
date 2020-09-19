@@ -179,7 +179,12 @@ for k = 1:nSteps-1
     speed_man = norm(v_man);
     direction_man = atan2(v_man(2),v_man(1));
     %very problematic when human gives no more output
-    z_human_react(1:2)=[speed_man;direction_man] + chol(obsModel.R_speed)' * randn(2,1);
+    if k*motionModel.dt>t_human_withdraw
+        z_human_react(1:2)=[speed_man;direction_man];
+    else
+        z_human_react(1:2)=[speed_man;direction_man] + chol(obsModel.R_speed)' * randn(2,1);
+    end
+%     z_human_react(1:2)=[speed_man;direction_man] + chol(obsModel.R_speed)' * randn(2,1);
     z_assists = zeros(n_assist * dim_xy,1);
     for i=1:n_assist
         z_assists(i*2-1:i*2) = simpleObsModel.getObservation(x_true(i*2+3:i*2+4), 'truenoise');
@@ -211,7 +216,7 @@ for k = 1:nSteps-1
         zerObsNoise = zeros(length(z_human_react),1);
         H = obsModel.getObservationJacobian(mu_platf{i_comp},zerObsNoise);
         % M is eye
-        M = obsModel.getObservationNoiseJacobian(mu_platf{i_comp},zerObsNoise,z_human_react);
+        M = obsModel.getObservationNoiseJacobian(mu_platf{i_comp});
     %     R = obsModel.getObservationNoiseCovariance(x,z);
     %     R = obsModel.R_est;
         % update P
@@ -223,9 +228,9 @@ for k = 1:nSteps-1
             z_ratio = abs(z_human_react(1));
         end
         weight_adjust = [z_ratio*weight(i_comp),z_ratio*weight(i_comp),1,1]';
-        if i_comp == 1
-            weight_adjust(1) = 0;
-        end
+%         if i_comp == 1
+%             weight_adjust(1) = 0;
+%         end
 %         K=weight_adjust.*K;
         P = (eye(motionModel.stDim) - K*H)*P_prd;
         x = x_prd + weight_adjust.*K*(z_human_react - z_prd);
@@ -339,7 +344,7 @@ for k = 1:nSteps-1
     plot([time_past + motionModel.dt*(k-1),time_past + motionModel.dt*(k)],[weight_save{1}(k),weight_save{1}(k+1)],'-ob',[time_past + motionModel.dt*(k-1),time_past + motionModel.dt*(k)],[weight_save{2}(k),weight_save{2}(k+1)],'-ok')
     hold on
 %     time_line = 0:motionModel.dt:motionModel.dt*(nSteps);
-    figure(10)
+    figure(fig_w+1)
     subplot(2,2,1)
     plot(time_past + motionModel.dt*(k-1),u(5),'b.',time_past + motionModel.dt*(k-1),u(6),'r.')
     hold on
@@ -355,7 +360,7 @@ for k = 1:nSteps-1
     pause(0.02);
 end
 if time_past<0.01
-    figure(10)
+    figure(fig_w+1)
     subplot(2,2,1)
     title('Unterstützung Plattform')
     xlabel('t(s)')
@@ -415,11 +420,12 @@ Y=-1:0.5:5;
 Z = zeros(size(x_m,1),size(x_m,2));
 for i=1:length(X)
     for j=1:length(Y)
-        Z(j,i) = obsModel.getObservationNoiseJacobian([0;0;X(i);Y(j)],zerObsNoise,1);
+        ZZ = obsModel.getObservationNoiseJacobian([0;0;X(i);Y(j)]);
+        Z(j,i) = ZZ(end);
 %         1/(1/norm([X(i);Y(j)]-[7;0])^2 + 1/norm([X(i);Y(j)]-[3;1])^2 + 1);
     end
 end
-figure(5)
+figure(fig_xy)
 surf(x_m,y_m,Z-max(Z)-0.5)
 end
 end

@@ -95,7 +95,7 @@ Q = motionModel.getProcessNoiseCovariance(x,u);
 z = obsModel.getObservation(x_next, 'nonoise');
 obsNoise = zeros(size(z));
 H = obsModel.getObservationJacobian(x,obsNoise);
-M = obsModel.getObservationNoiseJacobian(x,obsNoise,z);
+M = obsModel.getObservationNoiseJacobian(x);
 % M = eye
 R = obsModel.getObservationNoiseCovariance(x,z);
 

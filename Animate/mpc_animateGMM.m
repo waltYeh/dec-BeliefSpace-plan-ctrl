@@ -265,7 +265,7 @@ for k = 1:nSteps-1
 %     drawResult(plotFn,b,motionModel.stDim);
 %     drawnow;
     figure(fig_xy)
-    plot(x_save(1,k),x_save(2,k),'.')
+    plot(x_save(1,k),x_save(2,k),'+')
     hold on
     axis equal
     plot(x_save(3,k),x_save(4,k),'+')

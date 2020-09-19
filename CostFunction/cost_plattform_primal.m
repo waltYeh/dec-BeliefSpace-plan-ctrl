@@ -81,8 +81,8 @@ for j = [idx, incoming_nbrs_idces]
     u{j}(:,final)  = 0;
 end
 % u{idx}(:,final)  = 0;
-R_t = diag([0.2, 4.0, 0.2, 0.2,0.0,0.0]);
-Qerr_l = 100*L*eye(2);
+R_t = diag([0.2, 4.0, 0.2, 0.2,0.1,0.1]);
+Qerr_l = 10*L*eye(2);
 Qerr_t = 0.0*eye(2);
 Qcov_l = 1e8*eye(4); % penalize terminal covar
 Qcov_l(1,1) = 0;

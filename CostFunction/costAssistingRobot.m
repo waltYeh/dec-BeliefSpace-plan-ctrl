@@ -53,7 +53,7 @@ ctrlDim = size(u,1);
 % Q_t = 10*eye(stDim); % penalize uncertainty
 R_t = diag([0.2, 4.0, 0.2, 0.2,0.1,0.1]); % penalize control effort
 Qerr_t = 0.0*eye(2);
-Qerr_l = 100*L*eye(2); % penalize terminal error
+Qerr_l = 10*L*eye(2); % penalize terminal error
 Qcov_t = 0*eye(4);
 Qcov_l = 1e8*eye(4); % penalize terminal covar
 

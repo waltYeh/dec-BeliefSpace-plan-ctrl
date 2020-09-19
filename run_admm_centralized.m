@@ -76,9 +76,9 @@ sig_d = diag([0.02, 0.02]);
 % weight_1 = 0.9;
 % weight_2 = 0.1;
 dt = 0.05;
-horizon = 1.5;
-mpc_update_period = 1.5;
-simulation_time = 1.5;
+horizon = 2.5;
+mpc_update_period = 2.5;
+simulation_time = 2.5;
 
 %% 
 

@@ -66,9 +66,9 @@ sig_d = diag([0.02, 0.02]);
 % weight_1 = 0.9;
 % weight_2 = 0.1;
 dt = 0.05;
-horizon = 1.5;
-mpc_update_period = 1.5;
-simulation_time = 1.5;
+horizon = 2.5;
+mpc_update_period = 2.5;
+simulation_time = 2.5;
 
 %% 
 
@@ -211,7 +211,7 @@ for i_sim = 1:simulation_steps
     Dim_lam_in_xy = 2;
     lam_d = zeros(size(interfDiGr.Nodes,1)-1,Dim_lam_in_xy,horizonSteps);
     lam_up=zeros(1,Dim_lam_in_xy,horizonSteps-1);
-    for iter = 1:8
+    for iter = 1:12
         if iter == 1
             for i = 2:size(interfDiGr.Nodes,1)
                 for j = 1:size(interfDiGr.Nodes,1)

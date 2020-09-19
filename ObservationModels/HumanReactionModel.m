@@ -40,9 +40,10 @@ classdef HumanReactionModel < ObservationModelBase
             y_target = x(2); 
             x_man = x(3); 
             y_man = x(4); 
-            K=3;
+            v_max=3;
+            k_factor = 2;
             pos_error=norm([x_target;y_target]-[x_man;y_man]);
-            speed_chase=K*2/pi*atan(2*pos_error);
+            speed_chase=v_max*2/pi*atan(k_factor*pos_error);
             direction=atan2(y_target-y_man,x_target-x_man);
             
 %             range = obj.computeRange(x);                        
@@ -84,11 +85,12 @@ classdef HumanReactionModel < ObservationModelBase
             y_target = x(2); 
             x_man = x(3); 
             y_man = x(4); 
-            K=3;
+            v_max=3;
+            k_factor = 2;
             pos_error = norm([x_target;y_target]-[x_man;y_man]);
-            speed_chase=K*2/pi*atan(2*pos_error);
+            speed_chase=v_max*2/pi*atan(k_factor*pos_error);
             direction=atan2(y_target-y_man,x_target-x_man);
-            tmp_2_3_K_dist_3_2_2 = K*4/pi/(1+4*pos_error^2)*2/3*pos_error^(3/2);
+            tmp_2_3_K_dist_3_2_2 = v_max*4/pi/(1+4*pos_error^2)*2/3*pos_error^(3/2);
             dv_dx1 = tmp_2_3_K_dist_3_2_2*2*(x(1)-x(3));
             dv_dx2 = tmp_2_3_K_dist_3_2_2*2*(x(2)-x(4));
             dv_dx3 = tmp_2_3_K_dist_3_2_2*2*(x(3)-x(1));

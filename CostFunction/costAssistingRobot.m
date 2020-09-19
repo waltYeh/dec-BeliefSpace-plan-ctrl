@@ -50,14 +50,14 @@ ctrlDim = size(u,1);
 % ctrl dim 6
 [x, P, w] = b2xPw(b, stDim, 2);
 
-Q_t = 10*eye(stDim); % penalize uncertainty
+% Q_t = 10*eye(stDim); % penalize uncertainty
 R_t = diag([0.2, 4.0, 0.2, 0.2,0.1,0.1]); % penalize control effort
-Q_t_err = 0.05*eye(2);
+Q_t_err = 0.0*eye(2);
 Q_l = 10*L*eye(2); % penalize terminal error
-Qcov_t = 1*eye(4);
-Qcov_l = 100000000*eye(4); % penalize terminal covar
-Qcov_t(1,1) = 0;
-Qcov_t(2,2) = 0;
+Qcov_t = 0*eye(4);
+Qcov_l = 1e8*eye(4); % penalize terminal covar
+% Qcov_t(1,1) = 0;
+% Qcov_t(2,2) = 0;
 Qcov_l(1,1) = 0;
 Qcov_l(2,2) = 0;
 w_cc = 1.0; % penalize collision

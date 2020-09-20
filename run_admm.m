@@ -33,8 +33,8 @@ switch show_mode
         weight_a1 = 0.5;
         weight_a2 = 0.5;        
     case BALL_WISH_WITHOUT_HUMAN_INPUT
-        weight_a1 = 0.999;
-        weight_a2 = 0.001;
+        weight_a1 = 0.99;
+        weight_a2 = 0.01;
     case BALL_WISH_WITH_HUMAN_INPUT
         weight_a1 = 0.95;
         weight_a2 = 0.05;
@@ -135,8 +135,10 @@ agents{4} = AgentAssistAdmm(dt,horizonSteps,4,belief_dyns);
 u_guess=cell(size(interfDiGr.Nodes,1),size(interfDiGr.Nodes,1));
 for i=1:size(interfDiGr.Nodes,1)
     u_guess{i,1} = zeros(agents{1}.total_uDim,horizonSteps-1);
-    u_guess{i,1}(5,:) = (mu_a1(1)-mu_a1(3))/horizon;
-    u_guess{i,1}(6,:) = (mu_a1(2)-mu_a1(4))/horizon;
+    u_guess{i,1}(5,:) = (mu_a1(1)-mu_a1(3)-0.1)/horizon;
+    % -0.1 to avoid bad matrix condition caused by Jacobian of human
+    % reaction model
+    u_guess{i,1}(6,:) = (mu_a1(2)-mu_a1(4)-0.1)/horizon;
     u_guess{i,2} = zeros(agents{2}.total_uDim,horizonSteps-1);
     u_guess{i,2}(1,:) = 0;
     u_guess{i,2}(2,:) = 0;
@@ -211,6 +213,7 @@ for i_sim = 1:simulation_steps
     Dim_lam_in_xy = 2;
     lam_d = zeros(size(interfDiGr.Nodes,1)-1,Dim_lam_in_xy,horizonSteps);
     lam_up=zeros(1,Dim_lam_in_xy,horizonSteps-1);
+    tic
     for iter = 1:12
         if iter == 1
             for i = 2:size(interfDiGr.Nodes,1)
@@ -219,7 +222,7 @@ for i_sim = 1:simulation_steps
                     b{i,j} = [];
                 end
                 cost{i} = [];
-                agents{i}.rho_d = 5.0;
+                agents{i}.rho_d = 10.0;
                 agents{i}.rho_up = 5.0;
             end
 %         elseif iter <= 3
@@ -234,7 +237,7 @@ for i_sim = 1:simulation_steps
 %             end
         else
             for i = 2:size(interfDiGr.Nodes,1)
-                agents{i}.rho_d = 5;
+                agents{i}.rho_d = 10;
                 agents{i}.rho_up = 5;
             end
             agents{1}.rho_d = 0.01;
@@ -328,7 +331,13 @@ for i_sim = 1:simulation_steps
 %         [~, ~, ~] = animateAdmm(interfDiGr,agents, b0, x_true,update_steps,time_past, show_mode,false);
 
     end%iLQG iter
-
+    total_t = toc;
+    fprintf(['\n'...
+        'iterations:   %-3d\n'...
+        'time / iter:  %-5.0f ms\n'...
+        'total time:   %-5.2f seconds\n'...
+        '=========== end iLQG ===========\n'],...
+        iter,1e3*total_t/iter,total_t);
     for i = 1:size(interfDiGr.Nodes,1)
         u_guess(i,:) = u(i,:);
         % guess value only used for the first iLQG iteration of each MPC iteration
@@ -349,7 +358,7 @@ for i_sim = 1:simulation_steps
     for i = 1:size(interfDiGr.Nodes,1)
         agents{i}.ctrl_ptr = 1;
     end
-    [~, b0_next, x_true_next] = animateAdmm(interfDiGr,agents, b0, x_true,update_steps,time_past, show_mode,true);
+    [~, b0_next, x_true_next] = animateAdmm(109,110,interfDiGr,agents, b0, x_true,update_steps,time_past, show_mode,true);
 %     b0{1}(1:2) = x_true_final(1:2);
     b0 = b0_next;
     x_true = x_true_next;

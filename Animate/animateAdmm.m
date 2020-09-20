@@ -1,5 +1,5 @@
 function [failed, b_f, x_true_final]...
-    = animateAdmm(D,agents, b0, x_true, nSteps,time_past, show_mode,draw_cov)
+    = animateAdmm(fig_xy,fig_w,D,agents, b0, x_true, nSteps,time_past, show_mode,draw_cov)
 % longer, clear wish, shorter, less overshoot
 t_human_withdraw = 0.5;
 comp_sel =1;
@@ -140,18 +140,21 @@ for k = 1:nSteps-1
     x_save(:,:,k+1) = x_true;
     
     if k>1
-        figure(105)
-
-        plot(mu_save{1,1}(1,k+1),mu_save{1,1}(2,k+1),'bo')
+        figure(fig_xy)
+        plot([x_save(1,1,k-1),x_save(1,1,k)],[x_save(1,2,k-1),x_save(1,2,k)],'-r.')
         hold on
+
+        plot(mu_save{1,1}(1,k+1),mu_save{1,1}(2,k+1),'bo')%packet, target
+%         hold on
         grid on
         axis equal
-        plot(mu_save{1,1}(3,k+1),mu_save{1,1}(4,k+1),'bo')
-        plot(mu_save{1,2}(1,k+1),mu_save{1,2}(2,k+1),'mo')
-        plot(mu_save{1,2}(3,k+1),mu_save{1,2}(4,k+1),'mo')
-        plot(mu_save{2,1}(1,k+1),mu_save{2,1}(2,k+1),'ro')
-        plot(mu_save{3,1}(1,k+1),mu_save{3,1}(2,k+1),'ko')
-        plot(mu_save{4,1}(1,k+1),mu_save{4,1}(2,k+1),'go')
+%         plot(mu_save{1,1}(3,k+1),mu_save{1,1}(4,k+1),'bo')%packet, plattform
+        plot(mu_save{1,2}(1,k+1),mu_save{1,2}(2,k+1),'mo')%rest, target
+%         plot(mu_save{1,2}(3,k+1),mu_save{1,2}(4,k+1),'mo')%rest, plattform
+%         plot(mu_save{2,1}(1,k+1),mu_save{2,1}(2,k+1),'ro')
+%         plot(mu_save{3,1}(1,k+1),mu_save{3,1}(2,k+1),'ko')
+%         plot(mu_save{4,1}(1,k+1),mu_save{4,1}(2,k+1),'go')
+        plot(z{1}(3),z{1}(4),'b*')
         if draw_cov
             pointsToPlot = drawResultGMM([mu_save{1,1}(:,k+1); sig_save{1,1}(:,k+1)], 4);
     %         pointsToPlot = drawResult([mu_save{1,1}(:,k); sig_save{1,1}(:,k)], 2);
@@ -165,16 +168,16 @@ for k = 1:nSteps-1
             pointsToPlot = drawResult([mu_save{4,1}(:,k+1); sig_save{4,1}(:,k+1)], 2);
             plot(pointsToPlot(1,:),pointsToPlot(2,:),'g')
         end
-        plot(z{1}(3),z{1}(4),'b*')
+        
 %         plot(z{1}(1),z{1}(2),'b*')
         plot(z{2}(1),z{2}(2),'r*')
         plot(z{3}(1),z{3}(2),'k*')
         plot(z{4}(1),z{4}(2),'g*')
-        if k>1
-            plot([x_save(1,1,k-1),x_save(1,1,k)],[x_save(1,2,k-1),x_save(1,2,k)],'-r.')
-            plot([x_save(2,1,k-1),x_save(2,1,k)],[x_save(2,2,k-1),x_save(2,2,k)],'-k.')
-            plot([x_save(3,1,k-1),x_save(3,1,k)],[x_save(3,2,k-1),x_save(3,2,k)],'-r.')
-            plot([x_save(4,1,k-1),x_save(4,1,k)],[x_save(4,2,k-1),x_save(4,2,k)],'-r.')
+        
+        plot([x_save(2,1,k-1),x_save(2,1,k)],[x_save(2,2,k-1),x_save(2,2,k)],'-k.')
+        plot([x_save(3,1,k-1),x_save(3,1,k)],[x_save(3,2,k-1),x_save(3,2,k)],'-r.')
+        plot([x_save(4,1,k-1),x_save(4,1,k)],[x_save(4,2,k-1),x_save(4,2,k)],'-r.')
+
         %     
         %     pointsToPlot = drawResultGMM([mu_save{1,1}(:,k); sig_save{1,1}(:,k)], agents{1}.motionModel.stDim);
         %     plot(pointsToPlot(1,:),pointsToPlot(2,:),'b')
@@ -194,7 +197,20 @@ for k = 1:nSteps-1
 %             subplot(2,2,4)
 %             plot(time_past + 0.05*(k-1),u{4}(1),'b.',time_past + 0.05*(k-1),u{4}(2),'r.')
 %             hold on
-        end
+        figure(fig_w+1)
+        subplot(2,2,1)
+        plot(time_past + agents{1}.motionModel.dt*(k-1),u{1}(5),'b.',time_past + agents{1}.motionModel.dt*(k-1),u{1}(6),'r.')
+        hold on
+        plot(time_past + agents{1}.motionModel.dt*(k-1),u{1}(2),'r+')
+        subplot(2,2,2)
+        plot(time_past + agents{1}.motionModel.dt*(k-1),u{2}(1),'b.',time_past + agents{1}.motionModel.dt*(k-1),u{2}(2),'r.')
+        hold on
+        subplot(2,2,3)
+        plot(time_past + agents{1}.motionModel.dt*(k-1),u{3}(1),'b.',time_past + agents{1}.motionModel.dt*(k-1),u{3}(2),'r.')
+        hold on
+        subplot(2,2,4)
+        plot(time_past + agents{1}.motionModel.dt*(k-1),u{4}(1),'b.',time_past + agents{1}.motionModel.dt*(k-1),u{4}(2),'r.')
+        hold on
     end
     % figure(6)
     % %     
@@ -218,7 +234,7 @@ for k = 1:nSteps-1
         pause(0.2);
     end
 end
-figure(105)
+figure(fig_xy)
 
 plot(mu_save{1,1}(1,:),mu_save{1,1}(2,:),'bo')
 hold on
@@ -251,6 +267,35 @@ plot(mu_save{4,1}(1,:),mu_save{4,1}(2,:),'go')
     plot(squeeze(x_save(2,1,:)),squeeze(x_save(2,2,:)),'-k.')
     plot(squeeze(x_save(3,1,:)),squeeze(x_save(3,2,:)),'-r.')
     plot(squeeze(x_save(4,1,:)),squeeze(x_save(4,2,:)),'-r.')
+    
+    figure(fig_w+1)
+    subplot(2,2,1)
+    title('Unterstützung Plattform und Förderband')
+    xlabel('t(s)')
+    ylabel('vel(m/s)')
+    legend('x','y','Band')
+    grid
+    % hold off
+    subplot(2,2,2)
+    title('Assistent 2')
+    xlabel('t(s)')
+    ylabel('vel(m/s)')
+    legend('x','y')
+    grid
+    % hold off
+    subplot(2,2,3)
+    title('Assistent 3')
+    xlabel('t(s)')
+    ylabel('vel(m/s)')
+    legend('x','y')
+    grid
+    % hold off
+    subplot(2,2,4)
+    title('Assistent 4')
+    xlabel('t(s)')
+    ylabel('vel(m/s)')
+    legend('x','y')
+    grid
 % end
 b_f = b;
 % if time_past<0.01
@@ -286,5 +331,18 @@ b_f = b;
 %     ylabel('Gewicht')
 % end
 x_true_final = x_true;
-
+[x_m,y_m] = meshgrid(1:0.5:10,-2:0.5:5);
+X=1:0.5:10;
+Y=-2:0.5:5;
+Z = zeros(size(x_m,1),size(x_m,2));
+for i=1:length(X)
+    for j=1:length(Y)
+        ZZ = agents{1}.obsModel.getObservationNoiseJacobian([0;0;X(i);Y(j)]);
+        Z(j,i) = ZZ(end);
+%         1/(1/norm([X(i);Y(j)]-[7;0])^2 + 1/norm([X(i);Y(j)]-[3;1])^2 + 1);
+    end
+end
+figure(fig_xy)
+surf(x_m,y_m,Z-max(max(Z))-0.5)
+legend('wahre Plattform','Ziel A','Ziel B','Messung der Plattform','Belief A','Belief B')
 end

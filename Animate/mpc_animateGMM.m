@@ -268,19 +268,21 @@ for k = 1:nSteps-1
 %     drawResult(plotFn,b,motionModel.stDim);
 %     drawnow;
     figure(fig_xy)
-    plot(x_save(1,k),x_save(2,k),'+')
+%     plot(x_save(1,k),x_save(2,k),'+')
+    
+    plot(x_save(3,k),x_save(4,k),'+')
     hold on
     axis equal
-    plot(x_save(3,k),x_save(4,k),'+')
 %     plot(mu_save{1}(3,k),mu_save{1}(4,k),'bo')
     plot(mu_save{1}(1,k),mu_save{1}(2,k),'bo')
-    plot(mu_save{2}(1,k),mu_save{2}(2,k),'ro')
     
+    plot(mu_save{2}(1,k),mu_save{2}(2,k),'ro')
+    plot(z(3),z(4),'*')
     pointsToPlot = drawResultGMM([mu_save{1}(:,k); sig_save{1}(:,k)], motionModel.stDim);
     plot(pointsToPlot(1,:),pointsToPlot(2,:),'b')
     pointsToPlot = drawResultGMM([mu_save{2}(:,k); sig_save{2}(:,k)], motionModel.stDim);
     plot(pointsToPlot(1,:),pointsToPlot(2,:),'r')
-    plot(z(3),z(4),'*')
+    
     
 %     [x_nom, P_nom, w_nom] = b2xPw(b_nom(:,k), component_stDim, components_amount);
 %     plot(x_save(1,k),x_save(2,k),'.')
@@ -383,6 +385,7 @@ for i=1:length(X)
     end
 end
 figure(fig_xy)
-surf(x_m,y_m,Z-max(Z)-0.5)
+surf(x_m,y_m,Z-max(max(Z))-0.5)
+legend('wahre Plattform','Ziel A','Ziel B','Messung der Plattform','Belief A','Belief B')
 end
 end

@@ -305,14 +305,16 @@ for k = 1:nSteps-1
 %     drawResult(plotFn,b,motionModel.stDim);
 %     drawnow;
     figure(fig_xy)
-    plot(x_save(1,k),x_save(2,k),'+')
+%     plot(x_save(1,k),x_save(2,k),'+')
     hold on
     axis equal
     plot(x_save(3,k),x_save(4,k),'+')
+    hold on
+    axis equal
 %     plot(mu_save{1}(3,k),mu_save{1}(4,k),'bo')
     plot(mu_save{1}(1,k),mu_save{1}(2,k),'bo')
     plot(mu_save{2}(1,k),mu_save{2}(2,k),'ro')
-    
+    plot(z_human_react(3),z_human_react(4),'*')
     pointsToPlot = drawResultGMM([mu_save{1}(:,k); sig_save{1}(:,k)], motionModel.stDim);
     plot(pointsToPlot(1,:),pointsToPlot(2,:),'b')
     pointsToPlot = drawResultGMM([mu_save{2}(:,k); sig_save{2}(:,k)], motionModel.stDim);
@@ -323,7 +325,7 @@ for k = 1:nSteps-1
     plot(pointsToPlot(1,:),pointsToPlot(2,:),'k')
     pointsToPlot = drawResult([b_assist3_next(1:2); b_assist3_next(3:6)], 2);
     plot(pointsToPlot(1,:),pointsToPlot(2,:),'k')
-    plot(z_human_react(3),z_human_react(4),'*')
+    
     
 %     [x_nom, P_nom, w_nom] = b2xPw(b_nom(:,k), component_stDim, components_amount);
 %     plot(x_save(1,k),x_save(2,k),'.')
@@ -414,7 +416,7 @@ if time_past<0.01
     xlabel('t(s)')
     ylabel('Gewicht')
 %     legend('A','B')
-[x_m,y_m] = meshgrid(1:0.5:10,-1:0.5:5);
+[x_m,y_m] = meshgrid(1:0.5:10,-2:0.5:5);
 X=1:0.5:10;
 Y=-1:0.5:5;
 Z = zeros(size(x_m,1),size(x_m,2));
@@ -426,7 +428,8 @@ for i=1:length(X)
     end
 end
 figure(fig_xy)
-surf(x_m,y_m,Z-max(Z)-0.5)
+surf(x_m,y_m,Z-max(max(Z))-0.5)
+legend('wahre Plattform','Ziel A','Ziel B','Messung der Plattform','Belief A','Belief B')
 end
 end
 function [b_next,mu,sig] = getNextEstimation(b,u,z,motionModel,obsModel)

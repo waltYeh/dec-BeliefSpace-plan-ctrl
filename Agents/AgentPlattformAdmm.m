@@ -137,7 +137,7 @@ classdef AgentPlattformAdmm < AgentBase
                 zerObsNoise = zeros(length(z),1);
                 H = obj.obsModel.getObservationJacobian(mu{i_comp},zerObsNoise);
                 % M is eye
-                M = obj.obsModel.getObservationNoiseJacobian(mu{i_comp},zerObsNoise,z);
+                M = obj.obsModel.getObservationNoiseJacobian(mu{i_comp});
             %     R = obsModel.getObservationNoiseCovariance(x,z);
             %     R = obsModel.R_est;
                 % update P

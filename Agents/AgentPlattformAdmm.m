@@ -22,8 +22,8 @@ classdef AgentPlattformAdmm < AgentBase
             -4.0 4.0;%band move in y direction, may set to 0 if controlled by another agent
             -0.0  0.0;%rest position not movable
             -0.0  0.0;%
-            -2.0 2.0;%move plattform and human 
-            -2.0 2.0];
+            -4.0 4.0;%move plattform and human 
+            -4.0 4.0];
         % larger, less overshoot; smaller, less b-noise affects assist
          
     end

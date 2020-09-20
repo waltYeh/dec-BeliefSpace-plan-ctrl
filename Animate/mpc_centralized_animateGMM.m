@@ -348,47 +348,50 @@ for k = 1:nSteps-1
 %     time_line = 0:motionModel.dt:motionModel.dt*(nSteps);
     figure(fig_w+1)
     subplot(2,2,1)
+    plot(time_past + motionModel.dt*(k-1),(u(5)+u(7)+u(9))/3,'b.',time_past + motionModel.dt*(k-1),(u(6)+u(8)+u(10))/3,'r.')
+    %,time_past + motionModel.dt*(k-1),u(6),'r.')
+    hold on
+    plot(time_past + motionModel.dt*(k-1),u(2),'+')
+    
+    subplot(2,2,2)
     plot(time_past + motionModel.dt*(k-1),u(5),'b.',time_past + motionModel.dt*(k-1),u(6),'r.')
     hold on
-    subplot(2,2,2)
-    plot(time_past + motionModel.dt*(k-1),v_man(1),'b.',time_past + motionModel.dt*(k-1),v_man(2),'r.')
-    hold on
     subplot(2,2,3)
-    plot(time_past + motionModel.dt*(k-1),u(1),'b.',time_past + motionModel.dt*(k-1),u(2),'r.')
+    plot(time_past + motionModel.dt*(k-1),u(7),'b.',time_past + motionModel.dt*(k-1),u(8),'r.')
     hold on
     subplot(2,2,4)
-    plot(time_past + motionModel.dt*(k-1),u(3),'b.',time_past + motionModel.dt*(k-1),u(4),'r.')
+    plot(time_past + motionModel.dt*(k-1),u(9),'b.',time_past + motionModel.dt*(k-1),u(10),'r.')
     hold on
     pause(0.02);
 end
 if time_past<0.01
     figure(fig_w+1)
     subplot(2,2,1)
-    title('Unterstützung Plattform')
+    title('Unterstützung Plattform und Förderband')
     xlabel('t(s)')
     ylabel('vel(m/s)')
-%     legend('x','y')
+    legend('x','y','Band')
     grid
     % hold off
     subplot(2,2,2)
-    title('Mensch selbst')
+    title('Assistent 2')
     xlabel('t(s)')
     ylabel('vel(m/s)')
-%     legend('x','y')
+    legend('x','y')
     grid
     % hold off
     subplot(2,2,3)
-    title('Bewegung des Ziels A')
+    title('Assistent 3')
     xlabel('t(s)')
     ylabel('vel(m/s)')
-%     legend('x','y')
+    legend('x','y')
     grid
     % hold off
     subplot(2,2,4)
-    title('Bewegung des Ziels B')
+    title('Assistent 4')
     xlabel('t(s)')
     ylabel('vel(m/s)')
-%     legend('x','y')
+    legend('x','y')
     grid
 
     % figure(1)

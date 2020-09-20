@@ -28,7 +28,7 @@ BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT = 6;
 REST_WISH_WITHOUT_HUMAN_INPUT = 7;
 REST_WISH_WITH_HUMAN_INPUT = 8;
 REST_WISH_WITH_OPPOSITE_HUMAN_INPUT = 9;
-show_mode = REST_WISH_WITHOUT_HUMAN_INPUT;
+show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
 switch show_mode
     case EQUAL_WEIGHT_BALANCING
         weight_1 = 0.5;
@@ -112,12 +112,12 @@ Op.lims  = [-0.0 0.0;%target A x
     -4.0 4.0;%target A y
     -0.0  0.0;%target B x
     -0.0  0.0;%target B y
-    -2.0 2.0;%assist 2 x
-    -2.0 2.0;%assist 2 y
-    -2.0 2.0;%assist 3 x
-    -2.0 2.0;%assist 3 y
-    -2.0 2.0;%assist 4 x
-    -2.0 2.0;%assist 4 y
+    -4.0 4.0;%assist 2 x
+    -4.0 4.0;%assist 2 y
+    -4.0 4.0;%assist 3 x
+    -4.0 4.0;%assist 3 y
+    -4.0 4.0;%assist 4 x
+    -4.0 4.0;%assist 4 y
     ];
 
 Op.plot = -1; % plot the derivatives as well

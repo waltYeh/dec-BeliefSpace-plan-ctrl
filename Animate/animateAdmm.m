@@ -199,7 +199,8 @@ for k = 1:nSteps-1
 %             hold on
         figure(fig_w+1)
         subplot(2,2,1)
-        plot(time_past + agents{1}.motionModel.dt*(k-1),u{1}(5),'b.',time_past + agents{1}.motionModel.dt*(k-1),u{1}(6),'r.')
+%         plot(time_past + agents{1}.motionModel.dt*(k-1),u{1}(5),'b.',time_past + agents{1}.motionModel.dt*(k-1),u{1}(6),'r.')
+        plot(time_past + agents{1}.motionModel.dt*(k-1),(u{2}(1)+u{3}(1)+u{4}(1))/3,'b.',time_past + agents{1}.motionModel.dt*(k-1),(u{2}(2)+u{3}(2)+u{4}(2))/3,'r.')
         hold on
         plot(time_past + agents{1}.motionModel.dt*(k-1),u{1}(2),'r+')
         subplot(2,2,2)

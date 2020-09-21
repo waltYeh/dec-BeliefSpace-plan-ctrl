@@ -7,9 +7,11 @@ w = zeros(components_amount,1);
     for i_comp=1:components_amount
         b_comp = b((i_comp-1)*component_bDim+1:i_comp*component_bDim);
         x{i_comp} = b_comp(1:component_stDim);
+        PP=zeros(component_stDim,component_stDim);
         for d = 1:component_stDim
-            P{i_comp}(:,d) = b_comp(d*component_stDim+1:(d+1)*component_stDim, 1);
+            PP(:,d) = b_comp(d*component_stDim+1:(d+1)*component_stDim, 1);
         end
+        P{i_comp}=PP;
         w(i_comp) = b_comp(end);
     end
 % end

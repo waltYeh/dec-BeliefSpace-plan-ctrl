@@ -53,14 +53,16 @@ else
     
     % dynamics first derivatives
     xu_dyn  = @(xu) beliefDynamicsGMM(xu(ib,:),xu(iu_begin:end,:),motionModel, obsModel);
+%     tic
     J       = finiteDifference(xu_dyn, [b{idx}; u{idx}]);
     gb      = J(:,ib,:);
     gu      = J(:,iu_begin:end,:);
-
+%     time_gs = toc
     [gbb,gbu,guu] = deal([]);
     %% cost first derivatives
     
     xu_cost = @(xu) cost_plattform(xu(ib,:),xu(iu_begin:end,:),horizonSteps, components_amount);    
+%     tic
     J       = squeeze(finiteDifference(xu_cost, [b{idx}; u{idx}]));
     
     c_bi      = J(ib,:);
@@ -77,6 +79,7 @@ else
     c_bi_ui     = 0.5*(JJ(ib,iu_begin:end,:)+permute(JJ(iu_begin:end,ib,:),[2 1 3]));
     c_ui_ui     = JJ(iu_begin:end,iu_begin:end,:);            
     c_ui_uj = 0;
+%     time_css = toc
     [g,c] = deal([]);
 end
 end

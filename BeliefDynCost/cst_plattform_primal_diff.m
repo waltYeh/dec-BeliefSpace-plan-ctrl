@@ -1,6 +1,7 @@
 function [c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj] ...
         = cst_plattform_primal_diff(D,idx,b,u,c_bi,c_ui,...
         c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,lam_di,lam_up,rho_d,rho_up)
+%     tic
 horizon = size(c_bi,2);
 belief_dim = size(c_bi,1);
 comp_amount = 2;
@@ -38,4 +39,5 @@ for i_comp = 1:1
 
     end
 end
+% time_admm=toc
 end

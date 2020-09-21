@@ -45,10 +45,11 @@ else
     
     % dynamics first derivatives
     xu_dyn  = @(xu) beliefDynamicsCentralized(xu(ib,:),xu(iu,:),motionModel, obsModel);
+%     tic
     J       = finiteDifference(xu_dyn, [b; u]);
     gb      = J(:,ib,:);
     gu      = J(:,iu,:);
-
+%     time_gs = toc
     % dynamics second derivatives
     if full_DDP
         xu_Jcst = @(xu) finiteDifference(xu_dyn, xu);
@@ -78,6 +79,7 @@ else
     %% cost first derivatives
     
     xu_cost = @(xu) costAssistingRobotCentralized(xu(ib,:),xu(iu,:),horizonSteps,motionModel.stDim, components_amount);    
+%     tic
     J       = squeeze(finiteDifference(xu_cost, [b; u]));
     
 %     % construct Jacobian adding collision cost
@@ -106,7 +108,7 @@ else
     cbb     = JJ(ib,ib,:);
     cbu     = JJ(ib,iu,:);
     cuu     = JJ(iu,iu,:);            
-
+%     time_css = toc
     [g,c] = deal([]);
 end
 end

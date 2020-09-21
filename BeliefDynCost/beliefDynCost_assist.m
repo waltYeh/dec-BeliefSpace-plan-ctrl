@@ -101,9 +101,11 @@ else
 % but for cost values without der, b and u of all neighboring agents are
 % passed in, now we dont need those neighbors, but still have to pass them
 % in so that the syntax can be consistent
+%     tic
     J       = finiteDifference(xu_dyn, [b{idx}; u{idx}]);
     gb      = J(:,ib,:);
     gu      = J(:,iu_begin:end,:);
+%     time_gs = toc
     % gu depends on dt
 %     all others are zero because dyn is decoupled
     % dynamics second derivatives
@@ -169,6 +171,7 @@ else
 %     cu=zeros(size(D.Nodes,1),ctrlDim,horizon);
 %     for j = incoming_nbrs_idces
 % input dim 4*8*41
+%         tic
         J       = multiAgentFiniteDifference(xu_cost,D,idx, squeeze(cat(2,b_formation(:,:,:), u_formation(:,:,:))));
         
 %         xu_sigma =  @(b_f) sigmaToCollide_multiagent_D(D,idx,b_f(:,:,:),motionModel.stDim,collisionChecker);
@@ -242,7 +245,7 @@ else
 %     cbb     = JJ(ib,ib,:);
 %     cbu     = JJ(ib,iu,:);
 %     cuu     = JJ(iu,iu,:);            
-
+%     time_css = toc
     [g,c] = deal([]);
 end
 end

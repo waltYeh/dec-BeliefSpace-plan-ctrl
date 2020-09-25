@@ -4,6 +4,7 @@
 function run_admm()
 addpath(genpath('./'));
 clear
+close all
 % FigList = findall(groot, 'Type', 'figure');
 % for iFig = 1:numel(FigList)
 %     try
@@ -21,7 +22,7 @@ BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT = 6;
 REST_WISH_WITHOUT_HUMAN_INPUT = 7;
 REST_WISH_WITH_HUMAN_INPUT = 8;
 REST_WISH_WITH_OPPOSITE_HUMAN_INPUT = 9;
-show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
+show_mode = REST_WISH_WITHOUT_HUMAN_INPUT;
 switch show_mode
     case EQUAL_WEIGHT_BALANCING
         weight_a1 = 0.5;
@@ -53,12 +54,16 @@ switch show_mode
 end
 %% tuned parameters
 mu_a1 = [8.5, 0.0, 5.0, 0.0]';
-mu_a2 = [3, 0.5, 5.0, 0.0]';
+mu_a2 = [3, 0.8, 5.0, 0.0]';
+% mu_b = [4, -1.0]';
+% mu_c = [4., 1.0]';
+% mu_d = [6.0, 1.0]';
 mu_b = [3, -1.3]';
 mu_c = [4.5, 1.5]';
 mu_d = [7.0, 1.5]';
-sig_a1 = diag([0.01, 0.01, 0.1, 0.1]);%sigma
-sig_a2 = diag([0.01, 0.01, 0.1, 0.1]);
+
+sig_a1 = diag([0.01, 0.01, 0.05, 0.05]);%sigma
+sig_a2 = diag([0.01, 0.01, 0.05, 0.05]);
 sig_b = diag([0.02, 0.02]);%sigma
 sig_c = diag([0.02, 0.02]);
 sig_d = diag([0.02, 0.02]);
@@ -214,7 +219,7 @@ for i_sim = 1:simulation_steps
     lam_d = zeros(size(interfDiGr.Nodes,1)-1,Dim_lam_in_xy,horizonSteps);
     lam_up=zeros(1,Dim_lam_in_xy,horizonSteps-1);
     tic
-    for iter = 1:18
+    for iter = 1:15
         if iter == 1
             for i = 2:size(interfDiGr.Nodes,1)
                 for j = 1:size(interfDiGr.Nodes,1)
@@ -222,8 +227,8 @@ for i_sim = 1:simulation_steps
                     b{i,j} = [];
                 end
                 cost{i} = [];
-                agents{i}.rho_d = 10.0;
-                agents{i}.rho_up = 5.0;
+                agents{i}.rho_d = 0.4;
+                agents{i}.rho_up = 2.0;
             end
 %         elseif iter <= 3
 %             for i = 1:size(interfDiGr.Nodes,1)
@@ -237,11 +242,11 @@ for i_sim = 1:simulation_steps
 %             end
         else
             for i = 2:size(interfDiGr.Nodes,1)
-                agents{i}.rho_d = 10;
-                agents{i}.rho_up = 5;
+                agents{i}.rho_d = 0.4;
+                agents{i}.rho_up = 2;
             end
-            agents{1}.rho_d = 0.01;
-            agents{1}.rho_up = 0.01;
+            agents{1}.rho_d = 0.4;
+            agents{1}.rho_up =2;
         end
 
         for i = 1:size(interfDiGr.Nodes,1)
@@ -273,33 +278,92 @@ for i_sim = 1:simulation_steps
         end% for every agent
         %% 
         if mod(iter,1)==0
+            last_lam_d=lam_d;
+            last_lam_up=lam_up;
             [lam_d,lam_up,formation_residue,dyncouple_residue]=update_lam(interfDiGr,b,u, lam_d,lam_up,horizonSteps);
             finished{1} = false;
             finished{2} = false;
             finished{3} = false;
             finished{4} = false;
             figure(20)
+%             subplot(2,2,1)
+            if iter>1
+                set(h1,'LineWidth',0.5)
+                set(h2,'LineWidth',0.5)
+                set(h3,'LineWidth',0.5)
+                set(h4,'LineWidth',0.5)
+                set(h5,'LineWidth',0.5)
+                set(h6,'LineWidth',0.5)
+                set(h7,'LineWidth',0.5)
+                set(h8,'LineWidth',0.5)
+                
+                set(h9,'LineWidth',0.5)
+                set(h10,'LineWidth',0.5)
+                set(h11,'LineWidth',0.5)
+                set(h12,'LineWidth',0.5)
+                set(h13,'LineWidth',0.5)
+                set(h14,'LineWidth',0.5)
+                set(h15,'LineWidth',0.5)
+                set(h16,'LineWidth',0.5)
+            end
+            
             subplot(2,2,2)
             title('agent 2 residue')
-            plot(1:horizonSteps,squeeze(formation_residue(1,1,:)),'b')
+            h1=plot(1:horizonSteps,squeeze(formation_residue(1,1,:)),'b','LineWidth',2);
             hold on
-            plot(1:horizonSteps,squeeze(formation_residue(1,2,:)),'k')
+            h2=plot(1:horizonSteps,squeeze(formation_residue(1,2,:)),'k','LineWidth',2);
             subplot(2,2,3)
             title('agent 3 residue')
-            plot(1:horizonSteps,squeeze(formation_residue(2,1,:)),'b')
+            h3=plot(1:horizonSteps,squeeze(formation_residue(2,1,:)),'b','LineWidth',2);
             hold on
-            plot(1:horizonSteps,squeeze(formation_residue(2,2,:)),'k')
+            h4=plot(1:horizonSteps,squeeze(formation_residue(2,2,:)),'k','LineWidth',2);
             subplot(2,2,4)
             title('agent 4 residue')
-            plot(1:horizonSteps,squeeze(formation_residue(3,1,:)),'b')
+            h5=plot(1:horizonSteps,squeeze(formation_residue(3,1,:)),'b','LineWidth',2);
             hold on
-            plot(1:horizonSteps,squeeze(formation_residue(3,2,:)),'k')
-            figure(21)
-        
+            h6=plot(1:horizonSteps,squeeze(formation_residue(3,2,:)),'k','LineWidth',2);
+            
+            subplot(2,2,1)
             title('force balance residue')
-            plot(1:horizonSteps-1,squeeze(dyncouple_residue(1,1,:)),'b')
+            h7=plot(1:horizonSteps-1,squeeze(dyncouple_residue(1,1,:)),'b','LineWidth',2);
             hold on
-            plot(1:horizonSteps-1,squeeze(dyncouple_residue(1,2,:)),'k')
+            h8=plot(1:horizonSteps-1,squeeze(dyncouple_residue(1,2,:)),'k','LineWidth',2);
+            
+            figure(88)
+            subplot(2,2,1)
+            h9=plot(1:horizonSteps-1,squeeze(lam_up(1,1,:)),'b-','LineWidth',2);
+            hold on
+            h10=plot(1:horizonSteps-1,squeeze(lam_up(1,2,:)),'r-','LineWidth',2);
+            subplot(2,2,2)
+            h11=plot(1:horizonSteps,squeeze(lam_d(1,1,:)),'b-','LineWidth',2);
+            hold on
+            h12=plot(1:horizonSteps,squeeze(lam_d(1,2,:)),'r-','LineWidth',2);
+            subplot(2,2,3)
+            h13=plot(1:horizonSteps,squeeze(lam_d(2,1,:)),'b-','LineWidth',2);
+            hold on
+            h14=plot(1:horizonSteps,squeeze(lam_d(2,2,:)),'r-','LineWidth',2);
+            subplot(2,2,4)
+            h15=plot(1:horizonSteps,squeeze(lam_d(3,1,:)),'b-');
+            hold on
+            h16=plot(1:horizonSteps,squeeze(lam_d(3,2,:)),'r-');
+            
+            figure(89)
+            subplot(2,2,1)
+            plot([iter-1,iter],[sum(squeeze(last_lam_up(1,1,:)),'all'),sum(squeeze(lam_up(1,1,:)),'all')],'b-*')
+            hold on
+            plot([iter-1,iter],[sum(squeeze(last_lam_up(1,2,:)),'all'),sum(squeeze(lam_up(1,2,:)),'all')],'r-*')
+            subplot(2,2,2)
+            plot([iter-1,iter],[sum(squeeze(last_lam_d(1,1,:)),'all'),sum(squeeze(lam_d(1,1,:)),'all')],'b-*')
+            hold on
+            plot([iter-1,iter],[sum(squeeze(last_lam_d(1,2,:)),'all'),sum(squeeze(lam_d(1,2,:)),'all')],'r-*')
+            subplot(2,2,3)
+            plot([iter-1,iter],[sum(squeeze(last_lam_d(2,1,:)),'all'),sum(squeeze(lam_d(2,1,:)),'all')],'b-*')
+            hold on
+            plot([iter-1,iter],[sum(squeeze(last_lam_d(2,2,:)),'all'),sum(squeeze(lam_d(2,2,:)),'all')],'r-*')
+            subplot(2,2,4)
+            plot([iter-1,iter],[sum(squeeze(last_lam_d(3,1,:)),'all'),sum(squeeze(lam_d(3,1,:)),'all')],'b-*')
+            hold on
+            plot([iter-1,iter],[sum(squeeze(last_lam_d(3,2,:)),'all'),sum(squeeze(lam_d(3,2,:)),'all')],'r-*')
         end
         
 %         lam_d(lam_d>1.0)=1.0;
@@ -349,7 +413,7 @@ for i_sim = 1:simulation_steps
     end
     time_past = (i_sim-1) * mpc_update_period;
     assignin('base', 'interfDiGr', interfDiGr)
-    assignin('base', 'b0', b0)
+    assignin('base', 'b0_admm', b0)
     assignin('base', 'agents', agents)
     assignin('base', 'update_steps', update_steps)
     assignin('base', 'time_past', time_past)

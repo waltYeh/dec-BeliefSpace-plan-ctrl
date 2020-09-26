@@ -1,4 +1,4 @@
-function b_next = beliefDynamicsSimpleAgent(b, u, motionModel, obsModel)
+function b_next = beliefDynamicsSimpleAgent(b, u,motionModel,obsModel)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Propagate beliefs according to approach given in Section 4.1 
 % of Van Den Berg et al. IJRR 2012

@@ -18,7 +18,8 @@ N = 50; % discretize robot body
 delta_theta = 2*pi/N;
 theta = 0:delta_theta:2*pi-delta_theta;
 
-% robot perimeter
+% robot perimeter 
+% used for checking boundaries
 ptPerimiter = repmat(x,1,N) + R*[cos(theta);sin(theta)] ;
 
 % % check if robot is within boundary
@@ -32,10 +33,10 @@ if sum(inbounds) ~= size(ptPerimiter,2)
     return;
 end
 
-dx = map.obstacles(1,:) - x(1);
+dx = map.obstacles(1,:) - x(1);% map.obstacles has cols store with center pt of obst
 dy = map.obstacles(2,:) - x(2);
 
-c2c = sqrt(dx.^2 + dy.^2);                
+c2c = sqrt(dx.^2 + dy.^2); % center to center, robot to obst               
 
 if any(c2c <= R + map.obstacleRadius)
     yesno = 0;

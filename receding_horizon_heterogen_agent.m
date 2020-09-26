@@ -1,7 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Demo for a 2D belief space planning scenario 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function receding_horizon_agent()
+function receding_horizon_heterogen_agent()
 addpath(genpath('./'));
 clear
 % FigList = findall(groot, 'Type', 'figure');
@@ -21,51 +21,54 @@ BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT = 6;
 REST_WISH_WITHOUT_HUMAN_INPUT = 7;
 REST_WISH_WITH_HUMAN_INPUT = 8;
 REST_WISH_WITH_OPPOSITE_HUMAN_INPUT = 9;
-show_mode = EQUAL_WEIGHT_TO_BALL_FEEDBACK;
+show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
 switch show_mode
     case EQUAL_WEIGHT_BALANCING
-        weight_1 = 0.5;
-        weight_2 = 0.5;
+        weight_a1 = 0.5;
+        weight_a2 = 0.5;
     case EQUAL_WEIGHT_TO_BALL_FEEDBACK
-        weight_1 = 0.5;
-        weight_2 = 0.5;
+        weight_a1 = 0.5;
+        weight_a2 = 0.5;
     case EQUAL_WEIGHT_TO_REST_FEEDBACK
-        weight_1 = 0.5;
-        weight_2 = 0.5;        
+        weight_a1 = 0.5;
+        weight_a2 = 0.5;        
     case BALL_WISH_WITHOUT_HUMAN_INPUT
-        weight_1 = 0.95;
-        weight_2 = 0.05;
+        weight_a1 = 0.999;
+        weight_a2 = 0.001;
     case BALL_WISH_WITH_HUMAN_INPUT
-        weight_1 = 0.95;
-        weight_2 = 0.05;
+        weight_a1 = 0.95;
+        weight_a2 = 0.05;
     case BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT
-        weight_1 = 0.95;
-        weight_2 = 0.05;
+        weight_a1 = 0.95;
+        weight_a2 = 0.05;
     case REST_WISH_WITHOUT_HUMAN_INPUT
-        weight_1 = 0.05;
-        weight_2 = 0.95;
+        weight_a1 = 0.01;
+        weight_a2 = 0.99;
     case REST_WISH_WITH_HUMAN_INPUT
-        weight_1 = 0.05;
-        weight_2 = 0.95;
+        weight_a1 = 0.05;
+        weight_a2 = 0.95;
     case REST_WISH_WITH_OPPOSITE_HUMAN_INPUT
-        weight_1 = 0.05;
-        weight_2 = 0.95;
+        weight_a1 = 0.05;
+        weight_a2 = 0.95;
 end
 %% tuned parameters
-mu_1 = [-0.0, 1.3]';
-mu_2 = [-1.0, 0.1]';
-mu_3 = [1, 0.0]';
-mu_4 = [0.0, -0.3]';
-sig_1 = diag([0.01, 0.01]);%sigma
-sig_2 = diag([0.01, 0.01]);
-sig_3 = diag([0.01, 0.01]);%sigma
-sig_4 = diag([0.01, 0.01]);
+mu_a1 = [8.5, 0.0, 5.0, 0.0]';
+mu_a2 = [3, 0.5, 5.0, 0.0]';
+mu_b = [8.5, 0.0]';
+mu_c = [6.5, 1]';
+mu_d = [5.0, 0.5]';
+sig_a1 = diag([0.01, 0.01, 0.1, 0.1]);%sigma
+sig_a2 = diag([0.01, 0.01, 0.1, 0.1]);
+sig_b = diag([0.01, 0.01]);%sigma
+sig_c = diag([0.5, 0.5]);
+sig_d = diag([0.5, 0.5]);
+
 % weight_1 = 0.9;
 % weight_2 = 0.1;
 dt = 0.05;
-horizon = 2.0;
-mpc_update_period = 2;
-simulation_time = 2;
+horizon = 1.5;
+mpc_update_period = 1.5;
+simulation_time = 1.5;
 
 %% 
 
@@ -79,25 +82,26 @@ simulation_steps = simulation_time/mpc_update_period;
 % mm = HumanMind(dt); % motion model
 
 % om = HumanReactionModel(); % observation model
-use_admm = true;
 
 
-sd = [2 2 3 1];%edges start from
-td = [1 3 4 3];%edges go to
-nom_formation_1=[0.5,0.5;
-    -0.5,-0.5;
+
+sd = [2  3 1 1 1];%edges start from
+td = [1  4 3 2 4];%edges go to
+nom_formation_2=[0.0,0.0;
+    %-0.5,-0.5;
     -0.5,-0.5;
     -1,-1;
-    -0.5,-0.5;
-    ];%-- formation
-nom_formation_2=[-1,1;
-    -2,0;
+    -0.0,-0.0;];%-- formation
+nom_formation_2=[-0,0;
+    %-2,0;
     1,-1;
-    -1,-1;
-];%z formation
+    -0.1,-0.1;
+    0,-0;
+    0.9,-1.1];%z formation
+%control cost of node sd in opt of td
 rii_control = [0.8;0.8;0.8;0.8];
 incoming_edges = zeros(4,4);
-EdgeTable = table([sd' td'],nom_formation_2,'VariableNames',{'EndNodes' 'nom_formation_2' });
+EdgeTable = table([sd' td'],nom_formation_2,'VariableNames',{'EndNodes' 'nom_formation_2'});
 
 NodeTable = table(incoming_edges,rii_control,'VariableNames',{'incoming_edges' 'rii_control'});
 interfDiGr = digraph(EdgeTable,NodeTable);
@@ -113,42 +117,36 @@ for idx=1:4
     end
 end
 
-comm_sd = [1 3 2 3];
-comm_td = [2 1 4 4];
+comm_sd = [1 1 1 3];
+comm_td = [2 3 4 4];
 commGr = graph(comm_sd,comm_td);
-adjGr = full(adjacency(commGr));
+adjGr = full(adjacency(commGr));% full transfers sparse to normal matrix
 
 agents = cell(size(interfDiGr.Nodes,1),1);
-belief_dyns = {@(b, u)beliefDynamicsSimpleAgent(b, u,TwoDPointRobot(dt),TwoDSimpleObsModel()); 
-    @(b, u)beliefDynamicsSimpleAgent(b, u, TwoDPointRobot(dt),TwoDSimpleObsModel()); 
+belief_dyns = {@(b, u)beliefDynamicsGMM(b, u,HumanMind(dt),HumanReactionModel()); 
+    @(b, u)beliefDynamicsSimpleAgent(b, u, TwoDPointBelt(dt),TwoDSimpleObsModel()); 
     @(b, u)beliefDynamicsSimpleAgent(b, u, TwoDPointRobot(dt),TwoDSimpleObsModel()); 
     @(b, u)beliefDynamicsSimpleAgent(b, u, TwoDPointRobot(dt),TwoDSimpleObsModel())};
-agents{1} = AgentArm(dt,horizonSteps,1,belief_dyns);
-agents{2} = AgentArm(dt,horizonSteps,2,belief_dyns);
+agents{1} = AgentPlattform(dt,horizonSteps,1,belief_dyns);
+agents{2} = AgentBelt(dt,horizonSteps,2,belief_dyns);
 agents{3} = AgentArm(dt,horizonSteps,3,belief_dyns);
 agents{4} = AgentArm(dt,horizonSteps,4,belief_dyns);
+% agents{2} = AgentBelt(dt,horizonSteps,2);
+% agents{3} = AgentCrane(dt,horizonSteps,3);
+% agents{4} = AgentCrane(dt,horizonSteps,4);
 
 %% Setup start and goal/target state
 
 u_guess=cell(size(interfDiGr.Nodes,1),size(interfDiGr.Nodes,1));
-u_lambda = cell(size(interfDiGr.Nodes,1),size(interfDiGr.Nodes,1));
-uC = cell(size(interfDiGr.Nodes,1),1);
 for i=1:size(interfDiGr.Nodes,1)
-    u_lambda{i,1} = zeros(agents{1}.total_uDim,horizonSteps-1);
-    u_lambda{i,2} = zeros(agents{2}.total_uDim,horizonSteps-1);
-    u_lambda{i,3} = zeros(agents{3}.total_uDim,horizonSteps-1);
-    u_lambda{i,4} = zeros(agents{4}.total_uDim,horizonSteps-1);
-    
     u_guess{i,1} = zeros(agents{1}.total_uDim,horizonSteps-1);
-    u_guess{i,1}(1,:) = -0.15;
     u_guess{i,2} = zeros(agents{2}.total_uDim,horizonSteps-1);
-    u_guess{i,2}(1,:) = 0.1;
+    u_guess{i,2}(2,:) = 0.1;
     u_guess{i,3} = zeros(agents{3}.total_uDim,horizonSteps-1);
-    u_guess{i,3}(1,:) = -1.0;
     u_guess{i,4} = zeros(agents{4}.total_uDim,horizonSteps-1);
-    uC{i} = u_guess{i,i};
-end% initial guess, less iterations needed if given well
-% guess all agents for every agent, 4x4x2x40
+end
+% initial guess, less iterations needed if given well
+% guess all agents for every agent, 4x4 x uDim x horiz
 % u_guess(:,1,1,:)=1.0;
 % u_guess(:,1,2,:)=-1.0;
 % u_guess(:,2,1,:)=0.0;
@@ -158,23 +156,30 @@ end% initial guess, less iterations needed if given well
 % u_guess(:,4,1,:)=-1.0;
 % u_guess(:,4,2,:)=-1.0;
 b0=cell(size(interfDiGr.Nodes,1),size(interfDiGr.Nodes,1));
-
+% this is a 2D cell because each agent has different format of belief
+% states
 % each agent holds the belief of other agents, but in a later version,
-% this will be limited to neighbors
-
+% this can be limited to neighbors of interference graph
 for i=1:size(interfDiGr.Nodes,1)
     %{4x4}x6
-    b0{i,1} = [mu_1;sig_1(:)];
-    b0{i,2} = [mu_2;sig_2(:)];
-    b0{i,3} = [mu_3;sig_3(:)];
-    b0{i,4} = [mu_4;sig_4(:)];
+    b0{i,1} = [mu_a1;sig_a1(:);weight_a1;mu_a2;sig_a2(:);weight_a2];
+    b0{i,2} = [mu_b;sig_b(:)];
+    b0{i,3} = [mu_c;sig_c(:)];
+    b0{i,4} = [mu_d;sig_d(:)];
 end
-x_true = zeros(size(interfDiGr.Nodes,1),agents{1}.motionModel.stDim);
-x_true(1,:)=mu_1;
-x_true(2,:)=mu_2;
-x_true(3,:)=mu_3;
-x_true(4,:)=mu_4;
-% b0={[mu_1;sig_1(:);weight_1;mu_2;sig_2(:);weight_2];[mu_1;sig_1(:);weight_1;mu_2;sig_2(:);weight_2]};
+%????????????????
+% true states of agents are 2D position vectors
+x_true = zeros(size(interfDiGr.Nodes,1)+1,agents{3}.motionModel.stDim);
+% we select component 1 as true goal
+% if show_mode>6
+%     x_true(1,:)=mu_a2(3:4);
+% else
+    x_true(1,:)=mu_a1(3:4);%plattform
+% end
+x_true(2,:)=mu_b;
+x_true(3,:)=mu_a2(1:2);
+x_true(4,:)=mu_c;
+x_true(5,:)=mu_d;
 
 %% these are old codes remained
 Op.plot = -1; % plot the derivatives as well
@@ -185,7 +190,6 @@ plotFn = @(x) set(line_handle,'Xdata',x(1,:),'Ydata',x(2,:));
 Op.plotFn = plotFn;
 
 %% === run the optimization
-
 for i_sim = 1:simulation_steps
     u = cell(size(interfDiGr.Nodes,1),size(interfDiGr.Nodes,1));
     b = cell(size(interfDiGr.Nodes,1),size(interfDiGr.Nodes,1));
@@ -195,34 +199,28 @@ for i_sim = 1:simulation_steps
     for i = 1:size(interfDiGr.Nodes,1)
         finished{i}= false;
     end
-    for iter = 1:15
+    for iter = 1:5
         if iter == 1
             for i = 1:size(interfDiGr.Nodes,1)
-                u{i} = [];
-                b{i} = [];
+                for j = 1:size(interfDiGr.Nodes,1)
+                    u{i,j} = [];
+                    b{i,j} = [];
+                end
                 cost{i} = [];
             end
         end
 
         for i = 1:size(interfDiGr.Nodes,1)
             if finished{i}~=true
-                uC_lambda = uC;
-                for j=1:size(interfDiGr.Nodes,1)
-                    uC_lambda{j} = uC{j}-u_lambda{i,j};
-                end
-                %% 
-                if use_admm
-                    [bi,ui,cost{i},L_opt{i},~,~, finished{i}] ...
-                    = agents{i}.iLQG_one_it...
-                    (interfDiGr, b0(i,:), Op,  iter,u_guess(i,:),...
-                    uC_lambda,uC,b(i,:), cost{i});
+                if i==1
+                    Op.tolFun = 0.1;
                 else
-                    [bi,ui,cost{i},L_opt{i},~,~, finished{i}] ...
-                        = agents{i}.iLQG_one_it...
-                        (interfDiGr, b0(i,:), Op,  iter,u_guess(i,:),...
-                        uC_lambda,u(i,:),b(i,:), cost{i});
+                    Op.tolFun = 0.5;
                 end
-                %% 
+                [bi,ui,cost{i},L_opt{i},~,~, finished{i}] ...
+                    = agents{i}.iLQG_one_it...
+                    (interfDiGr, b0(i,:), Op, iter,u_guess(i,:),...
+                    u(i,:),b(i,:), cost{i});
                 for j=1:size(interfDiGr.Nodes,1)
                     u{i,j} = ui{j};
                     b{i,j} = bi{j};
@@ -251,57 +249,42 @@ for i_sim = 1:simulation_steps
                 % as long as all agents are connected by comm graph
             end
         end
-        if use_admm
-            for i = 1:4
-                uC{i} = u{i,i};
-            end
-            alpha_u = 1.0;
-            for i = 1:4
-                for j = 1:4
-                    u_lambda{i,j} = u_lambda{i,j} + alpha_u / ...
-                        agents{i}.rho(2) * (u{i,j}-uC{j});
-                    %residue is integrated
-                end
-            end
-        else
-        if 1
-            for i = 1:4
-                for j=1:4
+        for ii =1:1
+            d_u_est = u;%only to make the size the same, values will not be used
+            for i = 1:size(interfDiGr.Nodes,1)
+                for j=1:size(interfDiGr.Nodes,1)
                     if i==j
-%                             d_u_est{i,1}(j,:,:) = zeros(1,2,horizonSteps-1);
+                        d_u_est{i,j}(:,:) = zeros(size(u{i,j},1),horizonSteps-1);
                     else
-                        u{i,j}(:,:) = u{j,j}(:,:);
-%                              u{i}(j,:,:) = 0.3*u{j}(j,:,:) + 0.7*u{i}(j,:,:);
-                    end
-                end
-            end
-        else
-            for ii =1:1
-                d_u_est = u;%only to make the size the same, values will not be used
-                for i = 1:size(interfDiGr.Nodes,1)
-                    for j=1:size(interfDiGr.Nodes,1)
-                        if i==j
-                            d_u_est{i,j}(:,:) = zeros(size(u{i,j},1),horizonSteps-1);
-                        else
-                            sum_est = zeros(size(u{i,j},1),horizonSteps-1);
-                            for k=1:size(interfDiGr.Nodes,1)
+                        
+                        sum_est = zeros(size(u{i,j},1),horizonSteps-1);
+                        for k=1:size(interfDiGr.Nodes,1)
+%                             if size(u{i,j},1)>2
+%                                 u_ij = u{i,j}(5:6,:);
+%                             else
                                 u_ij = u{i,j};
+%                             end
+%                             if size(u{k,j},1)>2
+%                                 u_kj = u{k,j}(5:6,:);
+%                             else
                                 u_kj = u{k,j};
-                                sum_est = sum_est+adjGr(i,k)*(u_ij-u_kj);
-                            end
-                            d_u_est{i,j}(:,:)=-(sum_est+adjGr(i,j)*(u{i,j}-u{j,j}));
+%                             end
+                            sum_est = sum_est+adjGr(i,k)*(u_ij-u_kj);
                         end
-                    end
-                end
-                for i = 1:size(interfDiGr.Nodes,1)
-                    for j = 1:size(interfDiGr.Nodes,1)
-                        u{i,j} = u{i,j} + 0.4*d_u_est{i,j};
+                        d_u_est{i,j}(:,:)=-(sum_est+adjGr(i,j)*(u{i,j}-u{j,j}));
                     end
                 end
             end
-        end
+            for i = 1:size(interfDiGr.Nodes,1)
+                for j = 1:size(interfDiGr.Nodes,1)
+                    u{i,j} = u{i,j} + 0.3*d_u_est{i,j};
+                end
+            end
         end
 
+        if finished{1} && finished{2} && finished{3} && finished{4} 
+            break;
+        end
 %             error_policy_3_from_1 = squeeze(u{3,1}(1,:,:)-u{1,1}(1,:,:));
 %             error_policy_4_from_3 = squeeze(u{4,1}(3,:,:)-u{3,1}(3,:,:));
 %             figure(3)
@@ -311,64 +294,25 @@ for i_sim = 1:simulation_steps
 %             figure(4)
 %             plot(error_policy_4_from_3(1,:))
 %             hold on
-% %             plot(error_policy_4_from_3(2,:))
-        if 1
-            figure(iter)
-            for agent_i=1:4
-                subplot(2,2,agent_i)
-                for agent_j=1:4
-                    
-                    if agent_i == agent_j
-                        pattern = '.';
-                    else
-                        pattern = '-';
-                        plot(1:horizonSteps-1,squeeze(-u_lambda{agent_j,agent_i}(1,:)),'-.')
-                        plot(1:horizonSteps-1,squeeze(-u_lambda{agent_j,agent_i}(2,:)),'-.')
-                    end
-                    if agent_i ~= agent_j&&finished{agent_j}
-                        % those agents who has finished do not update their
-                        % estimation about agent i any more
-                    else
-                        plot(1:horizonSteps-1,squeeze(u{agent_j,agent_i}(1,:)),pattern)
-                        hold on
-                        plot(1:horizonSteps-1,squeeze(u{agent_j,agent_i}(2,:)),pattern)
-                        hold on
-                    end
-                    
-                end
-                title(strcat('Policy of agent ',num2str(agent_i)))
-            end
-        end
-        
-        for i = 1:size(interfDiGr.Nodes,1)
-            % iLQG iteration finished, take the policy to execute
-            agents{i}.updatePolicy(b(i,:),u(i,:),L_opt{i});
-            % guess value only used for the first iteration of each MPC iteration
-        end% guess value only used for the first iteration of each MPC iteration
-        if finished{1} && finished{2} && finished{3} && finished{4} 
-            break;
-        end
-        time_past = (i_sim-1) * mpc_update_period;
-        draw_ball=false;
-        [~, ~, ~] = animateHeteroMultiagent(interfDiGr,agents, b0, x_true,update_steps,time_past, show_mode,draw_ball);
-
-    end% end of iLQG iterations
-
+%             plot(error_policy_4_from_3(2,:))
+    end
 
     for i = 1:size(interfDiGr.Nodes,1)
         % iLQG iteration finished, take the policy to execute
+        agents{i}.updatePolicy(b(i,:),u(i,:),L_opt{i});
         u_guess(i,:) = u(i,:);
         % guess value only used for the first iteration of each MPC iteration
     end
+
 
 %     assignin('base', 'om', om)
 %     assignin('base', 'lims', Op.lims)
 %     [b_nom2,u_nom2,L_opt2,Vx2,Vxx2,cost2] = agents{2}.iLQG_GMM(b0{2}, u_guess, Op);
 %     agents{2}.updatePolicy(b_nom2,u_nom2,L_opt2);
     if i_sim < 2
-        show_mode = EQUAL_WEIGHT_TO_BALL_FEEDBACK;
+        show_mode = REST_WISH_WITHOUT_HUMAN_INPUT;
     else
-        show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
+        show_mode = REST_WISH_WITHOUT_HUMAN_INPUT;
     end
     time_past = (i_sim-1) * mpc_update_period;
     assignin('base', 'interfDiGr', interfDiGr)
@@ -381,12 +325,10 @@ for i_sim = 1:simulation_steps
     for i = 1:size(interfDiGr.Nodes,1)
         agents{i}.ctrl_ptr = 1;
     end
-    draw_ball=true;
-    [~, b0_next, x_true_next] = animateHeteroMultiagent(interfDiGr,agents, b0, x_true,update_steps,time_past, show_mode,draw_ball);
+    [~, b0_next, x_true_next] = animateHeteroMultiagentIntention(interfDiGr,agents, b0, x_true,update_steps,time_past, show_mode);
 %     b0{1}(1:2) = x_true_final(1:2);
     b0 = b0_next;
     x_true = x_true_next;
-%     b0{1}(1:2) = x_true_final(1:2);
 end
 % figure(3)
 % plot(error_policy_3_from_1(1,:),'.k')

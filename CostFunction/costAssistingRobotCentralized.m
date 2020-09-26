@@ -1,4 +1,4 @@
-function c = costAssistingRobot(b, u, horizon, stDim,components_amount)
+function c = costAssistingRobotCentralized(b, u, horizon, stDim,components_amount)
 % one step cost, not the whole cost horizon
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Compute cost for vector of states according to cost model given in Section 6 
@@ -48,15 +48,17 @@ u(:,final)  = 0;
 
 ctrlDim = size(u,1);
 % ctrl dim 6
-[x, P, w] = b2xPw(b, stDim, 2);
-
+[x, P, w] = b2xPw(b(1:42), stDim, 2);
+u_plattform = u(1:4,:);
+u_assists = u(5:end);
 % Q_t = 10*eye(stDim); % penalize uncertainty
-R_t = diag([0.2, 4.0, 0.2, 0.2,0.1,0.1]); % penalize control effort
+R_t = diag([0.2, 4.0, 0.2, 0.2]);%,0.1,0.1]); % penalize control effort
+R_assists_t = diag([0.1, 0.1, 0.1, 0.1, 0.1, 0.1]);
 Qerr_t = 0.0*eye(2);
 Qerr_l = 10*L*eye(2); % penalize terminal error
+Q_formation = 1*eye(2);
 Qcov_t = 0*eye(4);
 Qcov_l = 1e8*eye(4); % penalize terminal covar
-
 Qcov_l(1,1) = 0;
 Qcov_l(2,2) = 0;
 w_cc = 1.0; % penalize collision
@@ -89,9 +91,17 @@ for i_comp=1:components_amount
       sc = delta_x'*Qerr_t*delta_x;
       ic = trace(P{i_comp}*Qcov_t*P{i_comp});
 
-      uc = u'*R_t*u;
+      uc = u_plattform'*R_t*u_plattform + u_assists'*R_assists_t*u_assists;
+      
 
-
+    end
+    d_stpt=[-1,-1;
+    -1,1;
+    1,1];
+    for i=1:3
+        xi=b(42+i*6-5:42+i*6-4);
+        formation_residue = xi-x{i_comp}(3:4)-d_stpt(i,:)';
+        sc=sc+formation_residue'*Q_formation*formation_residue;
     end
     component_cost(i_comp) = sc + ic + uc + w_cc*cc;
     % may also consider take uc out of factoring with weight

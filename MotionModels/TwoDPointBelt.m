@@ -5,7 +5,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % 2D Point robot with additive process noise.
-classdef TwoDPointRobot < MotionModelBase
+classdef TwoDPointBelt < MotionModelBase
     properties (Constant = true) % note that all properties must be constant, because we have a lot of copies of this object and it can take a lot of memory otherwise.
         stDim = 2; % state dimension
         ctDim = 2;  % control vector dimension
@@ -14,7 +14,7 @@ classdef TwoDPointRobot < MotionModelBase
         sigma_b_u = [0.0;0.0]; % A constant bias intensity (std dev) of the control noise
         eta_u = [0;0]; % A coefficient, which makes the control noise intensity proportional to the control signal       
         zeroNoise = [0;0]; 
-        ctrlLim = [-4.0 4.0;-4.0 4.0]; % max control for Vx and Vy 
+        ctrlLim = [-0.0 0.0;-4.0 4.0]; % max control for Vx and Vy 
         %this is no longer consistent with other lim definition
         Q_est = diag([0.01,0.01]);
         P_Wg=0;
@@ -22,7 +22,7 @@ classdef TwoDPointRobot < MotionModelBase
     
     methods
         
-        function obj = TwoDPointRobot(dt)
+        function obj = TwoDPointBelt(dt)
             obj@MotionModelBase();      
             obj.dt = dt;
         end

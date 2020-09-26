@@ -1,5 +1,5 @@
 function [g,c,gb,gu,gbb,gbu,guu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj] ...
-    = beliefDynCost_crane(D,idx,b,u,horizonSteps,full_DDP,motionModel,obsModel,belief_dyns, collisionChecker)
+    = beliefDynCost_assist(D,idx,b,u,horizonSteps,full_DDP,motionModel,obsModel,belief_dyns, collisionChecker)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % A utility function that combines belief dynamics and cost
 % uses helper function finite_difference() to compute derivatives
@@ -44,7 +44,9 @@ g = cell(size(D.Nodes,1),1);
 b_formation = zeros(size(D.Nodes,1),beliefDim,paralDim);
 u_formation = zeros(size(D.Nodes,1),ctrlDim,paralDim);
 if nargout == 2
-    for j = incoming_nbrs_idces
+    agents_idces = [1,2,3,4];
+    agents_idces(idx) = [];
+    for j = agents_idces
         % the belief of agent idx about agent i
         %the last ":" in the following is for the parallel computing, not
         %affecting single computation
@@ -74,7 +76,7 @@ if nargout == 2
     g{idx} = belief_dyns{idx}(b{idx}, u{idx});
 %     c = costAssistingRobot(b{idx}, u{idx}, horizonSteps, motionModel.stDim,components_amount);
     
-    c = costAgentFormation(D, idx,b_formation, u_formation, horizonSteps, motionModel.stDim, collisionChecker);
+    c = cost_assist(D, idx,b_formation, u_formation, horizonSteps,collisionChecker);
 else
     % belief state and control indices
     ib = 1:beliefDim;
@@ -99,9 +101,11 @@ else
 % but for cost values without der, b and u of all neighboring agents are
 % passed in, now we dont need those neighbors, but still have to pass them
 % in so that the syntax can be consistent
+%     tic
     J       = finiteDifference(xu_dyn, [b{idx}; u{idx}]);
     gb      = J(:,ib,:);
     gu      = J(:,iu_begin:end,:);
+%     time_gs = toc
     % gu depends on dt
 %     all others are zero because dyn is decoupled
     % dynamics second derivatives
@@ -153,7 +157,7 @@ else
     end
     b_formation(idx,:,:) = b{idx};
     u_formation(idx,:,:) = u{idx};
-    xu_cost = @(xu) costAgentFormation(D,idx,xu(:,ib,:),xu(:,iu_begin:end,:),horizonSteps,motionModel.stDim, collisionChecker);    
+    xu_cost = @(xu) cost_assist(D,idx,xu(:,ib,:),xu(:,iu_begin:end,:),horizonSteps,collisionChecker);    
 %     J       = 
     
 %     % construct Jacobian adding collision cost
@@ -167,6 +171,7 @@ else
 %     cu=zeros(size(D.Nodes,1),ctrlDim,horizon);
 %     for j = incoming_nbrs_idces
 % input dim 4*8*41
+%         tic
         J       = multiAgentFiniteDifference(xu_cost,D,idx, squeeze(cat(2,b_formation(:,:,:), u_formation(:,:,:))));
         
 %         xu_sigma =  @(b_f) sigmaToCollide_multiagent_D(D,idx,b_f(:,:,:),motionModel.stDim,collisionChecker);
@@ -195,7 +200,7 @@ else
     
     
     % first calculate Hessian excluding collision cost
-    xu_cost_nocc = @(xu) costAgentFormation(D,idx,xu(:,ib,:),xu(:,iu_begin:end,:),horizonSteps,motionModel.stDim, collisionChecker);
+    xu_cost_nocc = @(xu) cost_assist(D,idx,xu(:,ib,:),xu(:,iu_begin:end,:),horizonSteps,collisionChecker);
     xu_Jcst_nocc = @(xu) squeeze(multiAgentFiniteDifference(xu_cost_nocc,D,idx, xu));   
     % the following can only compute c_uj_uj
     % JJ = finiteDifference(fun, x, h)
@@ -240,7 +245,7 @@ else
 %     cbb     = JJ(ib,ib,:);
 %     cbu     = JJ(ib,iu,:);
 %     cuu     = JJ(iu,iu,:);            
-
+%     time_css = toc
     [g,c] = deal([]);
 end
 end

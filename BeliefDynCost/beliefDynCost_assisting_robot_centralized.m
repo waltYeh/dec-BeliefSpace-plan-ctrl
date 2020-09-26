@@ -1,5 +1,5 @@
 function [g,c,gb,gu,gbb,gbu,guu,cb,cu,cbb,cbu,cuu] ...
-    = beliefDynCost_assisting_robot...
+    = beliefDynCost_assisting_robot_centralized...
     (b,u,horizonSteps,full_DDP,motionModel,obsModel)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % A utility function that combines belief dynamics and cost
@@ -30,24 +30,26 @@ function [g,c,gb,gu,gbb,gbu,guu,cb,cu,cbb,cbu,cuu] ...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 beliefDim = size(b,1);
-components_amount = round(beliefDim/(motionModel.stDim*(motionModel.stDim+1)+1));
-ctDim = motionModel.ctDim;% 4, only for one component
+ctrlDim = size(u,1);
+components_amount = 2;%round(beliefDim/(motionModel.stDim*(motionModel.stDim+1)+1));
+ctDim = 4;%motionModel.ctDim;% 4, only for one component
 % if only two outputs g and c are needed
 if nargout == 2
-    g = beliefDynamicsGMM(b, u, motionModel, obsModel);
-    c = costAssistingRobot(b, u, horizonSteps, motionModel.stDim,components_amount);
+    g = beliefDynamicsCentralized(b, u, motionModel, obsModel);
+    c = costAssistingRobotCentralized(b, u, horizonSteps, motionModel.stDim,components_amount);
 else
     components_amount = 2;
     % belief state and control indices
     ib = 1:beliefDim;
-    iu = beliefDim+1:beliefDim+(ctDim-2)*components_amount+2;
+    iu = beliefDim+1:beliefDim+ctrlDim;
     
     % dynamics first derivatives
-    xu_dyn  = @(xu) beliefDynamicsGMM(xu(ib,:),xu(iu,:),motionModel, obsModel);
+    xu_dyn  = @(xu) beliefDynamicsCentralized(xu(ib,:),xu(iu,:),motionModel, obsModel);
+%     tic
     J       = finiteDifference(xu_dyn, [b; u]);
     gb      = J(:,ib,:);
     gu      = J(:,iu,:);
-
+%     time_gs = toc
     % dynamics second derivatives
     if full_DDP
         xu_Jcst = @(xu) finiteDifference(xu_dyn, xu);
@@ -76,7 +78,8 @@ else
 %     
     %% cost first derivatives
     
-    xu_cost = @(xu) costAssistingRobot(xu(ib,:),xu(iu,:),horizonSteps,motionModel.stDim, components_amount);    
+    xu_cost = @(xu) costAssistingRobotCentralized(xu(ib,:),xu(iu,:),horizonSteps,motionModel.stDim, components_amount);    
+%     tic
     J       = squeeze(finiteDifference(xu_cost, [b; u]));
     
 %     % construct Jacobian adding collision cost
@@ -91,7 +94,7 @@ else
     
     
     % first calculate Hessian excluding collision cost
-    xu_cost_nocc = @(xu) costAssistingRobot(xu(ib,:),xu(iu,:),horizonSteps,motionModel.stDim, components_amount);
+    xu_cost_nocc = @(xu) costAssistingRobotCentralized(xu(ib,:),xu(iu,:),horizonSteps,motionModel.stDim, components_amount);
     xu_Jcst_nocc = @(xu) squeeze(finiteDifference(xu_cost_nocc, xu));    
     JJ      = finiteDifference(xu_Jcst_nocc, [b; u]);
     JJ      = 0.5*(JJ + permute(JJ,[2 1 3])); %symmetrize                      
@@ -105,7 +108,7 @@ else
     cbb     = JJ(ib,ib,:);
     cbu     = JJ(ib,iu,:);
     cuu     = JJ(iu,iu,:);            
-
+%     time_css = toc
     [g,c] = deal([]);
 end
 end

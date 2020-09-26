@@ -1,8 +1,10 @@
-function [x, u, L, Vx, Vxx, cost,  ...
-    lambda, dlambda, finished,flgChange,derivatives_cell] = iLQG_multiagent_one_iter(D,idx,DYNCST, x0, Op, iter,...
-    u_guess,lambda_last, dlambda_last, u_last,x_last, cost_last, flg_last, derivatives_cell_last, u_lims)
+function [x, u,L, Vx, Vxx, cost,  ...
+    lambda, dlambda, finished,flgChange,derivatives_cell] ...
+    = iLQG_admm_one_iter(D,idx,DYNCST,DYNCST_primal,DYNCST_primal_diff, x0, Op, iter,...
+    u_guess,lam_di,lam_up,lambda_last, dlambda_last, ...
+    u_last, x_last, cost_last,...
+    flg_last, derivatives_cell_last, u_lims)
 
-%     trace(iter).iter = iter; 
 defaults = {'lims',           [],...            control limits
             'parallel',       true,...          use parallel line-search?
             'Alpha',          10.^linspace(0,-3,11),... backtracking coefficients
@@ -11,8 +13,9 @@ defaults = {'lims',           [],...            control limits
             'maxIter',        50,...           maximum iterations            
             'lambda',         1,...             initial value for lambda
             'dlambda',        1,...             initial value for dlambda
+            'rho',            [1,1],...        %too large, converge slow,  rho_x and rho_u
             'lambdaFactor',   1.4,...           lambda scaling factor
-            'lambdaMax',      1e16,...          lambda maximum value
+            'lambdaMax',      1e5,...          lambda maximum value
             'lambdaMin',      1e-6,...          below this value lambda = 0
             'regType',        1,...             regularization type 1: q_uu+lambda*eye(); 2: V_xx+lambda*eye()
             'zMin',           0,...             minimal accepted reduction ratio
@@ -22,6 +25,7 @@ defaults = {'lims',           [],...            control limits
             'plotFn',         @(x)0,...         user-defined graphics callback
             'cost',           [],...            initial cost for pre-rolled trajectory            
             };
+% x0: {1x4},42x1, u: {1x4},6x60,2x60,...
         
 n   = size(x0, 2);          % dimension of belief state vector
 m   = size(u_guess, 2);          % dimension of control vector
@@ -34,6 +38,7 @@ finished = false;
 derivatives_cell = {};
 if iter == 1
     u = u_guess;
+%     uC_lambda = uC_lambda_guess;
 %     switch numel(Op.lims)
 %     case 0
 %     case 2*m
@@ -51,8 +56,24 @@ if iter == 1
     for alpha = Op.Alpha
         % x, only nodes pointing towards me and myself is filled with
         % belief state predictions
-        [x,un,cost]  = forward_pass(D,idx,x0,alpha*u,[],[],[],[],1,DYNCST,u_lims,[]);
-        if all(abs(x(:)) < 1e8)
+        alpha_u = u;
+        for i=1:length(alpha_u)
+            alpha_u{i} = alpha*u{i};
+        end
+        [x,un,cost,cost_origin]  = forward_pass(D,idx,x0,alpha_u,[],[],[],[],1,DYNCST,...
+            DYNCST_primal,u_lims,[],lam_di,lam_up);
+        incoming_nbrs_idces = predecessors(D,idx)';
+        diverges = false;
+        for j = [idx,incoming_nbrs_idces]
+            if all(abs(x{j}(:)) < 1e8)
+%                 u = un;
+%                 break
+            else
+                diverges = true;
+            end
+            
+        end
+        if ~diverges
             u = un;
             break
         end
@@ -63,33 +84,48 @@ else
     cost = cost_last;
     x = x_last;
     u = u_last;
+%     uC_lambda = uC_lambda_last;
     lambda = lambda_last; 
     dlambda = dlambda_last;
     flgChange = flg_last;
 end
   
 %====== STEP 1: differentiate dynamics and cost along new trajectory
-if flgChange
-    t_diff = tic;
+% if flgChange
+    enlonged_u = u;
+%     enlonged_uC_lambda = uC_lambda;
+    if size(u{1},2)<size(x{1},2)
+        for i=1:size(D.Nodes,1)
+            ctrl_dim = size(u{i},1);
+            enlonged_u{i}=cat(2,u{i},nan(ctrl_dim,1));
+    %         enlonged_uC_lambda{i}=cat(2,uC_lambda{i},nan(ctrl_dim,1));
+        end
+    else
+        
+    end
     % only considers agent idx itself fx: 6x6x41, fu 6x2x41, c_bi 6x41, cui
     % 2x41, ... 6x6x41, 6x2x41, 2x2x41, c_ui_uj 4x2x2x41
-    [~,~,fx,fu,fxx,fxu,fuu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj]   = DYNCST(D,idx,x, cat(3,u,nan(size(D.Nodes,1),m,1)), 1:N+1);
-%     trace(iter).time_derivs = toc(t_diff);
-    flgChange   = 0;
-else
-%     fx,fu,fxx,fxu,fuu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj = derivatives_cell_last{1};
-    fx = derivatives_cell_last{1};
-    fu = derivatives_cell_last{2};
-    fxx = derivatives_cell_last{3};
-    fxu = derivatives_cell_last{4};
-    fuu = derivatives_cell_last{5};
-    c_bi = derivatives_cell_last{6};
-    c_ui = derivatives_cell_last{7};
-    c_bi_bi = derivatives_cell_last{8};
-    c_bi_ui = derivatives_cell_last{9};
-    c_ui_ui = derivatives_cell_last{10};
-    c_ui_uj = derivatives_cell_last{11};
-end
+    [~,~,fx,fu,fxx,fxu,fuu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj] ...
+        = DYNCST(D,idx,x, enlonged_u, 1:N+1);
+    [c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj] ...
+        = DYNCST_primal_diff(D,idx,x,enlonged_u,c_bi,c_ui,...
+        c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,lam_di,lam_up);
+
+%     flgChange   = 0;
+% else
+% %     fx,fu,fxx,fxu,fuu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj = derivatives_cell_last{1};
+%     fx = derivatives_cell_last{1};
+%     fu = derivatives_cell_last{2};
+%     fxx = derivatives_cell_last{3};
+%     fxu = derivatives_cell_last{4};
+%     fuu = derivatives_cell_last{5};
+%     c_bi = derivatives_cell_last{6};
+%     c_ui = derivatives_cell_last{7};
+%     c_bi_bi = derivatives_cell_last{8};
+%     c_bi_ui = derivatives_cell_last{9};
+%     c_ui_ui = derivatives_cell_last{10};
+%     c_ui_uj = derivatives_cell_last{11};
+% end
 % convergence or not, these plots are the same!
 % figure(1+50)
 % subplot(2,2,idx)
@@ -110,9 +146,8 @@ end
 %====== STEP 2: backward pass, compute optimal control law and cost-to-go
 backPassDone   = 0;
 while ~backPassDone
-
-    t_back   = tic;
-    [diverge, Vx, Vxx, l, L, dV, Ku] = back_pass(D,idx,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,fx,fu,fxx,fxu,fuu,lambda,Op.regType,u_lims,u);
+    [diverge, Vx, Vxx, l, L, dV, Ku] = back_pass(D,idx,c_bi,c_ui,c_bi_bi,...
+        c_bi_ui,c_ui_ui,c_ui_uj,fx,fu,fxx,fxu,fuu,lambda,Op.regType,u_lims,u);
     % l is the feedforward term (42), 
     % L is the time-variant feedback(42)
 %     trace(iter).time_backward = toc(t_back);
@@ -149,7 +184,7 @@ end
 
 % check for termination due to small gradient
 % another exit criteria than Schwarting, but it hardly ever comes here
-g_norm         = mean(max(abs(l) ./ (squeeze(abs(u(idx,:,:)+1))),[],1));
+g_norm         = mean(max(abs(l) ./ (squeeze(abs(u{idx}(:,:)+1))),[],1));
 % trace(iter).grad_norm = g_norm;
 if g_norm < Op.tolGrad && lambda < 1e-5
     dlambda   = min(dlambda / Op.lambdaFactor, 1/Op.lambdaFactor);
@@ -162,26 +197,28 @@ if g_norm < Op.tolGrad && lambda < 1e-5
 end
 
 %====== STEP 3: line-search to find new control sequence, trajectory, cost
+% [~,~,cost]  = forward_pass(D,idx,x0,u,[],[],[],[],1,DYNCST,u_lims,[]);
 fwdPassDone  = 0;
 if backPassDone
-    t_fwd = tic;
     if Op.parallel  % parallel line-search
         %only u is different for case of consensus and direct exchange
-        [xnew,unew,costnew] = forward_pass(D,idx,x0 ,u, L, x(:,:,1:N), l, Ku, Op.Alpha, DYNCST,u_lims,Op.diffFn);
-        if iter ==3
-            a=1;
-        end
-        figure(4+50)
-subplot(2,2,idx)
-horizonSteps = size(x,3);
-plot(1:horizonSteps,squeeze(costnew(:,:,:,1)),'.')
-hold on
-plot(1:horizonSteps,squeeze(costnew(:,:,:,4)))
-plot(1:horizonSteps,squeeze(costnew(:,:,:,8)))
+        Op.Alpha(end)=0;
+        [xnew,unew,costnew,costnew_origin] = forward_pass(D,idx,x0 ,u, L, x, l, Ku,...
+            Op.Alpha, DYNCST,DYNCST_primal,u_lims,Op.diffFn,lam_di,lam_up);
 
-% plot(1:horizonSteps-1,squeeze(l(2,:)),'r')
-% hold on
-title(strcat('cost of agent ',num2str(idx)))
+        if iter>1
+            figure(4+50)
+            subplot(2,2,idx)
+            horizonSteps = size(x{idx},2);
+            plot(1:horizonSteps,squeeze(costnew_origin(:,:,:,1)),'-')
+            hold on
+    %         plot(1:horizonSteps,squeeze(costnew(:,:,:,4)))
+    %         plot(1:horizonSteps,squeeze(costnew(:,:,:,8)))
+
+            % plot(1:horizonSteps-1,squeeze(l(2,:)),'r')
+            % hold on
+            title(strcat('cost of agent ',num2str(idx)))
+        end
 % figure(2+100)
 % subplot(2,2,idx)
 % plot(1:horizonSteps-1,squeeze(L(1,1,:)),'b.')
@@ -191,8 +228,10 @@ title(strcat('cost of agent ',num2str(idx)))
 % title(strcat('Lx of agent ',num2str(idx)))
 %         
         % now we have 10 candidates of new traj
-        Dcost               = sum(cost(:)) - sum(squeeze(costnew),1);
+        Dcost               = sum(squeeze(costnew(:,:,:,end))) - sum(squeeze(costnew),1);
+        Dcost_origin = sum(squeeze(costnew_origin(:,:,:,end))) - sum(squeeze(costnew_origin),1);
         [dcost, w]          = max(Dcost);
+        dcost_origin = Dcost_origin(w);
         % find the one with greatest cost reduction
         alpha               = Op.Alpha(w);
         expected            = -alpha*(dV(1) + alpha*dV(2));
@@ -200,17 +239,29 @@ title(strcat('cost of agent ',num2str(idx)))
             z = dcost/expected;
         else
             z = sign(dcost);
-            warning('non-positive expected reduction: should not occur');
+            warning('non-positive expected reduction');
         end
-        if (z > Op.zMin)
+        if (z > Op.zMin)||w<8
+            
             fwdPassDone = 1;
             costnew     = costnew(:,:,:,w);
-            xnew        = xnew(:,:,:,w);
-            unew        = unew(:,:,:,w);
+            for i=1:size(D.Nodes,1)
+                xnew{i}        = xnew{i}(:,:,w);
+                unew{i}        = unew{i}(:,:,w);
+            end
+        else%still move a tiny step to avoid stucking in local places
+            
+            fwdPassDone = 0;
+            costnew     = costnew(:,:,:,w);
+            for i=1:size(D.Nodes,1)
+                xnew{i}        = xnew{i}(:,:,w);
+                unew{i}        = unew{i}(:,:,w);
+            end
         end
+        costnew_origin     = costnew_origin(:,:,:,w);
     end
     if ~fwdPassDone
-        alpha = nan; % signals failure of forward pass
+%         alpha = nan; % signals failure of forward pass
     end
 %     trace(iter).time_forward = toc(t_fwd);
 end
@@ -219,17 +270,17 @@ end
 
 % print headings
 if verbosity > 1
-    fprintf('%-12s','idx','iteration','cost','reduction','alpha','expected','gradient','log10(lambda)')
-    fprintf('\n');
+    if idx==1
+        fprintf('\n');
+        fprintf('%-12s','idx','iteration','cost','reduction','alpha','expected','gradient','lambda');
+        fprintf('\n');
+    end
 end
 
 if fwdPassDone
+    derivatives_cell =  { fx,fu,fxx,fxu,fuu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj};
 
-    % print status
-    if verbosity > 1
-        fprintf('%-12d%-12d%-12.6g%-12.2f%-12.3f%-12d%-12.3g%-12.3g%-12.1f\n', ...
-           idx, iter, sum(cost(:)), dcost,alpha,expected, g_norm, log10(lambda));
-    end
+    
     % maybe step 13 in Algorithm
     % decrease lambda
     dlambda   = min(dlambda / Op.lambdaFactor, 1/Op.lambdaFactor);
@@ -244,7 +295,13 @@ if fwdPassDone
 %         Op.plotFn(x);
 
     % terminate ?
-    if dcost < Op.tolFun
+%     dcost_origin
+    % print status
+    if verbosity > 1
+        fprintf('\n%-12d%-12d%-12.3g%-12.3g%-12.3g%-12d%-12.3g%-12.3g%-12.3g\n', ...
+           idx, iter, sum(costnew_origin(:)), dcost_origin,alpha,expected, g_norm, lambda);
+    end
+    if dcost_origin < Op.tolFun && dcost_origin>0 && iter > 5
         if verbosity > 0
             fprintf('\nSUCCESS: cost change < tolFun\n');
         end
@@ -258,11 +315,16 @@ else % no cost improvement
     % increase lambda
     dlambda  = max(dlambda * Op.lambdaFactor, Op.lambdaFactor);
     lambda   = max(lambda * dlambda, Op.lambdaMin);
-
+%     dlambda   = min(dlambda / Op.lambdaFactor, 1/Op.lambdaFactor);
+%     lambda    = lambda * dlambda * (lambda > Op.lambdaMin);
+    u              = unew;
+    x              = xnew;
+    cost           = costnew;
+    flgChange      = 1;% do the der again, because the consensus will help improve
     % print status
     if verbosity > 1
-        fprintf('%-12d%-12d%-12s%-12.3g%-12.3g%-12.3g%-12.1f\n', ...
-            idx, iter,'NO STEP', dcost, expected, g_norm, log10(lambda));           
+        fprintf('\n%-12d%-12d%-12s%-12.3g%-12.3g%-12.3g%-12.3g%-12.3g\n', ...
+            idx, iter,sum(costnew_origin(:)), dcost_origin, alpha,expected, g_norm, lambda);           
     end     
 
     % terminate ?
@@ -274,6 +336,10 @@ else % no cost improvement
         return;
     end
 end
+figure(31)
+subplot(2,2,idx)
+plot(iter,sum(cost(:)),'.')
+hold on
 
 % if ~isempty(lambda_last)
 %     figure(52)
@@ -297,73 +363,127 @@ end
 
 
 % [x,un,cost]  = forward_pass(x0(:,1),alpha*u,[],[],[],1,DYNCST,Op.lims,[]);
-function [xnew,unew,cnew] = forward_pass(D,idx,x0,u,L,x,l,Ku,Alpha,DYNCST,lims,diff)
+function [xnew,unew,cnew,cnew_origin] = forward_pass(D,idx,x0,u,L,x,l,Ku,Alpha,DYNCST,...
+    DYNCST_primal,lims,diff,lam_d,lam_up)
 % l (Schwarting j_k^i) is taken into the function as the argument du
 % parallel forward-pass (rollout)
 % internally time is on the 3rd dimension, 
 % to facillitate vectorized dynamics calls
 % Alpha is a series of possible step length, 
 % it is multiplied with du(:,i) in parallel
-n_agent = size(x0,1);
-n_b        = size(x0,2);
+n_agent = size(D.Nodes,1);
+% n_b        = size(x0,2);
 K        = length(Alpha);
 K1       = ones(1,K); % useful for expansion
-m_u        = size(u,2);
-N        = size(u,3);
 
-xnew        = zeros(n_agent,n_b,K,N);
-xnew(:,:,:,1) = x0(:,:,ones(1,K));
-% this line above causes only the first step of xnew to be none zero, apart
-% from idx itself
-unew        = zeros(n_agent,m_u,K,N);
-cnew        = zeros(1,1,K,N+1);% one agent, one dim c
-for k = 1:N
-    unew(:,:,:,k) = u(:,:,k*K1);
-    
+horizon        = size(u{1},2);
+xnew = cell(n_agent,1);
+unew = cell(n_agent,1);
+% uC_lambda_new = cell(n_agent,1);
+for i=1:n_agent
+    n_b = size(x0{i},1);
+    m_u = size(u{i},1);
+    xnew{i} = zeros(n_b,K,horizon+1);
+    xnew{i}(:,:,1) = x0{i}(:,ones(1,K));
+    unew{i} = zeros(m_u,K,horizon);
+end
+Dim_lam_in_xy = 2;
+lam_d_new = zeros(n_agent-1,Dim_lam_in_xy,K,horizon+1);
+lam_up_new = zeros(1,Dim_lam_in_xy,K,horizon);
+cnew        = zeros(1,1,K,horizon+1);% one agent, one dim c
+cnew_origin = zeros(1,1,K,horizon+1);
+for k = 1:horizon
+    for i=1:n_agent
+        unew{i}(:,:,k) = u{i}(:,k*K1);
+%         uC_lambda_new{i}(:,:,k) = uC_lambda{i}(:,k*K1);
+    end
+    for i=1:n_agent-1
+        lam_d_new(i,:,:,k) = lam_d(i,:,k*K1);
+%         uC_lambda_new{i}(:,:,k) = uC_lambda{i}(:,k*K1);
+    end
+    lam_up_new(1,:,:,k) = lam_up(1,:,k*K1);
     if ~isempty(l)
         % feedforward control term should not be too agressive, Alpha < 1
-        unew(idx,:,:,k) = squeeze(unew(idx,:,:,k)) + l(:,k)*Alpha;
+        unew{idx}(:,:,k) = squeeze(unew{idx}(:,:,k)) + l(:,k)*Alpha;
     end    
     
-    if ~isempty(L)
+    if ~isempty(L)%!!! not corrected yet
         if ~isempty(diff)
             dx = diff(xnew(:,:,k), x(:,k*K1));
         else
-            dx          = xnew(idx,:,:,k) - x(idx,:,k*K1);% both size 1x6x11
+            dx          = xnew{idx}(:,:,k) - x{idx}(:,k*K1);% both size 1x6x11
         end
-        unew(idx,:,:,k) = squeeze(unew(idx,:,:,k)) + L(:,:,k)*squeeze(dx); 
+        unew{idx}(:,:,k) = squeeze(unew{idx}(:,:,k)) + L(:,:,k)*squeeze(dx); 
         % with feedback
-    end
-    if ~isempty(Ku)
+    end%!!! not corrected yet
+    if ~isempty(Ku)%!!! not corrected yet
         du_all_agent = u;
 %         u_real_all_agent = u;
-        du_all_agent(:) = 0;
+%         du_all_agent(:) = 0;
 %         dx          = xnew(idx,:,:,k) - x(idx,:,k*K1);
         incoming_nbrs = predecessors(D,idx)';
 %         for j_agent=incoming_nbrs
 %             unew(idx,:,:,k) = squeeze(unew(idx,:,:,k)) + squeeze(Ku(j_agent,:,:,k))'*transpose(squeeze(du_all_agent(j_agent,:,k)));
 %         end
          % with feedback
-    end
+    end%!!! not corrected yet
     if ~isempty(lims)
         % add u upper and lower bound again
-        for i=1:size(D.Nodes,1)
-            unew_ik = squeeze(unew(i,:,:,k));
-            size_unew = size(unew_ik);
+%         for i=1:size(D.Nodes,1)
+            unew_idxk = squeeze(unew{idx}(:,:,k));
+            size_unew = size(unew_idxk);
+            m_u = size(u{idx},1);
             if size_unew(2)==m_u
                 unew_ik = transpose(unew_ik);
             end
-            unew(i,:,:,k) = min(lims(:,2*K1), max(lims(:,1*K1), unew_ik));
-        end
+            unew{idx}(:,:,k) = min(lims(:,2*K1), max(lims(:,1*K1), unew_idxk));
+%         end
     end
 % unew of other agents is updated, causing change of formation cost, which vergiftet the cost
-    [xnew(:,:,:,k+1), cnew(:,:,:,k)]  = DYNCST(D,idx,xnew(:,:,:,k), unew(:,:,:,k), k*K1);
-%     
+    xnew_k = cell(n_agent,1);
+    unew_k = cell(n_agent,1);
+    lam_d_k = zeros(n_agent-1,Dim_lam_in_xy,K);
+    lam_up_k = zeros(1,Dim_lam_in_xy,K);
+    for i=1:n_agent
+        xnew_k{i}=xnew{i}(:,:,k);
+        unew_k{i}=unew{i}(:,:,k);
+        
+%         u_lambda_k = u{i}(:,:,k);
+    end
+    for i=1:n_agent-1
+        lam_d_k(i,:,:) = lam_d_new(i,:,:,k);
+    end
+    lam_up_k(1,:,:) = lam_up_new(1,:,:,k);
+    [xnew_next,cnew_origin_k]  = DYNCST(D,idx,xnew_k, unew_k, k*K1);
+    [~,cnew_k]=DYNCST_primal(D,idx,xnew_k, unew_k, lam_d_k,lam_up_k ,k*K1);
+    incoming_nbrs_idces = predecessors(D,idx)';
+    for i=1:n_agent
+        xnew{i}(:,:,k+1) = xnew_next{i};
+        
+    end
+    xnew{idx}(:,:,k+1) = xnew_next{idx};
+    cnew(:,:,:,k)=cnew_k;
+    cnew_origin(:,:,:,k)=cnew_origin_k;
 end
-[~, cnew(:,:,:,N+1)] = DYNCST(D,idx,xnew(:,:,:,N+1),nan(n_agent,m_u,K,1),k);
-xnew = permute(xnew, [1 2 4 3]);
-unew = permute(unew, [1 2 4 3]);%unew of other agents never updated
-cnew = permute(cnew, [1 2 4 3]);
+xnew_k = cell(n_agent,1);
+    unew_k = cell(n_agent,1);
+    for i=1:n_agent
+        xnew_k{i}=xnew{i}(:,:,horizon+1);
+        unew_k{i}=nan(size(unew{i},1),K,1);
+%         lam_d_k{i} = nan(size(unew{i},1),K,1);
+    end
+    for i=1:n_agent-1
+        lam_d_k(i,:,:) = lam_d_new(i,:,:,horizon+1);
+    end
+    lam_up_k(1,:,:) = nan(Dim_lam_in_xy,K,1);
+    [~, cnew_origin(:,:,:,horizon+1)] = DYNCST(D,idx,xnew_k,unew_k,k);
+    [~, cnew(:,:,:,horizon+1)] = DYNCST_primal(D,idx,xnew_k,unew_k,lam_d_k,lam_up_k,k);
+for i=1:n_agent
+    xnew{i} = permute(xnew{i}, [1 3 2 ]);
+    unew{i} = permute(unew{i}, [1 3 2 ]);%unew of other agents never updated
+end
+cnew = permute(cnew, [1 2 4 3 ]);
+cnew_origin = permute(cnew_origin, [1 2 4 3 ]);
 % components_amount = 2;
 % horiz = N+1;
 % mu = cell(components_amount,1);
@@ -401,9 +521,6 @@ cnew = permute(cnew, [1 2 4 3]);
 % hold off
 
 % put the time dimension in the columns
-
-
-
 
 
 function [diverge, Vx, Vxx, k, K, dV, Ku] = back_pass(D,idx,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,fx,fu,fxx,fxu,fuu,lambda,regType,lims,u)
@@ -500,7 +617,7 @@ for i = N-1:-1:1
     k2_i = -QuuF\Qu;
     incoming_nbrs_idces = predecessors(D,idx)';
     for j = incoming_nbrs_idces
-        Ku(j,:,:,i) = -QuuF\squeeze(c_ui_uj(j,:,:,i));
+%         Ku(j,:,:,i) = -QuuF\squeeze(c_ui_uj(j,:,:,i));
     end
 %         if any(free)
 %             Lfree        = -R\(R'\Qux_reg(free,:)); %=-(R*R')^(-1)*Qux=-Quu^(-1)*Qux

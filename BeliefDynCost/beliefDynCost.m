@@ -11,7 +11,8 @@ function [g,c,gb,gu,gbb,gbu,guu,cb,cu,cbb,cbu,cuu] = beliefDynCost(b,u,xf,L,full
 %   motionModel: robot's motion model
 %   obsModel: Sensing model
 %   collisionChecker: collision checking with obstacles
-%
+%  @(x)isStateValid(x,map,0); is passed in, the last arg is number of dyn
+%  obstacles
 % Outputs:
 %   g: belief update using belief dynamics
 %   c: cost 

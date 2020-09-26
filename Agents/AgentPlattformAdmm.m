@@ -1,4 +1,4 @@
-classdef AgentPlattform < AgentBase 
+classdef AgentPlattformAdmm < AgentBase 
     properties (Constant = true) 
         % note that all properties must be constant, because we have a lot of copies of this object and it can take a lot of memory otherwise.
 %         compStateDim = 4; % state dimension
@@ -22,8 +22,8 @@ classdef AgentPlattform < AgentBase
             -4.0 4.0;%band move in y direction, may set to 0 if controlled by another agent
             -0.0  0.0;%rest position not movable
             -0.0  0.0;%
-            -2.0 2.0;%move plattform and human 
-            -2.0 2.0];
+            -4.0 4.0;%move plattform and human 
+            -4.0 4.0];
         % larger, less overshoot; smaller, less b-noise affects assist
          
     end
@@ -43,37 +43,56 @@ classdef AgentPlattform < AgentBase
         dlambda;
         flgChange;
         P_feedback= 1.0;
-%         beliefDyns;
+        cst_primal;
+        cst_primal_diff;
+        rho_d = 5;
+        rho_up = 1.0;
     end
     
     methods 
-        function obj = AgentPlattform(dt_input,horizonSteps, node_idx, belief_dyns)
+        function obj = AgentPlattformAdmm(dt_input,horizonSteps, node_idx, belief_dyns)
             obj@AgentBase(); 
             obj.digraph_idx = node_idx;
             obj.derivatives = {};
             obj.dt = dt_input; % delta_t for time discretization
             obj.motionModel = HumanMind(dt_input); % motion model
             obj.obsModel = HumanReactionModel(); % observation model
+            svc = @(xi,ri, xj, rj)isStateValid_multiagent(xi,ri, xj, rj);
             obj.dyn_cst  = @(D,idx,b,u,i) beliefDynCost_plattform(D,idx,b,u,horizonSteps,false,obj.motionModel,obj.obsModel,belief_dyns);
+            obj.cst_primal = @(D,idx,b,u,lam_di,lam_up,i) beliefDynCost_plattform_primal...
+                (D,idx,b,u,lam_di,lam_up,obj.rho_d,obj.rho_up,horizonSteps,false,...
+                obj.motionModel,obj.obsModel, belief_dyns, svc);
+            obj.cst_primal_diff = @(D,idx,b,u,c_bi,c_ui,...
+                c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,lam_di,lam_up)cst_plattform_primal_diff...
+                (D,idx,b,u,c_bi,c_ui,...
+                c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,lam_di,lam_up,obj.rho_d,obj.rho_up);
             obj.lambda = []; 
             obj.dlambda = [];
             obj.flgChange = [];
 %             obj.beliefDyns = belief_dyns;
         end
-        function [b_nom,u_nom,L_opt,Vx,Vxx,cost]= iLQG_agent(obj, D, b0, u_guess, Op)
-            [b_nom,u_nom,L_opt,Vx,Vxx,cost,~,~,tt, nIter]= iLQG_GMM(obj.dyn_cst, b0, u_guess, Op);
-        end
+%         function [b_nom,u_nom,L_opt,Vx,Vxx,cost]= iLQG_agent(obj, D, b0, u_guess, Op)
+%             [b_nom,u_nom,L_opt,Vx,Vxx,cost,~,~,tt, nIter]= iLQG_GMM(obj.dyn_cst, b0, u_guess, Op);
+%         end
         function [x, u, cost, L, Vx, Vxx, finished]= ...
                 iLQG_one_it...
-                (obj,D, b0, Op, iter, u_guess, u_last,x_last, cost_last)
+                (obj,D, b0, Op, iter, u_guess, lam_di,lam_up,...
+                u_last,x_last, cost_last)
             if iter == 1
                 obj.lambda = [];
                 obj.dlambda = [];
                 obj.flgChange = [];
             end
-            [x, u, L, Vx, Vxx, cost, obj.lambda, obj.dlambda, finished,obj.flgChange,derivatives_cell] = ...
-                iLQG_hetero_multiagent_one_iter(D,obj.digraph_idx,obj.dyn_cst, b0, Op, iter,...
-                u_guess,obj.lambda, obj.dlambda, u_last,x_last, cost_last,obj.flgChange,obj.derivatives, obj.u_lims);
+            [x, u, L, Vx, Vxx, cost, obj.lambda, obj.dlambda, finished,...
+                obj.flgChange,derivatives_cell] = ...
+                iLQG_admm_one_iter(...
+                D,obj.digraph_idx,...
+                obj.dyn_cst,obj.cst_primal, obj.cst_primal_diff,...
+                b0, Op, iter,u_guess,...
+                lam_di,lam_up,...
+                obj.lambda, obj.dlambda, u_last,x_last, ...
+                cost_last,obj.flgChange,obj.derivatives, obj.u_lims);
+            
             obj.derivatives = derivatives_cell;
         end
         function updatePolicy(obj, b_n_idx,u_n_idx,L)
@@ -85,8 +104,6 @@ classdef AgentPlattform < AgentBase
             obj.ctrl_ptr = 1;
         end
         function u = getNextControl(obj, b)
-            
-                
             diff_b = b{obj.digraph_idx} - obj.b_nom{obj.digraph_idx}(:,obj.ctrl_ptr);
             u = obj.u_nom{obj.digraph_idx}(:,obj.ctrl_ptr) + obj.P_feedback*obj.L_opt(:,:,obj.ctrl_ptr)*diff_b;
             % dim is 6
@@ -120,7 +137,7 @@ classdef AgentPlattform < AgentBase
                 zerObsNoise = zeros(length(z),1);
                 H = obj.obsModel.getObservationJacobian(mu{i_comp},zerObsNoise);
                 % M is eye
-                M = obj.obsModel.getObservationNoiseJacobian(mu{i_comp},zerObsNoise,z);
+                M = obj.obsModel.getObservationNoiseJacobian(mu{i_comp});
             %     R = obsModel.getObservationNoiseCovariance(x,z);
             %     R = obsModel.R_est;
                 % update P
@@ -133,6 +150,9 @@ classdef AgentPlattform < AgentBase
                 end
                 weight_adjust = [z_ratio*weight(i_comp),z_ratio*weight(i_comp),1,1]';
         %         K=weight_adjust.*K;
+                if i_comp == 1
+                    weight_adjust(1) = 0;
+                end
                 P = (eye(obj.motionModel.stDim) - K*H)*P_prd;
                 x = x_prd + weight_adjust.*K*(z - z_prd);
                 z_mu{i_comp} = z_prd;

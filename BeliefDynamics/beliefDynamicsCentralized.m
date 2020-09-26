@@ -1,4 +1,4 @@
-function b_next = beliefDynamicsGMM(b, u,motionModel,obsModel)
+function b_next = beliefDynamicsCentralized(b, u,motionModel,obsModel)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Propagate beliefs according to approach given in Section 4.1 
 % of Van Den Berg et al. IJRR 2012
@@ -25,6 +25,8 @@ end
 end
 % split of input to each component is done in the following function
 function b_next = updateGMM(b, u, motionModel, obsModel)
+    n_assist = 3;
+    dim_xy =2;
     if isnan(u(1,:))
         u = zeros(size(u));
     end
@@ -35,17 +37,31 @@ function b_next = updateGMM(b, u, motionModel, obsModel)
     shared_uDim = 2;
     component_alone_uDim = motionModel.ctDim - shared_uDim;
     
-    components_amount = length(b)/component_bDim;
-    u_man = [u(end-shared_uDim+1);u(end)];
+    components_amount = 2;%length(b)/component_bDim;
+    u_assist = zeros(n_assist,dim_xy);
+    for i = 1:n_assist
+        u_assist(i,:) = u(end-(n_assist-i)*2-1:end-(n_assist-i)*2)';
+    end
+    u_all_assists = sum(u_assist,1)./3;%sum of rows, not summing x and y together, which are in cols
+%     u_man = [u(end-shared_uDim+1);u(end)];
     
     b_next = b;
     for i=1:components_amount
         b_component = b((i-1)*component_bDim + 1 : i*component_bDim - 1,1);
         u_component = [u((i-1)*component_alone_uDim+1 : i*component_alone_uDim);
-            u_man];
+            u_all_assists'];
         b_next_component = updateSingleComponentGMM(b_component, u_component, motionModel, obsModel);
         b_next((i-1)*component_bDim + 1 : i*component_bDim - 1,1) = b_next_component;
         % the weight of each component remains unchanged
+    end
+    %now update the three assistants
+    simpleMotionModel=TwoDPointRobot(motionModel.dt);
+    simpleObsModel=TwoDSimpleObsModel();
+    for i=1:3
+        b_assist = b(42+1+(i-1)*6:42+i*6);
+        
+        b_assist_next = beliefDynamicsSimpleAgent(b_assist, u_assist(i,:)',simpleMotionModel,simpleObsModel);
+        b_next(42+1+(i-1)*6:42+i*6)=b_assist_next;
     end
 end
 function b_next = updateSingleComponentGMM(b, u, motionModel, obsModel)
@@ -104,9 +120,6 @@ P_prd = A*P*A' + G*Q*G';
 P_obs = H*P_prd*H';
 S = P_obs + M*R*M';
 K = (P_prd*H')/S;
-if rcond(S)<0.001
-    keyboard
-end
 P_next = (eye(stDim) - K*H)*P_prd;
 % there is no a posteriori update of x because there is no measurement
 % taking place in inference of belief dynamics

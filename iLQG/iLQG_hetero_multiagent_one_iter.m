@@ -1,5 +1,5 @@
 function [x, u, L, Vx, Vxx, cost,  ...
-    lambda, dlambda, finished,flgChange,derivatives_cell] = iLQG_multiagent_one_iter(D,idx,DYNCST, x0, Op, iter,...
+    lambda, dlambda, finished,flgChange,derivatives_cell] = iLQG_hetero_multiagent_one_iter(D,idx,DYNCST, x0, Op, iter,...
     u_guess,lambda_last, dlambda_last, u_last,x_last, cost_last, flg_last, derivatives_cell_last, u_lims)
 
 %     trace(iter).iter = iter; 
@@ -22,6 +22,7 @@ defaults = {'lims',           [],...            control limits
             'plotFn',         @(x)0,...         user-defined graphics callback
             'cost',           [],...            initial cost for pre-rolled trajectory            
             };
+% x0: {1x4},42x1, u: {1x4},6x60,2x60,...
         
 n   = size(x0, 2);          % dimension of belief state vector
 m   = size(u_guess, 2);          % dimension of control vector
@@ -51,8 +52,23 @@ if iter == 1
     for alpha = Op.Alpha
         % x, only nodes pointing towards me and myself is filled with
         % belief state predictions
-        [x,un,cost]  = forward_pass(D,idx,x0,alpha*u,[],[],[],[],1,DYNCST,u_lims,[]);
-        if all(abs(x(:)) < 1e8)
+        alpha_u = u;
+        for i=1:length(alpha_u)
+            alpha_u{i} = alpha*u{i};
+        end
+        [x,un,cost]  = forward_pass(D,idx,x0,alpha_u,[],[],[],[],1,DYNCST,u_lims,[]);
+        incoming_nbrs_idces = predecessors(D,idx)';
+        diverges = false;
+        for j = [idx,incoming_nbrs_idces]
+            if all(abs(x{j}(:)) < 1e8)
+%                 u = un;
+%                 break
+            else
+                diverges = true;
+            end
+            
+        end
+        if ~diverges
             u = un;
             break
         end
@@ -71,9 +87,14 @@ end
 %====== STEP 1: differentiate dynamics and cost along new trajectory
 if flgChange
     t_diff = tic;
+    enlonged_u = u;
+    for i=1:size(D.Nodes,1)
+        ctrl_dim = size(u{i},1);
+        enlonged_u{i}=cat(2,u{i},nan(ctrl_dim,1));
+    end
     % only considers agent idx itself fx: 6x6x41, fu 6x2x41, c_bi 6x41, cui
     % 2x41, ... 6x6x41, 6x2x41, 2x2x41, c_ui_uj 4x2x2x41
-    [~,~,fx,fu,fxx,fxu,fuu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj]   = DYNCST(D,idx,x, cat(3,u,nan(size(D.Nodes,1),m,1)), 1:N+1);
+    [~,~,fx,fu,fxx,fxu,fuu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj]   = DYNCST(D,idx,x, enlonged_u, 1:N+1);
 %     trace(iter).time_derivs = toc(t_diff);
     flgChange   = 0;
 else
@@ -149,7 +170,7 @@ end
 
 % check for termination due to small gradient
 % another exit criteria than Schwarting, but it hardly ever comes here
-g_norm         = mean(max(abs(l) ./ (squeeze(abs(u(idx,:,:)+1))),[],1));
+g_norm         = mean(max(abs(l) ./ (squeeze(abs(u{idx}(:,:)+1))),[],1));
 % trace(iter).grad_norm = g_norm;
 if g_norm < Op.tolGrad && lambda < 1e-5
     dlambda   = min(dlambda / Op.lambdaFactor, 1/Op.lambdaFactor);
@@ -162,26 +183,27 @@ if g_norm < Op.tolGrad && lambda < 1e-5
 end
 
 %====== STEP 3: line-search to find new control sequence, trajectory, cost
+% [~,~,cost]  = forward_pass(D,idx,x0,u,[],[],[],[],1,DYNCST,u_lims,[]);
 fwdPassDone  = 0;
 if backPassDone
     t_fwd = tic;
     if Op.parallel  % parallel line-search
         %only u is different for case of consensus and direct exchange
-        [xnew,unew,costnew] = forward_pass(D,idx,x0 ,u, L, x(:,:,1:N), l, Ku, Op.Alpha, DYNCST,u_lims,Op.diffFn);
-        if iter ==3
-            a=1;
-        end
-        figure(4+50)
-subplot(2,2,idx)
-horizonSteps = size(x,3);
-plot(1:horizonSteps,squeeze(costnew(:,:,:,1)),'.')
-hold on
-plot(1:horizonSteps,squeeze(costnew(:,:,:,4)))
-plot(1:horizonSteps,squeeze(costnew(:,:,:,8)))
+        [xnew,unew,costnew] = forward_pass(D,idx,x0 ,u, L, x, l, Ku, Op.Alpha, DYNCST,u_lims,Op.diffFn);
 
-% plot(1:horizonSteps-1,squeeze(l(2,:)),'r')
-% hold on
-title(strcat('cost of agent ',num2str(idx)))
+        if iter>1
+            figure(4+50)
+            subplot(2,2,idx)
+            horizonSteps = size(x{idx},2);
+            plot(1:horizonSteps,squeeze(costnew(:,:,:,1)),'-')
+            hold on
+    %         plot(1:horizonSteps,squeeze(costnew(:,:,:,4)))
+    %         plot(1:horizonSteps,squeeze(costnew(:,:,:,8)))
+
+            % plot(1:horizonSteps-1,squeeze(l(2,:)),'r')
+            % hold on
+            title(strcat('cost of agent ',num2str(idx)))
+        end
 % figure(2+100)
 % subplot(2,2,idx)
 % plot(1:horizonSteps-1,squeeze(L(1,1,:)),'b.')
@@ -205,8 +227,18 @@ title(strcat('cost of agent ',num2str(idx)))
         if (z > Op.zMin)
             fwdPassDone = 1;
             costnew     = costnew(:,:,:,w);
-            xnew        = xnew(:,:,:,w);
-            unew        = unew(:,:,:,w);
+            for i=1:size(D.Nodes,1)
+                xnew{i}        = xnew{i}(:,:,w);
+                unew{i}        = unew{i}(:,:,w);
+            end
+        else
+            w=11;
+            fwdPassDone = 0;
+            costnew     = costnew(:,:,:,w);
+            for i=1:size(D.Nodes,1)
+                xnew{i}        = xnew{i}(:,:,w);
+                unew{i}        = unew{i}(:,:,w);
+            end
         end
     end
     if ~fwdPassDone
@@ -224,6 +256,7 @@ if verbosity > 1
 end
 
 if fwdPassDone
+    derivatives_cell =  { fx,fu,fxx,fxu,fuu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj};
 
     % print status
     if verbosity > 1
@@ -244,7 +277,7 @@ if fwdPassDone
 %         Op.plotFn(x);
 
     % terminate ?
-    if dcost < Op.tolFun
+    if dcost < Op.tolFun && dcost>0 && iter > 5
         if verbosity > 0
             fprintf('\nSUCCESS: cost change < tolFun\n');
         end
@@ -256,9 +289,14 @@ else % no cost improvement
     
     derivatives_cell =  { fx,fu,fxx,fxu,fuu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj};
     % increase lambda
-    dlambda  = max(dlambda * Op.lambdaFactor, Op.lambdaFactor);
-    lambda   = max(lambda * dlambda, Op.lambdaMin);
-
+%     dlambda  = max(dlambda * Op.lambdaFactor, Op.lambdaFactor);
+%     lambda   = max(lambda * dlambda, Op.lambdaMin);
+%     dlambda   = min(dlambda / Op.lambdaFactor, 1/Op.lambdaFactor);
+%     lambda    = lambda * dlambda * (lambda > Op.lambdaMin);
+    u              = unew;
+    x              = xnew;
+    cost           = costnew;
+    flgChange      = 1;
     % print status
     if verbosity > 1
         fprintf('%-12d%-12d%-12s%-12.3g%-12.3g%-12.3g%-12.1f\n', ...
@@ -304,66 +342,91 @@ function [xnew,unew,cnew] = forward_pass(D,idx,x0,u,L,x,l,Ku,Alpha,DYNCST,lims,d
 % to facillitate vectorized dynamics calls
 % Alpha is a series of possible step length, 
 % it is multiplied with du(:,i) in parallel
-n_agent = size(x0,1);
-n_b        = size(x0,2);
+n_agent = size(D.Nodes,1);
+% n_b        = size(x0,2);
 K        = length(Alpha);
 K1       = ones(1,K); % useful for expansion
-m_u        = size(u,2);
-N        = size(u,3);
 
-xnew        = zeros(n_agent,n_b,K,N);
-xnew(:,:,:,1) = x0(:,:,ones(1,K));
-% this line above causes only the first step of xnew to be none zero, apart
-% from idx itself
-unew        = zeros(n_agent,m_u,K,N);
+N        = size(u{1},2);
+xnew = cell(n_agent,1);
+unew = cell(n_agent,1);
+for i=1:n_agent
+    n_b = size(x0{i},1);
+    m_u = size(u{i},1);
+    xnew{i} = zeros(n_b,K,N+1);
+    xnew{i}(:,:,1) = x0{i}(:,ones(1,K));
+    unew{i} = zeros(m_u,K,N);
+end
 cnew        = zeros(1,1,K,N+1);% one agent, one dim c
 for k = 1:N
-    unew(:,:,:,k) = u(:,:,k*K1);
-    
+    for i=1:n_agent
+        unew{i}(:,:,k) = u{i}(:,k*K1);
+    end
     if ~isempty(l)
         % feedforward control term should not be too agressive, Alpha < 1
-        unew(idx,:,:,k) = squeeze(unew(idx,:,:,k)) + l(:,k)*Alpha;
+        unew{idx}(:,:,k) = squeeze(unew{idx}(:,:,k)) + l(:,k)*Alpha;
     end    
     
-    if ~isempty(L)
+    if ~isempty(L)%!!! not corrected yet
         if ~isempty(diff)
             dx = diff(xnew(:,:,k), x(:,k*K1));
         else
-            dx          = xnew(idx,:,:,k) - x(idx,:,k*K1);% both size 1x6x11
+            dx          = xnew{idx}(:,:,k) - x{idx}(:,k*K1);% both size 1x6x11
         end
-        unew(idx,:,:,k) = squeeze(unew(idx,:,:,k)) + L(:,:,k)*squeeze(dx); 
+        unew{idx}(:,:,k) = squeeze(unew{idx}(:,:,k)) + L(:,:,k)*squeeze(dx); 
         % with feedback
-    end
-    if ~isempty(Ku)
+    end%!!! not corrected yet
+    if ~isempty(Ku)%!!! not corrected yet
         du_all_agent = u;
 %         u_real_all_agent = u;
-        du_all_agent(:) = 0;
+%         du_all_agent(:) = 0;
 %         dx          = xnew(idx,:,:,k) - x(idx,:,k*K1);
         incoming_nbrs = predecessors(D,idx)';
 %         for j_agent=incoming_nbrs
 %             unew(idx,:,:,k) = squeeze(unew(idx,:,:,k)) + squeeze(Ku(j_agent,:,:,k))'*transpose(squeeze(du_all_agent(j_agent,:,k)));
 %         end
          % with feedback
-    end
+    end%!!! not corrected yet
     if ~isempty(lims)
         % add u upper and lower bound again
-        for i=1:size(D.Nodes,1)
-            unew_ik = squeeze(unew(i,:,:,k));
-            size_unew = size(unew_ik);
+%         for i=1:size(D.Nodes,1)
+            unew_idxk = squeeze(unew{idx}(:,:,k));
+            size_unew = size(unew_idxk);
+            m_u = size(u{idx},1);
             if size_unew(2)==m_u
                 unew_ik = transpose(unew_ik);
             end
-            unew(i,:,:,k) = min(lims(:,2*K1), max(lims(:,1*K1), unew_ik));
-        end
+            unew{idx}(:,:,k) = min(lims(:,2*K1), max(lims(:,1*K1), unew_idxk));
+%         end
     end
 % unew of other agents is updated, causing change of formation cost, which vergiftet the cost
-    [xnew(:,:,:,k+1), cnew(:,:,:,k)]  = DYNCST(D,idx,xnew(:,:,:,k), unew(:,:,:,k), k*K1);
-%     
+    xnew_k = cell(n_agent,1);
+    unew_k = cell(n_agent,1);
+    for i=1:n_agent
+        xnew_k{i}=xnew{i}(:,:,k);
+        unew_k{i}=unew{i}(:,:,k);
+    end
+    [xnew_next,cnew_k]  = DYNCST(D,idx,xnew_k, unew_k, k*K1);
+    incoming_nbrs_idces = predecessors(D,idx)';
+    for i=incoming_nbrs_idces
+        xnew{i}(:,:,k+1) = xnew_next{i};
+        
+    end
+    xnew{idx}(:,:,k+1) = xnew_next{idx};
+    cnew(:,:,:,k)=cnew_k;
 end
-[~, cnew(:,:,:,N+1)] = DYNCST(D,idx,xnew(:,:,:,N+1),nan(n_agent,m_u,K,1),k);
-xnew = permute(xnew, [1 2 4 3]);
-unew = permute(unew, [1 2 4 3]);%unew of other agents never updated
-cnew = permute(cnew, [1 2 4 3]);
+xnew_k = cell(n_agent,1);
+    unew_k = cell(n_agent,1);
+    for i=1:n_agent
+        xnew_k{i}=xnew{i}(:,:,N+1);
+        unew_k{i}=nan(size(unew{i},1),K,1);
+    end
+[~, cnew(:,:,:,N+1)] = DYNCST(D,idx,xnew_k,unew_k,k);
+for i=1:n_agent
+    xnew{i} = permute(xnew{i}, [1 3 2 ]);
+    unew{i} = permute(unew{i}, [1 3 2 ]);%unew of other agents never updated
+end
+cnew = permute(cnew, [1 2 4 3 ]);
 % components_amount = 2;
 % horiz = N+1;
 % mu = cell(components_amount,1);
@@ -500,7 +563,7 @@ for i = N-1:-1:1
     k2_i = -QuuF\Qu;
     incoming_nbrs_idces = predecessors(D,idx)';
     for j = incoming_nbrs_idces
-        Ku(j,:,:,i) = -QuuF\squeeze(c_ui_uj(j,:,:,i));
+%         Ku(j,:,:,i) = -QuuF\squeeze(c_ui_uj(j,:,:,i));
     end
 %         if any(free)
 %             Lfree        = -R\(R'\Qux_reg(free,:)); %=-(R*R')^(-1)*Qux=-Quu^(-1)*Qux

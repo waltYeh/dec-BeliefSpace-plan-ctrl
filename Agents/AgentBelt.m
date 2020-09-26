@@ -1,4 +1,4 @@
-classdef AgentCrane < AgentBase 
+classdef AgentBelt < AgentBase 
     properties (Constant = true) 
         % note that all properties must be constant, because we have a lot of copies of this object and it can take a lot of memory otherwise.
 %         compStateDim = 4; % state dimension
@@ -15,7 +15,8 @@ classdef AgentCrane < AgentBase
         component_bDim = 6;
         components_amount = 1;
         shared_uDim = 0;
-        u_lims = [-4.0 4.0;
+        total_uDim = 2;
+        u_lims = [-0.0 0.0;
             -4.0 4.0];
         % larger, less overshoot; smaller, less b-noise affects assist
         
@@ -39,14 +40,14 @@ classdef AgentCrane < AgentBase
     end
     
     methods 
-        function obj = AgentCrane(dt_input,horizonSteps, node_idx)
+        function obj = AgentBelt(dt_input,horizonSteps, node_idx, belief_dyns)
             obj@AgentBase();  
             obj.digraph_idx = node_idx;
             obj.derivatives = {};
             obj.dt = dt_input; % delta_t for time discretization
-            obj.motionModel = TwoDPointRobot(dt_input); % motion model
+            obj.motionModel = TwoDPointBelt(dt_input); % motion model
             obj.obsModel = TwoDSimpleObsModel(); % observation model
-            obj.dyn_cst  = @(D,idx,b,u,i) beliefDynCost_crane(D,idx,b,u,horizonSteps,false,obj.motionModel,obj.obsModel);
+            obj.dyn_cst  = @(D,idx,b,u,i) beliefDynCost_belt(D,idx,b,u,horizonSteps,false,obj.motionModel,obj.obsModel, belief_dyns);
             obj.lambda = []; 
             obj.dlambda = [];
             obj.flgChange = [];
@@ -64,23 +65,23 @@ classdef AgentCrane < AgentBase
                 obj.flgChange = [];
             end
             [x, u, L, Vx, Vxx, cost, obj.lambda, obj.dlambda, finished,obj.flgChange,derivatives_cell] = ...
-                iLQG_multiagent_one_iter(D,obj.digraph_idx,obj.dyn_cst, b0, Op, iter,...
+                iLQG_hetero_multiagent_one_iter(D,obj.digraph_idx,obj.dyn_cst, b0, Op, iter,...
                 u_guess,obj.lambda, obj.dlambda, u_last,x_last, cost_last,obj.flgChange,obj.derivatives, obj.u_lims);
             obj.derivatives = derivatives_cell;
         end
-        function updatePolicy(obj, b_n,u_n,L)
-            %b_n 4x6x61, u_n 4x2x60, L 2x6x60
-            obj.policyHorizon = size(b_n,3);
-            obj.b_nom = b_n;
-            obj.u_nom = u_n;
+        function updatePolicy(obj,b_n_idx,u_n_idx,L)
+            %b_n 6x61, u_n 2x60, L 2x6x60
+            obj.policyHorizon = size(b_n_idx{obj.digraph_idx},2);
+            obj.b_nom = b_n_idx;
+            obj.u_nom = u_n_idx;
             obj.L_opt = L;
             obj.ctrl_ptr = 1;
         end
         function u = getNextControl(obj, b)
-            diff_b = (b - obj.b_nom(:,:,obj.ctrl_ptr));
-            u = obj.u_nom(obj.digraph_idx,:,obj.ctrl_ptr)' + obj.P_feedback*obj.L_opt(:,:,obj.ctrl_ptr)*diff_b(obj.digraph_idx,:)';
+            diff_b = b{obj.digraph_idx} - obj.b_nom{obj.digraph_idx}(:,obj.ctrl_ptr);
+            u = obj.u_nom{obj.digraph_idx}(:,obj.ctrl_ptr) + obj.P_feedback*obj.L_opt(:,:,obj.ctrl_ptr)*diff_b;
             % dim is 6
-            for i_u = 1:size(obj.u_nom,2)
+            for i_u = 1:size(obj.u_lims,1)
                 u(i_u)=min(obj.u_lims(i_u,2), max(obj.u_lims(i_u,1), u(i_u)));
             end
             obj.ctrl_ptr = obj.ctrl_ptr + 1;
@@ -94,7 +95,7 @@ classdef AgentCrane < AgentBase
 %             [mu, sig, weight] = b2xPw(b, obj.component_stDim, obj.components_amount);
             mu=cell(1);
             sig=cell(1);
-            [mu{1}, sig{1}] = b2xP(b(obj.digraph_idx,:), obj.component_stDim);
+            [mu{1}, sig{1}] = b2xP(b, obj.component_stDim);
             z_mu = cell(obj.components_amount);
             z_sig = cell(obj.components_amount);
             for i_comp = 1:obj.components_amount

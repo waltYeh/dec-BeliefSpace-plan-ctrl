@@ -40,9 +40,10 @@ classdef HumanReactionModel < ObservationModelBase
             y_target = x(2); 
             x_man = x(3); 
             y_man = x(4); 
-            K=3;
+            v_max=3;
+            k_factor = 2;
             pos_error=norm([x_target;y_target]-[x_man;y_man]);
-            speed_chase=K*2/pi*atan(2*pos_error);
+            speed_chase=v_max*2/pi*atan(k_factor*pos_error);
             direction=atan2(y_target-y_man,x_target-x_man);
             
 %             range = obj.computeRange(x);                        
@@ -61,7 +62,7 @@ classdef HumanReactionModel < ObservationModelBase
                     x_man;
                     y_man];
             elseif nargin > 2 && strcmp('truenoise',varargin{1}) == 1 
-                v = obj.computeObservationNoiseTrue();
+                v = obj.computeObservationNoiseTrue(x);
                 z = [speed_chase;
                     direction;
                     x_man;
@@ -84,11 +85,12 @@ classdef HumanReactionModel < ObservationModelBase
             y_target = x(2); 
             x_man = x(3); 
             y_man = x(4); 
-            K=3;
+            v_max=3;
+            k_factor = 2;
             pos_error = norm([x_target;y_target]-[x_man;y_man]);
-            speed_chase=K*2/pi*atan(2*pos_error);
+            speed_chase=v_max*2/pi*atan(k_factor*pos_error);
             direction=atan2(y_target-y_man,x_target-x_man);
-            tmp_2_3_K_dist_3_2_2 = K*4/pi/(1+4*pos_error^2)*2/3*pos_error^(3/2);
+            tmp_2_3_K_dist_3_2_2 = v_max*4/pi/(1+4*pos_error^2)*2/3*pos_error^(3/2);
             dv_dx1 = tmp_2_3_K_dist_3_2_2*2*(x(1)-x(3));
             dv_dx2 = tmp_2_3_K_dist_3_2_2*2*(x(2)-x(4));
             dv_dx3 = tmp_2_3_K_dist_3_2_2*2*(x(3)-x(1));
@@ -137,10 +139,12 @@ classdef HumanReactionModel < ObservationModelBase
                 0,0,0,1];
         end
         
-        function M = getObservationNoiseJacobian(obj,x,v,z)
-            n = length(z);
-            M = 8/(1/norm(x(4)-[1.5])^2 + 1/norm(x(3)-[1])^2 + 1) * eye(n);
-%             M = eye(n);
+
+        function M = getObservationNoiseJacobian(obj,x)%,v,z)
+            n = 4;%length(z);
+            M = 8/(1/(norm(x(4)-[1.5])^2+0.05) + 1/norm(x(3)-[1])^2 + 1) * eye(n);
+%             M(1,1) = 1;
+%             M(2,2) = 1;
         end
         
         function R = getObservationNoiseCovariance(obj,x,z)
@@ -151,11 +155,11 @@ classdef HumanReactionModel < ObservationModelBase
             
         end                                                      
         
-        function v = computeObservationNoiseTrue(obj)
+        function v = computeObservationNoiseTrue(obj,x)
             
             noise_std = chol(obj.R_true)';
             
-            v = noise_std*randn(obj.obsNoiseDim,1);
+            v = obj.getObservationNoiseJacobian(x)*noise_std*randn(obj.obsNoiseDim,1);
         end
         
         function v = computeObservationNoise(obj)

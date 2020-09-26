@@ -106,7 +106,7 @@ for i = 1:size(u_nom,2)
 
     delete(rh)
     rh = fill(x(1) + robotDisk(1,:),x(2) + robotDisk(2,:),'b');
-    drawResult(plotFn,b,2);
+%     drawResult(plotFn,b,2);
     drawnow;
     pause(0.005);
 end

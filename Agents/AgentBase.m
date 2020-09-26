@@ -12,7 +12,7 @@ classdef AgentBase < handle
 %         ctrlLim; % control limits
         component_stDim;
         u_lims;
-        P_feedback;
+
     end
     
     properties
@@ -21,6 +21,7 @@ classdef AgentBase < handle
         motionModel; % motion model
         obsModel; % observation model
         dyn_cst;
+%         P_feedback;
     end
     
     methods (Abstract)

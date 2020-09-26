@@ -62,8 +62,8 @@ mu_b = [3, -1.3]';
 mu_c = [4.5, 1.5]';
 mu_d = [7.0, 1.5]';
 
-sig_a1 = diag([0.01, 0.01, 0.05, 0.05]);%sigma
-sig_a2 = diag([0.01, 0.01, 0.05, 0.05]);
+sig_a1 = diag([0.01, 0.01, 0.1, 0.1]);%sigma
+sig_a2 = diag([0.01, 0.01, 0.1, 0.1]);
 sig_b = diag([0.02, 0.02]);%sigma
 sig_c = diag([0.02, 0.02]);
 sig_d = diag([0.02, 0.02]);
@@ -245,8 +245,8 @@ for i_sim = 1:simulation_steps
                 agents{i}.rho_d = 0.4;
                 agents{i}.rho_up = 2;
             end
-            agents{1}.rho_d = 0.4;
-            agents{1}.rho_up =2;
+            agents{1}.rho_d = 0.004;
+            agents{1}.rho_up =0.02;
         end
 
         for i = 1:size(interfDiGr.Nodes,1)

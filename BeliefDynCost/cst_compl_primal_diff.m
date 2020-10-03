@@ -15,7 +15,7 @@ n_agent = size(D.Nodes,1);
 %     c_ui(:,k) = c_ui(:,k) -rho_up * (3*u{1}(5:6,k) - uj_sum + transpose(lam_up(1,:,k)));
 %     c_ui_ui(:,:,k) = c_ui_ui(:,:,k) + rho_up * eye(ctrl_dim);
 % end
-for k=1:horizon
+for k=horizon-1:horizon
     components_amount=2;
     stDim_platf = 4;
     [x_platf_comp, P_platf, w] = b2xPw(b{1}(:,k), stDim_platf, components_amount);
@@ -35,8 +35,8 @@ for k=1:horizon
     x_in_b = 1:2;
     inc_c_bi = (compl_residue + transpose(lam_w(1,:,k)))*(w(1)^2+w(2)^2);
     c_bi(x_in_b,k) = c_bi(x_in_b,k) ...
-                + rho_d * inc_c_bi;
+                + 10*rho_d * inc_c_bi;
     c_bi_bi(x_in_b,x_in_b,k) = c_bi_bi(x_in_b,x_in_b,k) ...
-                + rho_d * (w(1)^2+w(2)^2)^2*eye(stDim);
+                + 10*rho_d * (w(1)^2+w(2)^2)^2*eye(stDim);
 end
 end

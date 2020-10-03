@@ -22,7 +22,7 @@ BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT = 6;
 REST_WISH_WITHOUT_HUMAN_INPUT = 7;
 REST_WISH_WITH_HUMAN_INPUT = 8;
 REST_WISH_WITH_OPPOSITE_HUMAN_INPUT = 9;
-show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
+show_mode = REST_WISH_WITHOUT_HUMAN_INPUT;
 switch show_mode
     case EQUAL_WEIGHT_BALANCING
         weight_a1 = 0.5;
@@ -226,7 +226,7 @@ for i_sim = 1:simulation_steps
     lam_up=zeros(1,Dim_lam_in_xy,horizonSteps-1);
     lam_w = zeros(1,Dim_lam_in_xy,horizonSteps);
     tic
-    for iter = 1:35
+    for iter = 1:15
         if iter == 1
             for i = 2:size(interfDiGr.Nodes,1)
                 for j = 1:size(interfDiGr.Nodes,1)
@@ -252,8 +252,8 @@ for i_sim = 1:simulation_steps
                 agents{i}.rho_d = 0.4;
                 agents{i}.rho_up = 2;
             end
-            agents{1}.rho_d = 0.004;
-            agents{1}.rho_up =0.02;
+            agents{1}.rho_d = 0.4;
+            agents{1}.rho_up =2;
         end
 
         for i = 1:size(interfDiGr.Nodes,1)
@@ -288,7 +288,7 @@ for i_sim = 1:simulation_steps
             last_lam_d=lam_d;
             last_lam_up=lam_up;
             last_lam_w=lam_w;
-            [lam_d,lam_up,lam_w,formation_residue,dyncouple_residue]=update_lam(interfDiGr,b,u, lam_d,lam_up,lam_w,horizonSteps);
+            [lam_d,lam_up,lam_w,formation_residue,dyncouple_residue,compl_residue]=update_lam(interfDiGr,b,u, lam_d,lam_up,lam_w,horizonSteps);
             finished{1} = false;
             finished{2} = false;
             finished{3} = false;
@@ -305,6 +305,8 @@ for i_sim = 1:simulation_steps
                 set(h6,'LineWidth',0.5)
                 set(h7,'LineWidth',0.5)
                 set(h8,'LineWidth',0.5)
+                set(h77,'LineWidth',0.5)
+                set(h88,'LineWidth',0.5)
                 
                 set(h9,'LineWidth',0.5)
                 set(h10,'LineWidth',0.5)
@@ -314,65 +316,90 @@ for i_sim = 1:simulation_steps
                 set(h14,'LineWidth',0.5)
                 set(h15,'LineWidth',0.5)
                 set(h16,'LineWidth',0.5)
+                set(h155,'LineWidth',0.5)
+                set(h166,'LineWidth',0.5)
             end
             
-            subplot(2,2,2)
+            subplot(2,3,2)
             title('agent 2 residue')
             h1=plot(1:horizonSteps,squeeze(formation_residue(1,1,:)),'b','LineWidth',2);
             hold on
             h2=plot(1:horizonSteps,squeeze(formation_residue(1,2,:)),'k','LineWidth',2);
-            subplot(2,2,3)
+            subplot(2,3,3)
             title('agent 3 residue')
             h3=plot(1:horizonSteps,squeeze(formation_residue(2,1,:)),'b','LineWidth',2);
             hold on
             h4=plot(1:horizonSteps,squeeze(formation_residue(2,2,:)),'k','LineWidth',2);
-            subplot(2,2,4)
+            subplot(2,3,4)
             title('agent 4 residue')
             h5=plot(1:horizonSteps,squeeze(formation_residue(3,1,:)),'b','LineWidth',2);
             hold on
             h6=plot(1:horizonSteps,squeeze(formation_residue(3,2,:)),'k','LineWidth',2);
             
-            subplot(2,2,1)
+            subplot(2,3,1)
             title('force balance residue')
             h7=plot(1:horizonSteps-1,squeeze(dyncouple_residue(1,1,:)),'b','LineWidth',2);
             hold on
             h8=plot(1:horizonSteps-1,squeeze(dyncouple_residue(1,2,:)),'k','LineWidth',2);
             
+            subplot(2,3,5)
+            h77=plot(1:horizonSteps,squeeze(compl_residue(1,1,:)),'b','LineWidth',2);
+            hold on
+            h88=plot(1:horizonSteps,squeeze(compl_residue(1,2,:)),'k','LineWidth',2);
+            
+            
             figure(88)
-            subplot(2,2,1)
+            subplot(2,3,1)
             h9=plot(1:horizonSteps-1,squeeze(lam_up(1,1,:)),'b-','LineWidth',2);
             hold on
             h10=plot(1:horizonSteps-1,squeeze(lam_up(1,2,:)),'r-','LineWidth',2);
-            subplot(2,2,2)
+            title('lam_u')
+            subplot(2,3,2)
             h11=plot(1:horizonSteps,squeeze(lam_d(1,1,:)),'b-','LineWidth',2);
             hold on
             h12=plot(1:horizonSteps,squeeze(lam_d(1,2,:)),'r-','LineWidth',2);
-            subplot(2,2,3)
+            title('lam_d1')
+            subplot(2,3,3)
             h13=plot(1:horizonSteps,squeeze(lam_d(2,1,:)),'b-','LineWidth',2);
             hold on
             h14=plot(1:horizonSteps,squeeze(lam_d(2,2,:)),'r-','LineWidth',2);
-            subplot(2,2,4)
-            h15=plot(1:horizonSteps,squeeze(lam_d(3,1,:)),'b-');
+            title('lam_d2')
+            subplot(2,3,4)
+            h15=plot(1:horizonSteps,squeeze(lam_d(3,1,:)),'b-','LineWidth',2);
             hold on
-            h16=plot(1:horizonSteps,squeeze(lam_d(3,2,:)),'r-');
-            
+            h16=plot(1:horizonSteps,squeeze(lam_d(3,2,:)),'r-','LineWidth',2);
+            title('lam_d3')
+            subplot(2,3,5)
+            h155=plot(1:horizonSteps,squeeze(lam_w(1,1,:)),'b-','LineWidth',2);
+            hold on
+            h166=plot(1:horizonSteps,squeeze(lam_w(1,2,:)),'r-','LineWidth',2);
+            title('lam_w')
             figure(89)
-            subplot(2,2,1)
+            subplot(2,3,1)
             plot([iter-1,iter],[sum(squeeze(last_lam_up(1,1,:)),'all'),sum(squeeze(lam_up(1,1,:)),'all')],'b-*')
             hold on
             plot([iter-1,iter],[sum(squeeze(last_lam_up(1,2,:)),'all'),sum(squeeze(lam_up(1,2,:)),'all')],'r-*')
-            subplot(2,2,2)
+            title('lam_u')
+            subplot(2,3,2)
             plot([iter-1,iter],[sum(squeeze(last_lam_d(1,1,:)),'all'),sum(squeeze(lam_d(1,1,:)),'all')],'b-*')
             hold on
             plot([iter-1,iter],[sum(squeeze(last_lam_d(1,2,:)),'all'),sum(squeeze(lam_d(1,2,:)),'all')],'r-*')
-            subplot(2,2,3)
+            title('lam_d1')
+            subplot(2,3,3)
             plot([iter-1,iter],[sum(squeeze(last_lam_d(2,1,:)),'all'),sum(squeeze(lam_d(2,1,:)),'all')],'b-*')
             hold on
             plot([iter-1,iter],[sum(squeeze(last_lam_d(2,2,:)),'all'),sum(squeeze(lam_d(2,2,:)),'all')],'r-*')
-            subplot(2,2,4)
+            title('lam_d2')
+            subplot(2,3,4)
             plot([iter-1,iter],[sum(squeeze(last_lam_d(3,1,:)),'all'),sum(squeeze(lam_d(3,1,:)),'all')],'b-*')
             hold on
             plot([iter-1,iter],[sum(squeeze(last_lam_d(3,2,:)),'all'),sum(squeeze(lam_d(3,2,:)),'all')],'r-*')
+            title('lam_d3')
+            subplot(2,3,5)
+            plot([iter-1,iter],[sum(squeeze(last_lam_w(1,1,:)),'all'),sum(squeeze(lam_w(1,1,:)),'all')],'b-*')
+            hold on
+            plot([iter-1,iter],[sum(squeeze(last_lam_w(1,2,:)),'all'),sum(squeeze(lam_w(1,2,:)),'all')],'r-*')
+            title('lam_w')
         end
         
 %         lam_d(lam_d>1.0)=1.0;
@@ -443,7 +470,7 @@ end
 % plot(error_policy_4_from_3(1,:),'.k')
 % plot(error_policy_4_from_3(2,:),'.k')
 end
-function [lam_d_new,lam_up_new,lam_w_new,formation_residue,dyncouple_residue]=update_lam(D,b,u, lam_d,lam_up,lam_w,horizonSteps)
+function [lam_d_new,lam_up_new,lam_w_new,formation_residue,dyncouple_residue,compl_residue]=update_lam(D,b,u, lam_d,lam_up,lam_w,horizonSteps)
     formation_residue = zeros(3,2,horizonSteps);
     dyncouple_residue = zeros(1,2,horizonSteps-1);
     compl_residue = zeros(1,2,horizonSteps);

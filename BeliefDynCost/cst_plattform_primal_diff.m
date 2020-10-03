@@ -41,7 +41,7 @@ for i_comp = 1:1
 
     end
 end
-for k=1:horizon
+for k=horizon-1:horizon
     components_amount=2;
     x_goals = zeros(2,components_amount);
 
@@ -61,10 +61,10 @@ for k=1:horizon
             i_w = 1;
         end
         inc_c_bi = (compl_residue + transpose(lam_w(1,:,k)))*(-w(i_w)^2);
-        c_bi(x_goal_in_b,k) = c_bi(x_goal_in_b,k) + rho_d * inc_c_bi;
+        c_bi(x_goal_in_b,k) = c_bi(x_goal_in_b,k) + 10*rho_d * inc_c_bi;
             c_bi_bi(x_goal_in_b,x_goal_in_b,k) = c_bi_bi(x_goal_in_b,x_goal_in_b,k) ...
-                + rho_d * eye(stDim) * w(i_w)^4;
-        c_bi(w_in_b,k) = c_bi(w_in_b,k) + rho_d * (compl_residue + transpose(lam_w(1,:,k)))'*(x_opposite-x_goals(:,i_w));
+                + 10*rho_d * eye(stDim) * w(i_w)^4;
+        c_bi(w_in_b,k) = c_bi(w_in_b,k) + 10*rho_d * (compl_residue + transpose(lam_w(1,:,k)))'*(x_opposite-x_goals(:,i_w));
     end
 end
 % time_admm=toc

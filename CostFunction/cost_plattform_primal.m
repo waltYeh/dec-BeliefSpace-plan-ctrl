@@ -125,12 +125,13 @@ for j_nid = 1:length(nid)-1
     cost = cost + rho_d/2*norm(formation_residue + transpose(lam_di(j-1,:)))^2;
 
 end
-x_compl = b{5}(1:stDim,1);
-compl_residue = w(1)^2*(x_compl-x_goals(:,2))+w(2)^2*(x_compl-x_goals(:,1));
-cost = cost + rho_d/2*norm(compl_residue + transpose(lam_w))^2;
 
 if any(final)
     % no more rho_up term in final step
+    x_compl = b{5}(1:stDim,1);
+    compl_residue = w(1)^2*(x_compl-x_goals(:,2))+w(2)^2*(x_compl-x_goals(:,1));
+    cost = cost + 10*rho_d/2*norm(compl_residue + transpose(lam_w))^2;
+
 else
     u_residue = 3*u{idx}(5:6,:);
     for j_nid = 1:length(nid)-1

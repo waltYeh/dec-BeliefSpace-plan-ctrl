@@ -16,7 +16,7 @@ defaults = {'lims',           [],...            control limits
             'rho',            [1,1],...        %too large, converge slow,  rho_x and rho_u
             'lambdaFactor',   1.4,...           lambda scaling factor
             'lambdaMax',      1e5,...          lambda maximum value
-            'lambdaMin',      1e-6,...          below this value lambda = 0
+            'lambdaMin',      1e-2,...          below this value lambda = 0
             'regType',        1,...             regularization type 1: q_uu+lambda*eye(); 2: V_xx+lambda*eye()
             'zMin',           0,...             minimal accepted reduction ratio
             'diffFn',         [],...            user-defined diff for sub-space optimization
@@ -243,7 +243,7 @@ if backPassDone
             z = sign(dcost);
             warning('non-positive expected reduction');
         end
-        if (z > Op.zMin)||w<8
+        if (z > Op.zMin)&&w<8
             
             fwdPassDone = 1;
             costnew     = costnew(:,:,:,w);

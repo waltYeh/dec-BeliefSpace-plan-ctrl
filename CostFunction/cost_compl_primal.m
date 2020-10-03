@@ -112,7 +112,9 @@ uc = 0;
 
 rii_control = 0.1;
 if any(final)
-    
+    compl_residue = w(1)^2*(x_idx-x_goals(:,2))+w(2)^2*(x_idx-x_goals(:,1));
+    cost = cost + 10*rho_d/2*norm(compl_residue + transpose(lam_w))^2;
+
 else
 %     nSigma = sigmaToCollide_multiagent_D(D,idx,b,2,stateValidityChecker);
 %     for j=incoming_nbrs_idces
@@ -121,12 +123,10 @@ else
     uc = uc + rii_control*(u{idx}(:)'*u{idx}(:));
 end
 cost = cost + uc;
-plattform_idx = 1;
-[eid,~] = inedges(D,plattform_idx);
+% plattform_idx = 1;
+% [eid,~] = inedges(D,plattform_idx);
 
 % edge_row = idx-1;
-compl_residue = w(1)^2*(x_idx-x_goals(:,2))+w(2)^2*(x_idx-x_goals(:,1));
-cost = cost + rho_d/2*norm(compl_residue + transpose(lam_w))^2;
 
 % if any(final)
 %     % no more rho_up term in final step

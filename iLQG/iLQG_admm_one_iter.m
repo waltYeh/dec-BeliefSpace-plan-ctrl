@@ -450,6 +450,7 @@ for k = 1:horizon
     unew_k = cell(n_agent,1);
     lam_d_k = zeros(n_agent-2,Dim_lam_in_xy,K);
     lam_up_k = zeros(1,Dim_lam_in_xy,K);
+    lam_w_k = zeros(1,Dim_lam_in_xy,K);
     for i=1:n_agent
         xnew_k{i}=xnew{i}(:,:,k);
         unew_k{i}=unew{i}(:,:,k);
@@ -472,20 +473,20 @@ for k = 1:horizon
     cnew(:,:,:,k)=cnew_k;
     cnew_origin(:,:,:,k)=cnew_origin_k;
 end
-    xnew_k = cell(n_agent,1);
-    unew_k = cell(n_agent,1);
-    for i=1:n_agent
-        xnew_k{i}=xnew{i}(:,:,horizon+1);
-        unew_k{i}=nan(size(unew{i},1),K,1);
+xnew_k = cell(n_agent,1);
+unew_k = cell(n_agent,1);
+for i=1:n_agent
+    xnew_k{i}=xnew{i}(:,:,horizon+1);
+    unew_k{i}=nan(size(unew{i},1),K,1);
 %         lam_d_k{i} = nan(size(unew{i},1),K,1);
-    end
-    for i=1:n_agent-2
-        lam_d_k(i,:,:) = lam_d_new(i,:,:,horizon+1);
-    end
-    lam_up_k(1,:,:) = nan(Dim_lam_in_xy,K,1);
-    lam_w_k(1,:,:) = lam_w_new(1,:,:,horizon+1);
-    [~, cnew_origin(:,:,:,horizon+1)] = DYNCST(D,idx,xnew_k,unew_k,k);
-    [~, cnew(:,:,:,horizon+1)] = DYNCST_primal(D,idx,xnew_k,unew_k,lam_d_k,lam_up_k,lam_w_k,k);
+end
+for i=1:n_agent-2
+    lam_d_k(i,:,:) = lam_d_new(i,:,:,horizon+1);
+end
+lam_up_k(1,:,:) = nan(Dim_lam_in_xy,K,1);
+lam_w_k(1,:,:) = lam_w_new(1,:,:,horizon+1);
+[~, cnew_origin(:,:,:,horizon+1)] = DYNCST(D,idx,xnew_k,unew_k,k);
+[~, cnew(:,:,:,horizon+1)] = DYNCST_primal(D,idx,xnew_k,unew_k,lam_d_k,lam_up_k,lam_w_k,k);
 for i=1:n_agent
     xnew{i} = permute(xnew{i}, [1 3 2 ]);
     unew{i} = permute(unew{i}, [1 3 2 ]);%unew of other agents never updated

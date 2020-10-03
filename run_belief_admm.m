@@ -22,7 +22,7 @@ BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT = 6;
 REST_WISH_WITHOUT_HUMAN_INPUT = 7;
 REST_WISH_WITH_HUMAN_INPUT = 8;
 REST_WISH_WITH_OPPOSITE_HUMAN_INPUT = 9;
-show_mode = REST_WISH_WITHOUT_HUMAN_INPUT;
+show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
 switch show_mode
     case EQUAL_WEIGHT_BALANCING
         weight_a1 = 0.5;
@@ -55,12 +55,12 @@ end
 %% tuned parameters
 mu_a1 = [8.5, 0.0, 5.0, 0.0]';
 mu_a2 = [3, 0.8, 5.0, 0.0]';
-% mu_b = [4, -1.0]';
-% mu_c = [4., 1.0]';
-% mu_d = [6.0, 1.0]';
-mu_b = [3, -1.3]';
-mu_c = [4.5, 1.5]';
-mu_d = [7.0, 1.5]';
+mu_b = [4, -1.0]';
+mu_c = [4., 1.0]';
+mu_d = [6.0, 1.0]';
+% mu_b = [3, -1.3]';
+% mu_c = [4.5, 1.5]';
+% mu_d = [7.0, 1.5]';
 mu_e = [6.0, 4]';
 sig_a1 = diag([0.01, 0.01, 0.1, 0.1]);%sigma
 sig_a2 = diag([0.01, 0.01, 0.1, 0.1]);
@@ -226,7 +226,7 @@ for i_sim = 1:simulation_steps
     lam_up=zeros(1,Dim_lam_in_xy,horizonSteps-1);
     lam_w = zeros(1,Dim_lam_in_xy,horizonSteps);
     tic
-    for iter = 1:15
+    for iter = 1:35
         if iter == 1
             for i = 2:size(interfDiGr.Nodes,1)
                 for j = 1:size(interfDiGr.Nodes,1)

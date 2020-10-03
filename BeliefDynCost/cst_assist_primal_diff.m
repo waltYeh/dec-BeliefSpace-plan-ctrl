@@ -9,7 +9,7 @@ n_agent = size(D.Nodes,1);
 for k=1:horizon-1
 %     c_bi(:,k) = c_bi(:,k) + rho(1) * (x{idx}(:,k) - );
     uj_sum = zeros(ctrl_dim,1);
-    for j = 2:n_agent
+    for j = 2:n_agent-1
         uj_sum = uj_sum + u{j}(:,k);
     end   
     c_ui(:,k) = c_ui(:,k) -rho_up * (3*u{1}(5:6,k) - uj_sum + transpose(lam_up(1,:,k)));

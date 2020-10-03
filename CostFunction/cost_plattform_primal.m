@@ -133,7 +133,7 @@ if any(final)
     % no more rho_up term in final step
 else
     u_residue = 3*u{idx}(5:6,:);
-    for j_nid = 1:length(nid)
+    for j_nid = 1:length(nid)-1
         j = nid(j_nid);
         u_residue = u_residue - u{j}(:,:);
     end

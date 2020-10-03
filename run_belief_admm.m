@@ -22,7 +22,7 @@ BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT = 6;
 REST_WISH_WITHOUT_HUMAN_INPUT = 7;
 REST_WISH_WITH_HUMAN_INPUT = 8;
 REST_WISH_WITH_OPPOSITE_HUMAN_INPUT = 9;
-show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
+show_mode = REST_WISH_WITHOUT_HUMAN_INPUT;
 switch show_mode
     case EQUAL_WEIGHT_BALANCING
         weight_a1 = 0.5;
@@ -204,7 +204,7 @@ x_true(4,:)=mu_d;
 if show_mode<7
     x_true(5,:)=mu_a1(1:2);
 else
-    x_true(5,:)=mu_a1(1:2);
+    x_true(5,:)=mu_a2(1:2);
 end
 x_true(6,:)=mu_e;
 %% these are old codes remained

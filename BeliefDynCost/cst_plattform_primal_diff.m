@@ -21,7 +21,7 @@ for k=1:horizon-1
         rho_up * 3 * 3 * eye(ctrl_dim);
 end
 [eid,nid] = inedges(D,idx);
-for i_comp = 1:1
+for i_comp = 1:2
     for k=1:horizon
         
         for j_nid = 1:length(nid)-1
@@ -41,7 +41,7 @@ for i_comp = 1:1
 
     end
 end
-for k=horizon-1:horizon
+for k=horizon:horizon
     components_amount=2;
     x_goals = zeros(2,components_amount);
 
@@ -50,7 +50,7 @@ for k=horizon-1:horizon
 %         x_goal_in_b = (i_comp2-1)*single_comp_dim+1:(i_comp2-1)*single_comp_dim+2;
         x_goals(:,i_comp)=transpose(x_platf_comp{i_comp}(1:2));
     end
-    x_opposite = b{5}(1:2,1);
+    x_opposite = b{5}(1:2,k);
     compl_residue = w(1)^2*(x_opposite-x_goals(:,2))+w(2)^2*(x_opposite-x_goals(:,1));
     for i_comp = 1:components_amount
         x_goal_in_b = (i_comp-1)*single_comp_dim+1:(i_comp-1)*single_comp_dim+2;
@@ -61,10 +61,10 @@ for k=horizon-1:horizon
             i_w = 1;
         end
         inc_c_bi = (compl_residue + transpose(lam_w(1,:,k)))*(-w(i_w)^2);
-        c_bi(x_goal_in_b,k) = c_bi(x_goal_in_b,k) + 10*rho_d * inc_c_bi;
-            c_bi_bi(x_goal_in_b,x_goal_in_b,k) = c_bi_bi(x_goal_in_b,x_goal_in_b,k) ...
-                + 10*rho_d * eye(stDim) * w(i_w)^4;
-        c_bi(w_in_b,k) = c_bi(w_in_b,k) + 10*rho_d * (compl_residue + transpose(lam_w(1,:,k)))'*(x_opposite-x_goals(:,i_w));
+        c_bi(x_goal_in_b,k) = c_bi(x_goal_in_b,k) + 100*rho_d * inc_c_bi;
+        c_bi_bi(x_goal_in_b,x_goal_in_b,k) = c_bi_bi(x_goal_in_b,x_goal_in_b,k) ...
+            + 100*rho_d * eye(stDim) * w(i_w)^4;
+        c_bi(w_in_b,k) = c_bi(w_in_b,k) + 100*rho_d * (compl_residue + transpose(lam_w(1,:,k)))'*(x_opposite-x_goals(:,i_w));
     end
 end
 % time_admm=toc

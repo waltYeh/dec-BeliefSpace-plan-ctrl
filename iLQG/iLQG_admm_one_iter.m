@@ -15,7 +15,7 @@ defaults = {'lims',           [],...            control limits
             'dlambda',        1,...             initial value for dlambda
             'rho',            [1,1],...        %too large, converge slow,  rho_x and rho_u
             'lambdaFactor',   1.4,...           lambda scaling factor
-            'lambdaMax',      1e5,...          lambda maximum value
+            'lambdaMax',      1e10,...          lambda maximum value
             'lambdaMin',      1e-2,...          below this value lambda = 0
             'regType',        1,...             regularization type 1: q_uu+lambda*eye(); 2: V_xx+lambda*eye()
             'zMin',           0,...             minimal accepted reduction ratio
@@ -203,6 +203,7 @@ if backPassDone
     if Op.parallel  % parallel line-search
         %only u is different for case of consensus and direct exchange
         Op.Alpha(end)=0;
+%         Op.Alpha(end)=-0.01;
         [xnew,unew,costnew,costnew_origin] = forward_pass(D,idx,x0 ,u, L, x, l, Ku,...
             Op.Alpha, DYNCST,DYNCST_primal,u_lims,Op.diffFn,lam_di,lam_up,lam_w);
 
@@ -262,6 +263,9 @@ if backPassDone
         end
         costnew_origin     = costnew_origin(:,:,:,w);
     end
+%     if idx==5
+%         a=1
+%     end
     if ~fwdPassDone
 %         alpha = nan; % signals failure of forward pass
     end

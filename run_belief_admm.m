@@ -22,7 +22,7 @@ BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT = 6;
 REST_WISH_WITHOUT_HUMAN_INPUT = 7;
 REST_WISH_WITH_HUMAN_INPUT = 8;
 REST_WISH_WITH_OPPOSITE_HUMAN_INPUT = 9;
-show_mode = REST_WISH_WITHOUT_HUMAN_INPUT;
+show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
 switch show_mode
     case EQUAL_WEIGHT_BALANCING
         weight_a1 = 0.5;
@@ -201,7 +201,11 @@ x_true = zeros(size(interfDiGr.Nodes,1)+1,agents{3}.motionModel.stDim);
 x_true(2,:)=mu_b;
 x_true(3,:)=mu_c;
 x_true(4,:)=mu_d;
-x_true(5,:)=mu_a1(1:2);
+if show_mode<7
+    x_true(5,:)=mu_a1(1:2);
+else
+    x_true(5,:)=mu_a1(1:2);
+end
 x_true(6,:)=mu_e;
 %% these are old codes remained
 Op.plot = -1; % plot the derivatives as well
@@ -442,11 +446,11 @@ for i_sim = 1:simulation_steps
         u_guess(i,:) = u(i,:);
         % guess value only used for the first iLQG iteration of each MPC iteration
     end
-    if i_sim < 2
-        show_mode = REST_WISH_WITHOUT_HUMAN_INPUT;
-    else
-        show_mode = REST_WISH_WITHOUT_HUMAN_INPUT;
-    end
+%     if i_sim < 2
+%         show_mode = REST_WISH_WITHOUT_HUMAN_INPUT;
+%     else
+%         show_mode = REST_WISH_WITHOUT_HUMAN_INPUT;
+%     end
     time_past = (i_sim-1) * mpc_update_period;
     assignin('base', 'interfDiGr', interfDiGr)
     assignin('base', 'b0_admm', b0)

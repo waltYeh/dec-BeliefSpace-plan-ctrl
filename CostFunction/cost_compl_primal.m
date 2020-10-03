@@ -113,7 +113,7 @@ uc = 0;
 rii_control = 0.1;
 if any(final)
     compl_residue = w(1)^2*(x_idx-x_goals(:,2))+w(2)^2*(x_idx-x_goals(:,1));
-    cost = cost + 10*rho_d/2*norm(compl_residue + transpose(lam_w))^2;
+    cost = cost + 100*rho_d/2*norm(compl_residue + transpose(lam_w))^2;
 
 else
 %     nSigma = sigmaToCollide_multiagent_D(D,idx,b,2,stateValidityChecker);

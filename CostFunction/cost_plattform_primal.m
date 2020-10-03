@@ -81,10 +81,10 @@ for j = [idx, incoming_nbrs_idces]
     u{j}(:,final)  = 0;
 end
 % u{idx}(:,final)  = 0;
-R_t = diag([0.2, 4.0, 0.2, 0.2,0.1,0.1]);
-Qerr_l = 10*L*eye(2);
-Qerr_t = 0.0*eye(2);
-Qcov_l = 1e8*eye(4); % penalize terminal covar
+R_t = diag([0.2, 4.0, 0.2, 0.2,0.1,0.1])*10;
+Qerr_l = 10*L*eye(2)*10;
+Qerr_t = 0.0*eye(2)*10;
+Qcov_l = 1e8*eye(4)*10; % penalize terminal covar
 Qcov_l(1,1) = 0;
 Qcov_l(2,2) = 0;
 component_cost = zeros(components_amount,1);
@@ -120,17 +120,18 @@ for j_nid = 1:length(nid)-1
     xj = b{j}(1:stDim,1);
 % Extract columns of principal sqrt of covariance matrix
 % right now we are not exploiting symmetry
-    formation_residue = xj-x_idx{i_comp}(3:4)-(D.Edges.nom_formation_2(edge_row,:))';
-%     rho_d = rho_d/100;
-    cost = cost + rho_d/2*norm(formation_residue + transpose(lam_di(j-1,:)))^2;
-
+    for i_comp=1:components_amount
+        formation_residue = xj-x_idx{i_comp}(3:4)-(D.Edges.nom_formation_2(edge_row,:))';
+    %     rho_d = rho_d/100;
+        cost = cost + rho_d/2*norm(formation_residue + transpose(lam_di(j-1,:)))^2;
+    end
 end
 
 if any(final)
     % no more rho_up term in final step
     x_compl = b{5}(1:stDim,1);
     compl_residue = w(1)^2*(x_compl-x_goals(:,2))+w(2)^2*(x_compl-x_goals(:,1));
-    cost = cost + 10*rho_d/2*norm(compl_residue + transpose(lam_w))^2;
+    cost = cost + 100*rho_d/2*norm(compl_residue + transpose(lam_w))^2;
 
 else
     u_residue = 3*u{idx}(5:6,:);

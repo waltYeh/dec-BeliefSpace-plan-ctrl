@@ -1,6 +1,5 @@
-function c = cost_plattform_primal(D, idx, b, u,...
-    lam_di,lam_up,lam_w,rho_d,rho_up,...
-    horizon,stateValidityChecker)
+function c = cost_compl_primal(D, idx, b, u,lam_di,lam_up,lam_w,rho_d,rho_up,horizon,  ...
+    stateValidityChecker)
 % one step cost, not the whole cost horizon
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Compute cost for vector of states according to cost model given in Section 6 
@@ -24,7 +23,7 @@ c = zeros(1,size(b,3));
 % % % horizons
 %     keyboard
 % end
-% size is n_agent * n_b * parallel_alpha for forward path
+% size is n_agent * n_b for forward path
 % incoming_nbrs_idces = predecessors(D,idx);
 for j=1:size(b{idx},2)
 %     if isempty(varargin)
@@ -43,7 +42,7 @@ for j=1:size(b{idx},2)
         u_parallel{i} = u{i}(:,j);
     end
     c(j) =  evaluateCost(D, idx, b_parallel,u_parallel,...
-        lam_di(:,:,j),lam_up(:,:,j),lam_w(:,:,j),rho_d,rho_up, horizon, ...
+        lam_di(:,:,j),lam_up(:,:,j),lam_w(:,:,j),rho_d,rho_up,horizon, ...
         stateValidityChecker);
 %     else
 %         c(i) =  evaluateCost(b(:,i),u(:,i), goal, stDim, L, stateValidityChecker, varargin{1});
@@ -59,8 +58,8 @@ function cost = evaluateCost(D, idx, b, u, lam_di,lam_up,lam_w,rho_d,rho_up, ...
 % of Van Den Berg et al. IJRR 2012
 %
 % Input:
-%   b: Current belief vector 4x6
-%   u: Control 4x2
+%   b: Current belief vector 4x2
+%   u: Control 4x6
 %   goal: target state
 %   stDim: State dimension
 %   L: Number of steps in horizon
@@ -73,70 +72,69 @@ incoming_nbrs_idces = predecessors(D,idx)';
 [eid,nid] = inedges(D,idx);
 final = isnan(u{idx}(1,:));
 % u(:,final)  = 0;
-components_amount=2;
-stDim = 4;
-[x_idx, P_idx, w] = b2xPw(b{idx}(:,1), stDim, components_amount);
-
 for j = [idx, incoming_nbrs_idces]
     u{j}(:,final)  = 0;
 end
-% u{idx}(:,final)  = 0;
-R_t = diag([0.2, 4.0, 0.2, 0.2,0.1,0.1]);
-Qerr_l = 10*L*eye(2);
-Qerr_t = 0.0*eye(2);
-Qcov_l = 1e8*eye(4); % penalize terminal covar
-Qcov_l(1,1) = 0;
-Qcov_l(2,2) = 0;
-component_cost = zeros(components_amount,1);
-x_goals = zeros(2,components_amount);
-cost = 0;
-for i_comp=1:components_amount
-    x_goals(:,i_comp)=transpose(x_idx{i_comp}(1:2));
-    delta_x = x_idx{i_comp}(1:2)-x_idx{i_comp}(3:4);
-    % collision Cost
-    cc = 0;
-    w_cc = 1.0;
-    % State Cost
-    sc = 0;
-    % information cost
-    ic = 0;
-    % control cost
-    uc = 0;
-    if any(final)
-        sc = delta_x'*Qerr_l*delta_x;
-        ic = trace(P_idx{i_comp}*Qcov_l*P_idx{i_comp});
-    else
-        uc = u{idx}'*R_t*u{idx};
-        sc = delta_x'*Qerr_t*delta_x;
-    end
-    component_cost(i_comp) = sc + ic + uc + w_cc*cc;
-    
-    cost = cost + component_cost(i_comp) * w(i_comp)^2;
-end
-for j_nid = 1:length(nid)-1
-    j = nid(j_nid);
-    edge_row = eid(j_nid);
-    stDim=2;
-    xj = b{j}(1:stDim,1);
+stDim = 2;
+x_idx = b{idx}(1:stDim,1);
+P_idx = zeros(stDim, stDim); % covariance matrix
 % Extract columns of principal sqrt of covariance matrix
 % right now we are not exploiting symmetry
-    formation_residue = xj-x_idx{i_comp}(3:4)-(D.Edges.nom_formation_2(edge_row,:))';
-%     rho_d = rho_d/100;
-    cost = cost + rho_d/2*norm(formation_residue + transpose(lam_di(j-1,:)))^2;
-
+for d = 1:stDim
+    P_idx(:,d) = b{idx}(d*stDim+1:(d+1)*stDim, 1);
 end
-x_compl = b{5}(1:stDim,1);
-compl_residue = w(1)^2*(x_compl-x_goals(:,2))+w(2)^2*(x_compl-x_goals(:,1));
+components_amount=2;
+stDim_platf = 4;
+[x_platf_comp, P_platf, w] = b2xPw(b{1}(:,1), stDim_platf, components_amount);
+
+x_platf_weighted = zeros(2,components_amount);
+x_goals = zeros(2,components_amount);
+for i=1:components_amount
+    x_platf_weighted(:,i)=transpose(x_platf_comp{i}(3:4)*w(i));
+    x_goals(:,i)=transpose(x_platf_comp{i}(1:2));
+end
+x_platf= [sum(x_platf_weighted(1,:));sum(x_platf_weighted(2,:))];
+% x_goal_a = 
+cost = 0;
+% u{idx}(:,final)  = 0;
+% ctrlDim = size(u{idx},1);
+% collision cost
+cc = 0;
+
+% State Cost
+sc = 0;
+
+% information cost
+ic = 0;
+
+% control cost
+uc = 0;
+
+rii_control = 0.1;
+if any(final)
+    
+else
+%     nSigma = sigmaToCollide_multiagent_D(D,idx,b,2,stateValidityChecker);
+%     for j=incoming_nbrs_idces
+%         cc = cc-log(chi2cdf(nSigma(j)^2, stDim));
+%     end
+    uc = uc + rii_control*(u{idx}(:)'*u{idx}(:));
+end
+cost = cost + uc;
+plattform_idx = 1;
+[eid,~] = inedges(D,plattform_idx);
+
+% edge_row = idx-1;
+compl_residue = w(1)^2*(x_idx-x_goals(:,2))+w(2)^2*(x_idx-x_goals(:,1));
 cost = cost + rho_d/2*norm(compl_residue + transpose(lam_w))^2;
 
-if any(final)
-    % no more rho_up term in final step
-else
-    u_residue = 3*u{idx}(5:6,:);
-    for j_nid = 1:length(nid)
-        j = nid(j_nid);
-        u_residue = u_residue - u{j}(:,:);
-    end
-    cost = cost + rho_up/2*norm(u_residue + transpose(lam_up))^2;
-end
+% if any(final)
+%     % no more rho_up term in final step
+% else
+%     u_residue = 3*u{1}(5:6,:);
+%     for j = 2:4
+%         u_residue = u_residue - u{j}(:,:);
+%     end
+%     cost = cost + rho_up/2*norm(u_residue + transpose(lam_up))^2;
+% end
 end

@@ -1,7 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Demo for a 2D belief space planning scenario 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function run_admm()
+function run_belief_admm()
 addpath(genpath('./'));
 clear
 close all
@@ -61,13 +61,13 @@ mu_a2 = [3, 0.8, 5.0, 0.0]';
 mu_b = [3, -1.3]';
 mu_c = [4.5, 1.5]';
 mu_d = [7.0, 1.5]';
-% mu_e = [7.0, 1.5]';
+mu_e = [6.0, 4]';
 sig_a1 = diag([0.01, 0.01, 0.1, 0.1]);%sigma
 sig_a2 = diag([0.01, 0.01, 0.1, 0.1]);
 sig_b = diag([0.02, 0.02]);%sigma
 sig_c = diag([0.02, 0.02]);
 sig_d = diag([0.02, 0.02]);
-
+sig_e = diag([0.02, 0.02]);
 % weight_1 = 0.9;
 % weight_2 = 0.1;
 dt = 0.05;
@@ -90,22 +90,22 @@ simulation_steps = simulation_time/mpc_update_period;
 
 
 
-sd = [2  3 4];%edges start from
-td = [1  1 1];%edges go to
+sd = [2  3 4 5];%edges start from
+td = [1  1 1 1];%edges go to
 
 nom_formation_2=[-1,-1;
     %-2,0;
     -1,1;
     1,1;
-    ];%z formation
+    0,0];%z formation
 %control cost of node sd in opt of td
-rii_control = [0.8;0.8;0.8;0.8];
-incoming_edges = zeros(4,4);
+rii_control = [0.8;0.8;0.8;0.8;0.8];
+incoming_edges = zeros(5,5);
 EdgeTable = table([sd' td'],nom_formation_2,'VariableNames',{'EndNodes' 'nom_formation_2'});
 
 NodeTable = table(incoming_edges,rii_control,'VariableNames',{'incoming_edges' 'rii_control'});
 interfDiGr = digraph(EdgeTable,NodeTable);
-for idx=1:4
+for idx=1:5
     incoming_nbrs_idces = predecessors(interfDiGr,idx)';
     for j = incoming_nbrs_idces
         if isempty(j)
@@ -117,20 +117,22 @@ for idx=1:4
     end
 end
 
-comm_sd = [1 1 1 3];
-comm_td = [2 3 4 4];
-commGr = graph(comm_sd,comm_td);
-adjGr = full(adjacency(commGr));% full transfers sparse to normal matrix
+% comm_sd = [1 1 1 3];
+% comm_td = [2 3 4 4];
+% commGr = graph(comm_sd,comm_td);
+% adjGr = full(adjacency(commGr));% full transfers sparse to normal matrix
 
 agents = cell(size(interfDiGr.Nodes,1),1);
 belief_dyns = {@(b, u)beliefDynamicsGMM(b, u,HumanMind(dt),HumanReactionModel()); 
     @(b, u)beliefDynamicsSimpleAgent(b, u, TwoDPointRobot(dt),TwoDSimpleObsModel()); 
     @(b, u)beliefDynamicsSimpleAgent(b, u, TwoDPointRobot(dt),TwoDSimpleObsModel()); 
+    @(b, u)beliefDynamicsSimpleAgent(b, u, TwoDPointRobot(dt),TwoDSimpleObsModel());
     @(b, u)beliefDynamicsSimpleAgent(b, u, TwoDPointRobot(dt),TwoDSimpleObsModel())};
 agents{1} = AgentPlattformAdmm(dt,horizonSteps,1,belief_dyns);
 agents{2} = AgentAssistAdmm(dt,horizonSteps,2,belief_dyns);
 agents{3} = AgentAssistAdmm(dt,horizonSteps,3,belief_dyns);
 agents{4} = AgentAssistAdmm(dt,horizonSteps,4,belief_dyns);
+agents{5} = AgentComplementAdmm(dt,horizonSteps,5,belief_dyns);
 % agents{2} = AgentBelt(dt,horizonSteps,2);
 % agents{3} = AgentCrane(dt,horizonSteps,3);
 % agents{4} = AgentCrane(dt,horizonSteps,4);
@@ -153,6 +155,9 @@ for i=1:size(interfDiGr.Nodes,1)
     u_guess{i,4} = zeros(agents{4}.total_uDim,horizonSteps-1);
     u_guess{i,4}(1,:) = 0;
     u_guess{i,4}(2,:) = 0;
+    u_guess{i,5} = zeros(agents{4}.total_uDim,horizonSteps-1);
+    u_guess{i,5}(1,:) = 0;
+    u_guess{i,5}(2,:) = 0;
 end
 % for i=1:size(interfDiGr.Nodes,1)
 %     u_guess{i,1} = zeros(agents{1}.total_uDim,horizonSteps-1);
@@ -182,6 +187,7 @@ for i=1:size(interfDiGr.Nodes,1)
     b0{i,2} = [mu_b;sig_b(:)];
     b0{i,3} = [mu_c;sig_c(:)];
     b0{i,4} = [mu_d;sig_d(:)];
+    b0{i,5} = [mu_e;sig_e(:)];
 end
 %????????????????
 % true states of agents are 2D position vectors
@@ -196,7 +202,7 @@ x_true(2,:)=mu_b;
 x_true(3,:)=mu_c;
 x_true(4,:)=mu_d;
 x_true(5,:)=mu_a1(1:2);
-
+x_true(6,:)=mu_e;
 %% these are old codes remained
 Op.plot = -1; % plot the derivatives as well
 
@@ -216,8 +222,9 @@ for i_sim = 1:simulation_steps
         finished{i}= false;
     end
     Dim_lam_in_xy = 2;
-    lam_d = zeros(size(interfDiGr.Nodes,1)-1,Dim_lam_in_xy,horizonSteps);
+    lam_d = zeros(size(interfDiGr.Nodes,1)-2,Dim_lam_in_xy,horizonSteps);
     lam_up=zeros(1,Dim_lam_in_xy,horizonSteps-1);
+    lam_w = zeros(1,Dim_lam_in_xy,horizonSteps);
     tic
     for iter = 1:15
         if iter == 1
@@ -259,7 +266,7 @@ for i_sim = 1:simulation_steps
                 [bi,ui,cost{i},L_opt{i},~,~, finished{i}] ...
                     = agents{i}.iLQG_one_it...
                     (interfDiGr, b0(i,:), Op, iter,u_guess(i,:),...
-                    lam_d,lam_up,u(i,:),b(i,:), cost{i});
+                    lam_d,lam_up,lam_w,u(i,:),b(i,:), cost{i});
 %                 for j=1:size(interfDiGr.Nodes,1)
 %                     %update all the est of u and b of agent i itself
 %                     u{i,j} = ui{j};%only ui{i} is different from u_guess
@@ -280,11 +287,13 @@ for i_sim = 1:simulation_steps
         if mod(iter,1)==0
             last_lam_d=lam_d;
             last_lam_up=lam_up;
-            [lam_d,lam_up,formation_residue,dyncouple_residue]=update_lam(interfDiGr,b,u, lam_d,lam_up,horizonSteps);
+            last_lam_w=lam_w;
+            [lam_d,lam_up,lam_w,formation_residue,dyncouple_residue]=update_lam(interfDiGr,b,u, lam_d,lam_up,lam_w,horizonSteps);
             finished{1} = false;
             finished{2} = false;
             finished{3} = false;
             finished{4} = false;
+            finished{5} = false;
             figure(20)
 %             subplot(2,2,1)
             if iter>1
@@ -377,7 +386,7 @@ for i_sim = 1:simulation_steps
             % guess value only used for the first iLQG iteration of each MPC iteration
             
         end
-        if finished{1} && finished{2} && finished{3} && finished{4} && iter>5
+        if finished{1} && finished{2} && finished{3} && finished{4} && finished{5} && iter>5
             break;
         end
 %             error_policy_3_from_1 = squeeze(u{3,1}(1,:,:)-u{1,1}(1,:,:));
@@ -422,7 +431,7 @@ for i_sim = 1:simulation_steps
     for i = 1:size(interfDiGr.Nodes,1)
         agents{i}.ctrl_ptr = 1;
     end
-    [~, b0_next, x_true_next] = animateAdmm(109,110,interfDiGr,agents, b0, x_true,update_steps,time_past, show_mode,true);
+    [~, b0_next, x_true_next] = animateBeliefAdmm(109,110,interfDiGr,agents, b0, x_true,update_steps,time_past, show_mode,true);
 %     b0{1}(1:2) = x_true_final(1:2);
     b0 = b0_next;
     x_true = x_true_next;
@@ -434,14 +443,15 @@ end
 % plot(error_policy_4_from_3(1,:),'.k')
 % plot(error_policy_4_from_3(2,:),'.k')
 end
-function [lam_d_new,lam_up_new,formation_residue,dyncouple_residue]=update_lam(D,b,u, lam_d,lam_up,horizonSteps)
+function [lam_d_new,lam_up_new,lam_w_new,formation_residue,dyncouple_residue]=update_lam(D,b,u, lam_d,lam_up,lam_w,horizonSteps)
     formation_residue = zeros(3,2,horizonSteps);
     dyncouple_residue = zeros(1,2,horizonSteps-1);
-
+    compl_residue = zeros(1,2,horizonSteps);
     components_amount=2;
     stDim_platf = 4;
     stDim=2;
     x_platf = zeros(2,horizonSteps);
+    x_goals = zeros(2,components_amount,horizonSteps);
     for k=1:horizonSteps
         [x_platf_comp, P_platf, w] = b2xPw(b{1,1}(:,k), stDim_platf, components_amount);
 
@@ -450,7 +460,10 @@ function [lam_d_new,lam_up_new,formation_residue,dyncouple_residue]=update_lam(D
             x_platf_weighted(:,i)=transpose(x_platf_comp{i}(3:4)*w(i));
         end
         x_platf(:,k)= [sum(x_platf_weighted(1,:));sum(x_platf_weighted(2,:))];
-
+        x_goals(:,1,k)=x_platf_comp{1}(1:2);
+        x_goals(:,2,k)=x_platf_comp{2}(1:2);
+        compl_residue(1,:,k) = w(1)^2*(b{5,5}(1:stDim,k)-x_goals(:,2,k))...
+            +w(2)^2*(b{5,5}(1:stDim,k)-x_goals(:,1,k));
     end
     for i=2:4
         edge_row = i-1;
@@ -461,7 +474,10 @@ function [lam_d_new,lam_up_new,formation_residue,dyncouple_residue]=update_lam(D
     for k=1:horizonSteps-1
         dyncouple_residue(1,:,k) = 3*u{1,1}(5:6,k)-u{2,2}(:,k)-u{3,3}(:,k)-u{4,4}(:,k);
     end
+%     for k=1:horizonSteps
+%         
+%     end
     lam_d_new = lam_d + formation_residue;
     lam_up_new = lam_up + dyncouple_residue;
-
+    lam_w_new = lam_w + compl_residue;
 end

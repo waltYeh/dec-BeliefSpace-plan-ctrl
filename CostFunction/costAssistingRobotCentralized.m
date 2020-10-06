@@ -56,7 +56,7 @@ R_t = diag([0.2, 4.0, 0.2, 0.2]);%,0.1,0.1]); % penalize control effort
 R_assists_t = diag([0.1, 0.1, 0.1, 0.1, 0.1, 0.1]);
 Qerr_t = 0.0*eye(2);
 Qerr_l = 10*L*eye(2); % penalize terminal error
-Q_formation = 1*eye(2);
+Q_formation = 10*eye(2);
 Qcov_t = 0*eye(4);
 Qcov_l = 1e8*eye(4); % penalize terminal covar
 Qcov_l(1,1) = 0;
@@ -95,9 +95,15 @@ for i_comp=1:components_amount
       
 
     end
-    d_stpt=[-1,-1;
-    -1,1;
-    1,1];
+    if i_comp ==1
+        d_stpt=[-1,-1;
+        -1,1;
+        1,1];
+    else
+        d_stpt=[1,-1;
+        -1,1;
+        1,1];
+    end
     for i=1:3
         xi=b(42+i*6-5:42+i*6-4);
         formation_residue = xi-x{i_comp}(3:4)-d_stpt(i,:)';

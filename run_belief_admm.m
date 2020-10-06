@@ -22,7 +22,7 @@ BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT = 6;
 REST_WISH_WITHOUT_HUMAN_INPUT = 7;
 REST_WISH_WITH_HUMAN_INPUT = 8;
 REST_WISH_WITH_OPPOSITE_HUMAN_INPUT = 9;
-show_mode = REST_WISH_WITHOUT_HUMAN_INPUT;
+show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
 switch show_mode
     case EQUAL_WEIGHT_BALANCING
         weight_a1 = 0.5;
@@ -55,12 +55,12 @@ end
 %% tuned parameters
 mu_a1 = [8.5, 0.0, 5.0, 0.0]';
 mu_a2 = [3, 0.8, 5.0, 0.0]';
-mu_b = [4, -1.0]';
-mu_c = [4., 1.0]';
-mu_d = [6.0, 1.0]';
-% mu_b = [3, -1.3]';
-% mu_c = [4.5, 1.5]';
-% mu_d = [7.0, 1.5]';
+% mu_b = [4, -1.0]';
+% mu_c = [4., 1.0]';
+% mu_d = [6.0, 1.0]';
+mu_b = [5.2, -1.3]';
+mu_c = [4.5, 1.5]';
+mu_d = [7.0, 1.5]';
 mu_e = [6.0, 4]';
 sig_a1 = diag([0.01, 0.01, 0.1, 0.1]);%sigma
 sig_a2 = diag([0.01, 0.01, 0.1, 0.1]);
@@ -92,8 +92,12 @@ simulation_steps = simulation_time/mpc_update_period;
 
 sd = [2  3 4 5];%edges start from
 td = [1  1 1 1];%edges go to
-
-nom_formation_2=[-1,-1;
+nom_formation_1=[-1,-1;
+    %-2,0;
+    -1,1;
+    1,1;
+    0,0];
+nom_formation_2=[1,-1;
     %-2,0;
     -1,1;
     1,1;
@@ -101,7 +105,7 @@ nom_formation_2=[-1,-1;
 %control cost of node sd in opt of td
 rii_control = [0.8;0.8;0.8;0.8;0.8];
 incoming_edges = zeros(5,5);
-EdgeTable = table([sd' td'],nom_formation_2,'VariableNames',{'EndNodes' 'nom_formation_2'});
+EdgeTable = table([sd' td'],nom_formation_1,nom_formation_2,'VariableNames',{'EndNodes' 'nom_formation_1' 'nom_formation_2'});
 
 NodeTable = table(incoming_edges,rii_control,'VariableNames',{'incoming_edges' 'rii_control'});
 interfDiGr = digraph(EdgeTable,NodeTable);
@@ -239,7 +243,7 @@ for i_sim = 1:simulation_steps
                 end
                 cost{i} = [];
                 agents{i}.rho_d = 0.4;
-                agents{i}.rho_up = 2.0;
+                agents{i}.rho_up = 0.1;
             end
 %         elseif iter <= 3
 %             for i = 1:size(interfDiGr.Nodes,1)
@@ -254,10 +258,10 @@ for i_sim = 1:simulation_steps
         else
             for i = 2:size(interfDiGr.Nodes,1)
                 agents{i}.rho_d = 0.4;
-                agents{i}.rho_up = 2;
+                agents{i}.rho_up = 0.1;
             end
             agents{1}.rho_d = 0.4;
-            agents{1}.rho_up =2;
+            agents{1}.rho_up =0.1;
         end
 
         for i = 1:size(interfDiGr.Nodes,1)
@@ -499,7 +503,11 @@ function [lam_d_new,lam_up_new,lam_w_new,formation_residue,dyncouple_residue,com
     for i=2:4
         edge_row = i-1;
         for k=1:horizonSteps
-            formation_residue(i-1,:,k) = b{i,i}(1:stDim,k)-x_platf(:,k)-(D.Edges.nom_formation_2(edge_row,:))';
+            w1_index = 21;
+            w2_index = 42;
+            formation_residue(i-1,:,k) = ...
+                (b{i,i}(1:stDim,k)-x_platf(:,k)-(D.Edges.nom_formation_2(edge_row,:))')*b{1,1}(w2_index,k)^2 ...
+            +(b{i,i}(1:stDim,k)-x_platf(:,k)-(D.Edges.nom_formation_1(edge_row,:))')*b{1,1}(w1_index,k)^2;
         end
     end
     for k=1:horizonSteps-1

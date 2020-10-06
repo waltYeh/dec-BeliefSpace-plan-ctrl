@@ -122,7 +122,8 @@ plattform_idx = 1;
 [eid,~] = inedges(D,plattform_idx);
 
 edge_row = idx-1;
-formation_residue = x_idx-x_platf-(D.Edges.nom_formation_2(edge_row,:))';
+formation_residue = (x_idx-x_platf-(D.Edges.nom_formation_2(edge_row,:))')*w(2)^2 ...
+    +(x_idx-x_platf-(D.Edges.nom_formation_1(edge_row,:))')*w(1)^2;
 cost = cost + rho_d/2*norm(formation_residue + transpose(lam_di(idx-1,:)))^2;
 
 if any(final)

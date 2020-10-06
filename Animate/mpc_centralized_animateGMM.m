@@ -421,7 +421,7 @@ if time_past<0.01
 %     legend('A','B')
 [x_m,y_m] = meshgrid(1:0.5:10,-2:0.5:5);
 X=1:0.5:10;
-Y=-1:0.5:5;
+Y=-2:0.5:5;
 Z = zeros(size(x_m,1),size(x_m,2));
 for i=1:length(X)
     for j=1:length(Y)

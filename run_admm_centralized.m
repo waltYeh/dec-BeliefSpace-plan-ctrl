@@ -8,6 +8,7 @@ function run_admm_centralized()
 % and it can sense beacons in the world.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+close all
 
 addpath(genpath('./'));
 clear
@@ -64,8 +65,8 @@ end
 % sig_1 = diag([0.01, 0.01, 0.1, 0.1]);%sigma
 % sig_2 = diag([0.01, 0.01, 0.1, 0.1]);
 mu_a1 = [8.5, 0.0, 5.0, 0.0]';
-mu_a2 = [3, 0.5, 5.0, 0.0]';
-mu_b = [3, -1.3]';
+mu_a2 = [3, 0.8, 5.0, 0.0]';
+mu_b = [5.2, -1.3]';
 mu_c = [4.5, 1.5]';
 mu_d = [7.0, 1.5]';
 sig_a1 = diag([0.01, 0.01, 0.1, 0.1]);%sigma

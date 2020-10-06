@@ -121,7 +121,8 @@ for j_nid = 1:length(nid)-1
 % Extract columns of principal sqrt of covariance matrix
 % right now we are not exploiting symmetry
     for i_comp=1:components_amount
-        formation_residue = xj-x_idx{i_comp}(3:4)-(D.Edges.nom_formation_2(edge_row,:))';
+        formation_residue = (xj-x_idx{i_comp}(3:4)-(D.Edges.nom_formation_2(edge_row,:))')*w(2)^2 ...
+            +(xj-x_idx{i_comp}(3:4)-(D.Edges.nom_formation_1(edge_row,:))')*w(1)^2;
     %     rho_d = rho_d/100;
         cost = cost + rho_d/2*norm(formation_residue + transpose(lam_di(j-1,:)))^2;
     end

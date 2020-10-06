@@ -26,12 +26,13 @@ for k=1:horizon
     end
     x_platf= [sum(x_platf_weighted(1,:));sum(x_platf_weighted(2,:))];
     edge_row = idx-1;
-    formation_residue = b{idx}(1:stDim,k)-x_platf-(D.Edges.nom_formation_2(edge_row,:))';
+    formation_residue = (b{idx}(1:stDim,k)-x_platf-(D.Edges.nom_formation_2(edge_row,:))')*w(2)^2 ...
+        +(b{idx}(1:stDim,k)-x_platf-(D.Edges.nom_formation_1(edge_row,:))')*w(1)^2;
     x_in_b = 1:2;
-    inc_c_bi = (formation_residue + transpose(lam_di(idx-1,:,k)));
+    inc_c_bi = (w(1)^2+w(2)^2)*(formation_residue + transpose(lam_di(idx-1,:,k)));
     c_bi(x_in_b,k) = c_bi(x_in_b,k) ...
                 + rho_d * inc_c_bi;
     c_bi_bi(x_in_b,x_in_b,k) = c_bi_bi(x_in_b,x_in_b,k) ...
-                + rho_d * eye(stDim);
+                + rho_d * (w(1)^2+w(2)^2)^2 * eye(stDim);
 end
 end

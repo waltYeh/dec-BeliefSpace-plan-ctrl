@@ -90,7 +90,7 @@ P_next = (eye(stDim) - K*H)*P_prd;
 g_b_u = zeros(size(b));
 g_b_u(1:stDim,1) = x_next;
 
-g_b_u(stDim+1:end,1) = P_next(:);
+g_b_u(stDim+1:stDim+stDim*stDim,1) = P_next(:);
 
 % for d = 1:stDim
 %     g_b_u(d*stDim+1:(d+1)*stDim,1) = P_next(:,d);

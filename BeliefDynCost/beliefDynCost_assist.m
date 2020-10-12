@@ -29,7 +29,7 @@ function [g,c,gb,gu,gbb,gbu,guu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj] ...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 incoming_nbrs_idces = predecessors(D,idx)';
-beliefDim = size(b{idx},1);
+beliefDim = 6;%size(b{idx},1);
 ctrlDim = size(u{idx},1);
 paralDim = size(b{idx},2);% which can be one or equal to horizonSteps or 11
 
@@ -53,7 +53,7 @@ if nargout == 2
         bj=squeeze(b{j});
         uj = squeeze(u{j});
         g{j} = belief_dyns{j}(bj, uj);
-        if size(bj,1)>6
+        if size(bj,1)>14
             for k=1:paralDim
                 [x, P, w] = b2xPw(bj(:,k), 4, 2);
                 avr_x = w(1)*x{1}(3:4,:)+w(2)*x{2}(3:4,:);
@@ -67,7 +67,7 @@ if nargout == 2
 %             b_formation(j,:,:) = [avr_x;avr_P(:)];
             u_formation(j,:,:) = uj(5:6,:);
         else
-            b_formation(j,:,:) = bj;
+            b_formation(j,:,:) = bj(1:6,:);
             u_formation(j,:,:) = uj;
         end
     end

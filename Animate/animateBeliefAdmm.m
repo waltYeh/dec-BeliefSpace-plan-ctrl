@@ -72,7 +72,7 @@ for k = 1:nSteps-1
     for i=1:size(D.Nodes,1)  % the real states of four robots
         processNoise = agents{i}.motionModel.generateProcessNoise(x_true(i,:),u{i});
         if i==1
-            if show_mode>6% towards resting place
+            if show_mode>6 ||show_mode==3% towards resting place
                 x_mind = [x_true(5,:)';x_true(1,:)'];
                 x_mind_next = agents{i}.motionModel.evolve(x_mind,[u{i}(3:4);u{i}(5:6)],processNoise);
                 x_true(1,:) = x_mind_next(3:4)';
@@ -97,8 +97,16 @@ for k = 1:nSteps-1
 %             z{i} = agents{i}.obsModel.getObservation(x_true(i,:),'truenoise');
 
         elseif i<5
+            %% manipulated
+            [x1, P1, w1] = b2xPw(b{1,1}, 4, 2);
+            K_feedback = agents{1}.L_opt(5:6,[21,42],k);
+%             u_w = zeros(2,1);
+%             for hori=1:size(K_feedback,3)
+            u_w = K_feedback*w1;
+%             u{i} = u{i}+u_w;
             x_true(i,:) = agents{i}.motionModel.evolve(x_true(i,:)',u{i},processNoise);
             z{i} = agents{i}.obsModel.getObservation(x_true(i,:),'truenoise');
+            
         elseif i==5
             x_true(6,:) = agents{i}.motionModel.evolve(x_true(6,:)',u{i},processNoise);
             z{i} = agents{i}.obsModel.getObservation(x_true(6,:),'truenoise');  

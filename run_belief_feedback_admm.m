@@ -1,7 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Demo for a 2D belief space planning scenario 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function run_belief_admm()
+function run_belief_feedback_admm()
 addpath(genpath('./'));
 clear
 close all
@@ -188,10 +188,10 @@ b0=cell(size(interfDiGr.Nodes,1),size(interfDiGr.Nodes,1));
 for i=1:size(interfDiGr.Nodes,1)
     %{4x4}x6
     b0{i,1} = [mu_a1;sig_a1(:);weight_a1;mu_a2;sig_a2(:);weight_a2];
-    b0{i,2} = [mu_b;sig_b(:)];
-    b0{i,3} = [mu_c;sig_c(:)];
-    b0{i,4} = [mu_d;sig_d(:)];
-    b0{i,5} = [mu_e;sig_e(:)];
+    b0{i,2} = [mu_b;sig_b(:);weight_a1;weight_a2];
+    b0{i,3} = [mu_c;sig_c(:);weight_a1;weight_a2];
+    b0{i,4} = [mu_d;sig_d(:);weight_a1;weight_a2];
+    b0{i,5} = [mu_e;sig_e(:);weight_a1;weight_a2];
 end
 %????????????????
 % true states of agents are 2D position vectors
@@ -205,7 +205,7 @@ x_true = zeros(size(interfDiGr.Nodes,1)+1,agents{3}.motionModel.stDim);
 x_true(2,:)=mu_b;
 x_true(3,:)=mu_c;
 x_true(4,:)=mu_d;
-if show_mode<7 && show_mode~=3
+if show_mode<7
     x_true(5,:)=mu_a1(1:2);
 else
     x_true(5,:)=mu_a2(1:2);

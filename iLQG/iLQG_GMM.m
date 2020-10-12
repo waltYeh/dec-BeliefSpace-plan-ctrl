@@ -537,7 +537,15 @@ cu    = reshape(cu,  [m N]);
 cxx   = reshape(cxx, [n n N]);
 cxu   = reshape(cxu, [n m N]);
 cuu   = reshape(cuu, [m m N]);
-
+% cx(21,:)=0;
+% cx(42,:)=0;
+% 
+% cxx(:,21,:)=0;
+% cxx(:,42,:)=0;
+% fx(21,21,:)=0;
+% fx(42,42,:)=0;
+% fu(21,:,:)=0;
+% fu(42,:,:)=0;
 k     = zeros(m,N-1);
 K     = zeros(m,n,N-1);
 Vx    = zeros(n,N);

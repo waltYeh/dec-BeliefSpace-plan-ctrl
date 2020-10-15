@@ -1,7 +1,7 @@
 function [x, u,L, Vx, Vxx, cost,  ...
     lambda, dlambda, finished,flgChange,derivatives_cell] ...
     = iLQG_admm_one_iter(D,idx,DYNCST,DYNCST_primal,DYNCST_primal_diff, x0, Op, iter,...
-    u_guess,lam_di,lam_up,lam_w,lambda_last, dlambda_last, ...
+    u_guess,lam_di,lam_b,lam_up,lam_w,lambda_last, dlambda_last, ...
     u_last, x_last, cost_last,...
     flg_last, derivatives_cell_last, u_lims)
 
@@ -61,7 +61,7 @@ if iter == 1
             alpha_u{i} = alpha*u{i};
         end
         [x,un,cost,cost_origin]  = forward_pass(D,idx,x0,alpha_u,[],[],[],[],1,DYNCST,...
-            DYNCST_primal,u_lims,[],lam_di,lam_up,lam_w);
+            DYNCST_primal,u_lims,[],lam_di,lam_b,lam_up,lam_w);
         incoming_nbrs_idces = predecessors(D,idx)';
         diverges = false;
         for j = [idx,incoming_nbrs_idces]
@@ -107,9 +107,10 @@ end
     % 2x41, ... 6x6x41, 6x2x41, 2x2x41, c_ui_uj 4x2x2x41
     [~,~,fx,fu,fxx,fxu,fuu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj] ...
         = DYNCST(D,idx,x, enlonged_u, 1:N+1);
+    
     [c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj] ...
         = DYNCST_primal_diff(D,idx,x,enlonged_u,c_bi,c_ui,...
-        c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,lam_di,lam_up,lam_w);
+        c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,lam_di,lam_b,lam_up,lam_w);
 
 %     flgChange   = 0;
 % else
@@ -205,7 +206,7 @@ if backPassDone
         Op.Alpha(end)=0;
 %         Op.Alpha(end)=-0.01;
         [xnew,unew,costnew,costnew_origin] = forward_pass(D,idx,x0 ,u, L, x, l, Ku,...
-            Op.Alpha, DYNCST,DYNCST_primal,u_lims,Op.diffFn,lam_di,lam_up,lam_w);
+            Op.Alpha, DYNCST,DYNCST_primal,u_lims,Op.diffFn,lam_di,lam_b,lam_up,lam_w);
 
         if iter>1
             if idx<5
@@ -372,7 +373,7 @@ end
 
 % [x,un,cost]  = forward_pass(x0(:,1),alpha*u,[],[],[],1,DYNCST,Op.lims,[]);
 function [xnew,unew,cnew,cnew_origin] = forward_pass(D,idx,x0,u,L,x,l,Ku,Alpha,DYNCST,...
-    DYNCST_primal,lims,diff,lam_d,lam_up,lam_w)
+    DYNCST_primal,lims,diff,lam_d,lam_b,lam_up,lam_w)
 % l (Schwarting j_k^i) is taken into the function as the argument du
 % parallel forward-pass (rollout)
 % internally time is on the 3rd dimension, 
@@ -397,6 +398,7 @@ for i=1:n_agent
 end
 Dim_lam_in_xy = 2;
 lam_d_new = zeros(n_agent-2,Dim_lam_in_xy,K,horizon+1);
+lam_b_new = zeros(n_agent-2,Dim_lam_in_xy,K,horizon+1);
 lam_up_new = zeros(1,Dim_lam_in_xy,K,horizon);
 lam_w_new = zeros(1,Dim_lam_in_xy,K,horizon+1);
 cnew        = zeros(1,1,K,horizon+1);% one agent, one dim c
@@ -408,6 +410,7 @@ for k = 1:horizon
     end
     for i=1:n_agent-2
         lam_d_new(i,:,:,k) = lam_d(i,:,k*K1);
+        lam_b_new(i,:,:,k) = lam_b(i,:,k*K1);
 %         uC_lambda_new{i}(:,:,k) = uC_lambda{i}(:,k*K1);
     end
     lam_up_new(1,:,:,k) = lam_up(1,:,k*K1);
@@ -423,7 +426,8 @@ for k = 1:horizon
         else
             dx          = xnew{idx}(:,:,k) - x{idx}(:,k*K1);% both size 1x6x11
         end
-        unew{idx}(:,:,k) = squeeze(unew{idx}(:,:,k)) + L(:,:,k)*squeeze(dx); 
+        size_dx=size(squeeze(dx),1);
+        unew{idx}(:,:,k) = squeeze(unew{idx}(:,:,k)) + L(:,1:size_dx,k)*squeeze(dx); 
         % with feedback
     end%!!! not corrected yet
     if ~isempty(Ku)%!!! not corrected yet
@@ -453,6 +457,7 @@ for k = 1:horizon
     xnew_k = cell(n_agent,1);
     unew_k = cell(n_agent,1);
     lam_d_k = zeros(n_agent-2,Dim_lam_in_xy,K);
+    lam_b_k = zeros(n_agent-2,Dim_lam_in_xy,K);
     lam_up_k = zeros(1,Dim_lam_in_xy,K);
     lam_w_k = zeros(1,Dim_lam_in_xy,K);
     for i=1:n_agent
@@ -463,11 +468,12 @@ for k = 1:horizon
     end
     for i=1:n_agent-2
         lam_d_k(i,:,:) = lam_d_new(i,:,:,k);
+        lam_b_k(i,:,:) = lam_b_new(i,:,:,k);
     end
     lam_up_k(1,:,:) = lam_up_new(1,:,:,k);
     lam_w_k(1,:,:) = lam_w_new(1,:,:,k);
     [xnew_next,cnew_origin_k]  = DYNCST(D,idx,xnew_k, unew_k, k*K1);
-    [~,cnew_k]=DYNCST_primal(D,idx,xnew_k, unew_k, lam_d_k,lam_up_k,lam_w_k ,k*K1);
+    [~,cnew_k]=DYNCST_primal(D,idx,xnew_k, unew_k, lam_d_k,lam_b_k,lam_up_k,lam_w_k ,k*K1);
     incoming_nbrs_idces = predecessors(D,idx)';
     for i=1:n_agent
         xnew{i}(:,:,k+1) = xnew_next{i};
@@ -486,11 +492,12 @@ for i=1:n_agent
 end
 for i=1:n_agent-2
     lam_d_k(i,:,:) = lam_d_new(i,:,:,horizon+1);
+    lam_b_k(i,:,:) = lam_b_new(i,:,:,horizon+1);
 end
 lam_up_k(1,:,:) = nan(Dim_lam_in_xy,K,1);
 lam_w_k(1,:,:) = lam_w_new(1,:,:,horizon+1);
 [~, cnew_origin(:,:,:,horizon+1)] = DYNCST(D,idx,xnew_k,unew_k,k);
-[~, cnew(:,:,:,horizon+1)] = DYNCST_primal(D,idx,xnew_k,unew_k,lam_d_k,lam_up_k,lam_w_k,k);
+[~, cnew(:,:,:,horizon+1)] = DYNCST_primal(D,idx,xnew_k,unew_k,lam_d_k,lam_b_k,lam_up_k,lam_w_k,k);
 for i=1:n_agent
     xnew{i} = permute(xnew{i}, [1 3 2 ]);
     unew{i} = permute(unew{i}, [1 3 2 ]);%unew of other agents never updated

@@ -1,6 +1,6 @@
 function [c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj] ...
         = cst_assist_primal_diff(D,idx,b,u,c_bi,c_ui,...
-        c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,lam_di,lam_up,lam_w,rho_d,rho_up)
+        c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,lam_di,lam_b,lam_up,lam_w,rho_d,rho_up)
 horizon = size(c_bi,2);
 belief_dim = size(c_bi,1);
 ctrl_dim = size(c_ui,1);

@@ -1,7 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Demo for a 2D belief space planning scenario 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function run_belief_admm()
+function run_belief_feedback_admm2()
 addpath(genpath('./'));
 clear
 close all
@@ -188,9 +188,9 @@ b0=cell(size(interfDiGr.Nodes,1),size(interfDiGr.Nodes,1));
 for i=1:size(interfDiGr.Nodes,1)
     %{4x4}x6
     b0{i,1} = [mu_a1;sig_a1(:);weight_a1;mu_a2;sig_a2(:);weight_a2];
-    b0{i,2} = [mu_b;sig_b(:)];
-    b0{i,3} = [mu_c;sig_c(:)];
-    b0{i,4} = [mu_d;sig_d(:)];
+    b0{i,2} = [mu_b;sig_b(:);mu_a1(3:4)];
+    b0{i,3} = [mu_c;sig_c(:);mu_a1(3:4)];
+    b0{i,4} = [mu_d;sig_d(:);mu_a1(3:4)];
     b0{i,5} = [mu_e;sig_e(:)];
 end
 %????????????????
@@ -231,6 +231,7 @@ for i_sim = 1:simulation_steps
     end
     Dim_lam_in_xy = 2;
     lam_d = zeros(size(interfDiGr.Nodes,1)-2,Dim_lam_in_xy,horizonSteps);
+    lam_b = zeros(size(interfDiGr.Nodes,1)-2,Dim_lam_in_xy,horizonSteps);
     lam_up=zeros(1,Dim_lam_in_xy,horizonSteps-1);
     lam_w = zeros(1,Dim_lam_in_xy,horizonSteps);
     tic
@@ -274,7 +275,7 @@ for i_sim = 1:simulation_steps
                 [bi,ui,cost{i},L_opt{i},~,~, finished{i}] ...
                     = agents{i}.iLQG_one_it...
                     (interfDiGr, b0(i,:), Op, iter,u_guess(i,:),...
-                    lam_d,lam_up,lam_w,u(i,:),b(i,:), cost{i});
+                    lam_d,lam_b,lam_up,lam_w,u(i,:),b(i,:), cost{i});
 %                 for j=1:size(interfDiGr.Nodes,1)
 %                     %update all the est of u and b of agent i itself
 %                     u{i,j} = ui{j};%only ui{i} is different from u_guess
@@ -294,9 +295,10 @@ for i_sim = 1:simulation_steps
         %% 
         if mod(iter,1)==0
             last_lam_d=lam_d;
+            last_lam_b=lam_b;
             last_lam_up=lam_up;
             last_lam_w=lam_w;
-            [lam_d,lam_up,lam_w,formation_residue,dyncouple_residue,compl_residue]=update_lam(interfDiGr,b,u, lam_d,lam_up,lam_w,horizonSteps);
+            [lam_d,lam_b,lam_up,lam_w,formation_residue,consensus_residue,dyncouple_residue,compl_residue]=update_lam(interfDiGr,b,u, lam_d,lam_b,lam_up,lam_w,horizonSteps);
             finished{1} = false;
             finished{2} = false;
             finished{3} = false;
@@ -478,8 +480,9 @@ end
 % plot(error_policy_4_from_3(1,:),'.k')
 % plot(error_policy_4_from_3(2,:),'.k')
 end
-function [lam_d_new,lam_up_new,lam_w_new,formation_residue,dyncouple_residue,compl_residue]=update_lam(D,b,u, lam_d,lam_up,lam_w,horizonSteps)
+function [lam_d_new,lam_b_new,lam_up_new,lam_w_new,formation_residue,consensus_residue,dyncouple_residue,compl_residue]=update_lam(D,b,u, lam_d,lam_b,lam_up,lam_w,horizonSteps)
     formation_residue = zeros(3,2,horizonSteps);
+    consensus_residue = zeros(3,2,horizonSteps);
     dyncouple_residue = zeros(1,2,horizonSteps-1);
     compl_residue = zeros(1,2,horizonSteps);
     components_amount=2;
@@ -508,6 +511,7 @@ function [lam_d_new,lam_up_new,lam_w_new,formation_residue,dyncouple_residue,com
             formation_residue(i-1,:,k) = ...
                 (b{i,i}(1:stDim,k)-x_platf(:,k)-(D.Edges.nom_formation_2(edge_row,:))')*b{1,1}(w2_index,k)^2 ...
             +(b{i,i}(1:stDim,k)-x_platf(:,k)-(D.Edges.nom_formation_1(edge_row,:))')*b{1,1}(w1_index,k)^2;
+            consensus_residue(i-1,:,k) = b{i,i}(1:stDim,k)-x_platf(:,k);
         end
     end
     for k=1:horizonSteps-1
@@ -517,6 +521,7 @@ function [lam_d_new,lam_up_new,lam_w_new,formation_residue,dyncouple_residue,com
 %         
 %     end
     lam_d_new = lam_d + formation_residue;
+    lam_b_new = lam_b + consensus_residue;
     lam_up_new = lam_up + dyncouple_residue;
     lam_w_new = lam_w + compl_residue;
 end

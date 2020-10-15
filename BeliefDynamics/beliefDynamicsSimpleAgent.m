@@ -20,6 +20,9 @@ b_next = zeros(size(b));
 
 for i=1:horizon    
     b_next(:,i) = updateSingleBelief(b(:,i), u(:,i), motionModel, obsModel);
+    if size(b,1)==8
+        b_next(7:8,i)=b(7:8,i);
+    end
 end
 
 

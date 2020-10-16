@@ -104,6 +104,7 @@ classdef AgentAssistAdmm < AgentBase
         end
         function u = getNextControl(obj, b)
             diff_b = b{obj.digraph_idx} - obj.b_nom{obj.digraph_idx}(:,obj.ctrl_ptr);
+%             obj.L_opt(:,7:8,obj.ctrl_ptr)=0;
             u = obj.u_nom{obj.digraph_idx}(:,obj.ctrl_ptr) + obj.P_feedback*obj.L_opt(:,:,obj.ctrl_ptr)*diff_b;
             % dim is 6
             for i_u = 1:size(obj.u_lims,1)

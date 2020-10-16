@@ -115,7 +115,20 @@ for k = 1:nSteps-1
     %% now do the machine part
     for i = 1:size(D.Nodes,1)%agents_amount
         % b_next already contains all info of mu_i and sig_i
-        [b_next_i,mu_i,sig_i,~] = agents{i}.getNextEstimation(b{i,i},u{i},z{i});
+        if i<5 && i>1
+            [b_next_i,mu_i,sig_i,~] = agents{i}.getNextEstimation(b{i,i}(1:6),u{i},z{i});
+            components_amount=2;
+            [x_platf_comp, P_platf, w] = b2xPw(b{1,1}, 4, components_amount);
+
+            x_platf_weighted = zeros(2,components_amount);
+            for ii=1:components_amount
+                x_platf_weighted(:,ii)=transpose(x_platf_comp{ii}(3:4)*w(ii));
+            end
+            x_platf= [sum(x_platf_weighted(1,:));sum(x_platf_weighted(2,:))];
+            b_next_i = [b_next_i;x_platf];
+        else
+            [b_next_i,mu_i,sig_i,~] = agents{i}.getNextEstimation(b{i,i},u{i},z{i});
+        end
         %should pass in the control and measurement of connected agents in
         %order to do estimations for them!
         b{i,i}=b_next_i;

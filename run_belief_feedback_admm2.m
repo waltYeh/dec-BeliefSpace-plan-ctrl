@@ -22,7 +22,7 @@ BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT = 6;
 REST_WISH_WITHOUT_HUMAN_INPUT = 7;
 REST_WISH_WITH_HUMAN_INPUT = 8;
 REST_WISH_WITH_OPPOSITE_HUMAN_INPUT = 9;
-show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
+show_mode = EQUAL_WEIGHT_TO_BALL_FEEDBACK;
 switch show_mode
     case EQUAL_WEIGHT_BALANCING
         weight_a1 = 0.5;
@@ -59,7 +59,7 @@ mu_a2 = [3, 0.8, 5.0, 0.0]';
 % mu_c = [4., 1.0]';
 % mu_d = [6.0, 1.0]';
 mu_b = [5.2, -1.3]';
-mu_c = [4.5, 1.5]';
+mu_c = [4.2, 1.8]';
 mu_d = [7.0, 1.5]';
 mu_e = [6.0, 4]';
 sig_a1 = diag([0.01, 0.01, 0.1, 0.1]);%sigma
@@ -151,17 +151,17 @@ for i=1:size(interfDiGr.Nodes,1)
     % reaction model
     u_guess{i,1}(6,:) = (mu_a1(2)-mu_a1(4)-0.1)/horizon;
     u_guess{i,2} = zeros(agents{2}.total_uDim,horizonSteps-1);
-    u_guess{i,2}(1,:) = 0;
-    u_guess{i,2}(2,:) = 0;
+    u_guess{i,2}(1,:) = 1;
+    u_guess{i,2}(2,:) = 1;
     u_guess{i,3} = zeros(agents{3}.total_uDim,horizonSteps-1);
-    u_guess{i,3}(1,:) = 0;
-    u_guess{i,3}(2,:) = 0;
+    u_guess{i,3}(1,:) = 1;
+    u_guess{i,3}(2,:) = 1;
     u_guess{i,4} = zeros(agents{4}.total_uDim,horizonSteps-1);
-    u_guess{i,4}(1,:) = 0;
-    u_guess{i,4}(2,:) = 0;
+    u_guess{i,4}(1,:) = 1;
+    u_guess{i,4}(2,:) = 1;
     u_guess{i,5} = zeros(agents{4}.total_uDim,horizonSteps-1);
-    u_guess{i,5}(1,:) = 0;
-    u_guess{i,5}(2,:) = 0;
+    u_guess{i,5}(1,:) = 1;
+    u_guess{i,5}(2,:) = 1;
 end
 % for i=1:size(interfDiGr.Nodes,1)
 %     u_guess{i,1} = zeros(agents{1}.total_uDim,horizonSteps-1);
@@ -459,7 +459,7 @@ for i_sim = 1:simulation_steps
 %     end
     time_past = (i_sim-1) * mpc_update_period;
     assignin('base', 'interfDiGr', interfDiGr)
-    assignin('base', 'b0_admm', b0)
+    assignin('base', 'b0', b0)
     assignin('base', 'agents', agents)
     assignin('base', 'update_steps', update_steps)
     assignin('base', 'time_past', time_past)

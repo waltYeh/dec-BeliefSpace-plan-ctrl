@@ -104,7 +104,7 @@ classdef AgentComplementAdmm < AgentBase
         end
         function u = getNextControl(obj, b)
             diff_b = b{obj.digraph_idx} - obj.b_nom{obj.digraph_idx}(:,obj.ctrl_ptr);
-            u = obj.u_nom{obj.digraph_idx}(:,obj.ctrl_ptr) + obj.P_feedback*obj.L_opt(:,:,obj.ctrl_ptr)*diff_b;
+            u = obj.u_nom{obj.digraph_idx}(:,obj.ctrl_ptr) + obj.P_feedback*obj.L_opt(:,1:size(diff_b,1),obj.ctrl_ptr)*diff_b;
             % dim is 6
             for i_u = 1:size(obj.u_lims,1)
                 u(i_u)=min(obj.u_lims(i_u,2), max(obj.u_lims(i_u,1), u(i_u)));

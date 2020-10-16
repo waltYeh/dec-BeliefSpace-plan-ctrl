@@ -34,5 +34,12 @@ for k=1:horizon
                 + rho_d * inc_c_bi;
     c_bi_bi(x_in_b,x_in_b,k) = c_bi_bi(x_in_b,x_in_b,k) ...
                 + rho_d * (w(1)^2+w(2)^2)^2 * eye(stDim);
+            
+    consensus_residue = b{idx}(7:8,k)-x_platf;
+    inc_c_bi = (consensus_residue + transpose(lam_b(idx-1,:,k)));
+    x_in_b = 7:8;
+    c_bi(x_in_b,k) = c_bi(x_in_b,k) + rho_d * inc_c_bi;
+    c_bi_bi(x_in_b,x_in_b,k) = c_bi_bi(x_in_b,x_in_b,k) ...
+            + rho_d * eye(stDim);
 end
 end

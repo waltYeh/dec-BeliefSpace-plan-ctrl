@@ -1,4 +1,4 @@
-function G=sparse_feedback(F_in,diff,b_nom,options)
+function [G,W]=sparse_feedback(F_in,diff,b_nom,options)
 F=F_in;
 rho=options.rho;
 gam=options.gam;
@@ -41,8 +41,12 @@ for reweightedstep = 1 : reweighted_Max_Iter
         eps = 1e-2;
         for ii = 1:sub_mat_amount(1)
             for jj = 1:sub_mat_amount(2)
-                Wnew(ii,jj) = 1 / ( norm( F( mm*(ii-1)+1 : mm*ii, ...
-                    nn*(jj-1)+1 : nn*jj ,1),'fro' ) + eps );% only using first time step of F
+                norm_Fiijj=0;
+                for k=1:horizon-1
+                    norm_Fiijj=norm_Fiijj+ norm( F( mm*(ii-1)+1 : mm*ii, ...
+                    nn*(jj-1)+1 : nn*jj ,k),'fro' );
+                end
+                Wnew(ii,jj) = 1 / ( norm_Fiijj + eps );% only using first time step of F
             end
         end 
         W=Wnew;
@@ -80,7 +84,7 @@ for k=1:horizon-1
                     (rho/2) * norm( F(:,:,k) - U(:,:,k), 'fro' )^2;
     
 end
-finished_k=zeros(horizon-1);
+finished_k=zeros(horizon-1,1);
 for iter=1:1%AM_Max_Iter
     for k=1:horizon-1
         if finished_k(k)>0.5
@@ -112,6 +116,7 @@ for iter=1:1%AM_Max_Iter
             stepsize = stepsize * beta;
 
             if stepsize < 1.e-16            
+                iter
                 error('Extremely small stepsize in F-minimization step!');            
             end 
         end%while

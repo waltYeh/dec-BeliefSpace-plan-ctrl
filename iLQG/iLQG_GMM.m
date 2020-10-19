@@ -227,6 +227,14 @@ for iter = 1:Op.maxIter
     if flgChange
         t_diff = tic;
         [~,~,fx,fu,fxx,fxu,fuu,cx,cu,cxx,cxu,cuu]   = DYNCST(x, [u nan(m,1)], 1:N+1);
+        diff.fx=fx;
+        diff.fu=fu;
+        diff.cx=cx;
+        diff.cu=cu;
+        diff.cxx=cxx;
+        diff.cxu=cxu;
+        diff.cuu=cuu;
+        assignin('base', 'diff', diff)
         trace(iter).time_derivs = toc(t_diff);
         flgChange   = 0;
     end

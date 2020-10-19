@@ -140,8 +140,8 @@ for i_sim = 1:simulation_steps
     time_past = (i_sim-1) * mpc_update_period;
 %     assignin('base', 'interfDiGr', interfDiGr)
     assignin('base', 'b0', b0)
-    assignin('base', 'b_opt', b_opt)
-    assignin('base', 'u_opt', u_opt)
+    assignin('base', 'b_nom', b_opt)
+    assignin('base', 'u_nom', u_opt)
     assignin('base', 'L_opt', L_opt)
     assignin('base', 'update_steps', update_steps)
     assignin('base', 'time_past', time_past)

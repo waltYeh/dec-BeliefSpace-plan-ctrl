@@ -1,4 +1,4 @@
-function sparse_feedback(F_in,diff,b_nom,options)
+function G=sparse_feedback(F_in,diff,b_nom,options)
 F=F_in;
 rho=options.rho;
 gam=options.gam;
@@ -20,7 +20,7 @@ eps_rel = 1.e-2;
 % method
 tolAM = 1.e-2; 
 tolNT = 1.e-3;
-reweighted_Max_Iter =3;
+reweighted_Max_Iter =5;
 ADMM_Max_Iter = 10;
 for reweightedstep = 1 : reweighted_Max_Iter
     % Solve the minimization problem using ADMM
@@ -42,13 +42,13 @@ for reweightedstep = 1 : reweighted_Max_Iter
         for ii = 1:sub_mat_amount(1)
             for jj = 1:sub_mat_amount(2)
                 Wnew(ii,jj) = 1 / ( norm( F( mm*(ii-1)+1 : mm*ii, ...
-                    nn*(jj-1)+1 : nn*jj ),'fro' ) + eps );
+                    nn*(jj-1)+1 : nn*jj ,1),'fro' ) + eps );% only using first time step of F
             end
         end 
         W=Wnew;
     end
 end
-
+% assignin('base', 'G', G)
 end
 function Fnew=fmin_admm(diffs,rho,F,U,b_nom,tol)
 cuu=diffs.cuu;
@@ -80,8 +80,12 @@ for k=1:horizon-1
                     (rho/2) * norm( F(:,:,k) - U(:,:,k), 'fro' )^2;
     
 end
+finished_k=zeros(horizon-1);
 for iter=1:1%AM_Max_Iter
     for k=1:horizon-1
+        if finished_k(k)>0.5
+            continue;
+        end
         Ffullstep(:,:,k)=lyap(rho*inv(cuu(:,:,k)),cov_belief(:,:,k),-rho*cuu(:,:,k)\U(:,:,k));
         F_diff(:,:,k)=Ffullstep(:,:,k)-F(:,:,k);
         grad_phi(:,:,k)=cuu(:,:,k)*F(:,:,k)*cov_belief(:,:,k) + rho * (F(:,:,k) - U(:,:,k));
@@ -90,6 +94,7 @@ for iter=1:1%AM_Max_Iter
         end 
         if norm( grad_phi(:,:,k), 'fro' ) < tol%found necessary condition for opt, above (NC-F)
 %             break;
+            finished_k(k)=1;
         end
         stepsize = 1;%step size will be a half for each while iteration
         while 1
@@ -127,7 +132,7 @@ for k=1:horizon-1
     for i=1:p
         for j=1:q
             wij = W(i,j);
-            Vij = V( mm * (i-1) + 1:mm*i, nn * (j-1) + 1:nn*j);
+            Vij = V( mm * (i-1) + 1:mm*i, nn * (j-1) + 1:nn*j,k);
             a = (gam / rho) * wij;
             nVij = norm( Vij, 'fro' );
             if nVij <= a

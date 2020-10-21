@@ -46,7 +46,7 @@ for reweightedstep = 1 : reweighted_Max_Iter
                     norm_Fiijj=norm_Fiijj+ norm( F( mm*(ii-1)+1 : mm*ii, ...
                     nn*(jj-1)+1 : nn*jj ,k),'fro' );
                 end
-                if (jj>4&&jj<=20)||(jj>26&&jj<=41)
+                if (jj>0&&jj<=20)||(jj>21&&jj<=41)
                     norm_Fiijj=0;
                 end
                 Wnew(ii,jj) = 1 / ( norm_Fiijj + eps );% only using first time step of F
@@ -60,6 +60,7 @@ end
 end
 function Fnew=fmin_admm(diffs,rho,F,U,b_nom,tol)
 cuu=diffs.cuu;
+cub=diffs.cxu;
 cbb=diffs.cxx;
 n_b=size(F,2);
 n_u=size(F,1);
@@ -94,7 +95,7 @@ for iter=1:1%AM_Max_Iter
         if finished_k(k)>0.5
             continue;
         end
-        Ffullstep(:,:,k)=lyap(rho*inv(cuu(:,:,k)),cov_belief(:,:,k),-rho*cuu(:,:,k)\U(:,:,k));
+        Ffullstep(:,:,k)=lyap(rho*inv(cuu(:,:,k)),cov_belief(:,:,k),cuu(:,:,k)\(2*cub(:,:,k)'*cov_belief(:,:,k)-rho*U(:,:,k)));
         F_diff(:,:,k)=Ffullstep(:,:,k)-F(:,:,k);
         grad_phi(:,:,k)=cuu(:,:,k)*F(:,:,k)*cov_belief(:,:,k) + rho * (F(:,:,k) - U(:,:,k));
         if trace( F_diff(:,:,k)' * grad_phi(:,:,k) ) > 1.e-10

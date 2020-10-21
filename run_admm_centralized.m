@@ -66,9 +66,9 @@ end
 % sig_2 = diag([0.01, 0.01, 0.1, 0.1]);
 mu_a1 = [8.5, 0.0, 5.0, 0.0]';
 mu_a2 = [3, 0.8, 5.0, 0.0]';
-mu_b = [4.7, -1.3]';
-mu_c = [4.2, 1.1]';
-mu_d = [6.2, 1.2]';
+mu_b = [5, -1.3]';
+mu_c = [4.0, 1.1]';
+mu_d = [6.0, 1.2]';
 sig_a1 = diag([0.01, 0.01, 0.1, 0.1]);%sigma
 sig_a2 = diag([0.01, 0.01, 0.1, 0.1]);
 sig_b = diag([0.02, 0.02]);%sigma
@@ -140,8 +140,8 @@ for i_sim = 1:simulation_steps
     time_past = (i_sim-1) * mpc_update_period;
 %     assignin('base', 'interfDiGr', interfDiGr)
     assignin('base', 'b0', b0)
-    assignin('base', 'b_opt', b_opt)
-    assignin('base', 'u_opt', u_opt)
+    assignin('base', 'b_nom', b_opt)
+    assignin('base', 'u_nom', u_opt)
     assignin('base', 'L_opt', L_opt)
     assignin('base', 'update_steps', update_steps)
     assignin('base', 'time_past', time_past)

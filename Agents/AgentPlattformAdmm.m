@@ -47,6 +47,7 @@ classdef AgentPlattformAdmm < AgentBase
         cst_primal_diff;
         rho_d = 5;
         rho_up = 1.0;
+        rho;
     end
     
     methods 
@@ -58,16 +59,16 @@ classdef AgentPlattformAdmm < AgentBase
             obj.motionModel = HumanMind(dt_input); % motion model
             obj.obsModel = HumanReactionModel(); % observation model
             svc = @(xi,ri, xj, rj)isStateValid_multiagent(xi,ri, xj, rj);
-            rho.rho_d=obj.rho_d;
-            rho.rho_up=obj.rho_up;
+            obj.rho.rho_d=obj.rho_d;
+            obj.rho.rho_up=obj.rho_up;
             obj.dyn_cst  = @(D,idx,b,u,i) beliefDynCost_plattform(D,idx,b,u,horizonSteps,false,obj.motionModel,obj.obsModel,belief_dyns);
             obj.cst_primal = @(D,idx,b,u,lam,i) beliefDynCost_plattform_primal...
-                (D,idx,b,u,lam,rho,horizonSteps,false,...
+                (D,idx,b,u,lam,obj.rho,horizonSteps,false,...
                 obj.motionModel,obj.obsModel, belief_dyns, svc);
             obj.cst_primal_diff = @(D,idx,b,u,c_bi,c_ui,...
                 c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,lam)cst_plattform_primal_diff...
                 (D,idx,b,u,c_bi,c_ui,...
-                c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,lam,rho);
+                c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,lam,obj.rho);
             obj.lambda = []; 
             obj.dlambda = [];
             obj.flgChange = [];

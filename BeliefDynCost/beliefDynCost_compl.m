@@ -41,7 +41,7 @@ end
 % ctDim = motionModel.ctDim;% 4, only for one component
 % if only two outputs g and c are needed
 g = cell(size(D.Nodes,1),1);
-b_formation = zeros(size(D.Nodes,1),beliefDim+2,paralDim);
+b_formation = zeros(size(D.Nodes,1),beliefDim,paralDim);
 u_formation = zeros(size(D.Nodes,1),ctrlDim,paralDim);
 if nargout == 2
     agents_idces = [1,2,3,4,5];
@@ -58,7 +58,7 @@ if nargout == 2
                 [x, P, w] = b2xPw(bj(:,k), 4, 2);
                 avr_x = w(1)*x{1}(3:4,:)+w(2)*x{2}(3:4,:);
                 avr_P = w(1)*P{1}(3:4,3:4)+w(2)*P{2}(3:4,3:4);
-                b_formation(j,:,k) = [avr_x;avr_P(:);0;0];
+                b_formation(j,:,k) = [avr_x;avr_P(:)];
                 
             end
 %             [x, P, w] = b2xPw(bj, 4, 2);
@@ -67,14 +67,14 @@ if nargout == 2
 %             b_formation(j,:,:) = [avr_x;avr_P(:)];
             u_formation(j,:,:) = uj(5:6,:);
         elseif size(bj,1)<8
-            b_formation(j,:,:) = [bj(1:6,:);zeros(2,size(bj,2))];
+            b_formation(j,:,:) = [bj(1:6,:)];
             u_formation(j,:,:) = uj;
         else
             b_formation(j,:,:) = bj(1:8,:);
             u_formation(j,:,:) = uj;
         end
     end
-    b_formation(idx,:,:) = [b{idx}(1:6,:);zeros(2,size(bj,2))];
+    b_formation(idx,:,:) = [b{idx}(1:6,:)];
     u_formation(idx,:,:) = u{idx};
     g{idx} = belief_dyns{idx}(b{idx}, u{idx});
 %     c = costAssistingRobot(b{idx}, u{idx}, horizonSteps, motionModel.stDim,components_amount);
@@ -82,8 +82,8 @@ if nargout == 2
     c = cost_compl(D, idx,b_formation, u_formation, horizonSteps,collisionChecker);
 else
     % belief state and control indices
-    ib = 1:beliefDim+2;
-    iu_begin = beliefDim+1+2;
+    ib = 1:beliefDim;
+    iu_begin = beliefDim+1;
     
     % dynamics first derivatives, dynamics is decoupled!, there is no
     % g^i_uj, only g^i_ui
@@ -105,7 +105,7 @@ else
 % passed in, now we dont need those neighbors, but still have to pass them
 % in so that the syntax can be consistent
 %     tic
-    b_formation_idx = [b{idx};zeros(2,size(b{idx},2))];
+    b_formation_idx = [b{idx}];
     J       = finiteDifference(xu_dyn, [b_formation_idx; u{idx}]);
     gb      = J(:,ib,:);
     gu      = J(:,iu_begin:end,:);
@@ -155,14 +155,14 @@ else
             end
             u_formation(j,:,:) = uj(5:6,:);
         elseif size(bj,1)<8
-            b_formation(j,:,:) = [bj(1:6,:);zeros(2,size(bj,2))];
+            b_formation(j,:,:) = [bj(1:6,:)];
             u_formation(j,:,:) = uj;
         else
             b_formation(j,:,:) = bj(1:8,:);
             u_formation(j,:,:) = uj;
         end
     end
-    b_formation(idx,:,:) = [b{idx}(1:6,:);zeros(2,size(b{idx},2))];
+    b_formation(idx,:,:) = [b{idx}(1:6,:)];
     u_formation(idx,:,:) = u{idx};
     xu_cost = @(xu) cost_compl(D,idx,xu(:,ib,:),xu(:,iu_begin:end,:),horizonSteps,collisionChecker);    
 %     J       = 

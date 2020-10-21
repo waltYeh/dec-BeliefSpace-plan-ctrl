@@ -22,7 +22,7 @@ BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT = 6;
 REST_WISH_WITHOUT_HUMAN_INPUT = 7;
 REST_WISH_WITH_HUMAN_INPUT = 8;
 REST_WISH_WITH_OPPOSITE_HUMAN_INPUT = 9;
-show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
+show_mode = REST_WISH_WITHOUT_HUMAN_INPUT;
 switch show_mode
     case EQUAL_WEIGHT_BALANCING
         weight_a1 = 0.5;
@@ -151,17 +151,17 @@ for i=1:size(interfDiGr.Nodes,1)
     % reaction model
     u_guess{i,1}(6,:) = (mu_a1(2)-mu_a1(4)-0.1)/horizon;
     u_guess{i,2} = zeros(agents{2}.total_uDim,horizonSteps-1);
-    u_guess{i,2}(1,:) = 0;
-    u_guess{i,2}(2,:) = 0;
+    u_guess{i,2}(1,:) = u_guess{i,1}(5,:);
+    u_guess{i,2}(2,:) = u_guess{i,1}(6,:);
     u_guess{i,3} = zeros(agents{3}.total_uDim,horizonSteps-1);
-    u_guess{i,3}(1,:) = 0;
-    u_guess{i,3}(2,:) = 0;
+    u_guess{i,3}(1,:) = u_guess{i,1}(5,:);
+    u_guess{i,3}(2,:) = u_guess{i,1}(6,:);
     u_guess{i,4} = zeros(agents{4}.total_uDim,horizonSteps-1);
-    u_guess{i,4}(1,:) = 0;
-    u_guess{i,4}(2,:) = 0;
-    u_guess{i,5} = zeros(agents{4}.total_uDim,horizonSteps-1);
-    u_guess{i,5}(1,:) = 0;
-    u_guess{i,5}(2,:) = 0;
+    u_guess{i,4}(1,:) = u_guess{i,1}(5,:);
+    u_guess{i,4}(2,:) = u_guess{i,1}(6,:);
+    u_guess{i,5} = zeros(agents{5}.total_uDim,horizonSteps-1);
+    u_guess{i,5}(1,:) = u_guess{i,1}(5,:);
+    u_guess{i,5}(2,:) = u_guess{i,1}(6,:);
 end
 % for i=1:size(interfDiGr.Nodes,1)
 %     u_guess{i,1} = zeros(agents{1}.total_uDim,horizonSteps-1);
@@ -271,10 +271,14 @@ for i_sim = 1:simulation_steps
                 else
                     Op.tolFun = 0.1;
                 end
+                lam.lam_d=lam_d;
+%                 lam.lam_b=lam_b;
+                lam.lam_up=lam_up;
+                lam.lam_w=lam_w;
                 [bi,ui,cost{i},L_opt{i},~,~, finished{i}] ...
                     = agents{i}.iLQG_one_it...
                     (interfDiGr, b0(i,:), Op, iter,u_guess(i,:),...
-                    lam_d,lam_up,lam_w,u(i,:),b(i,:), cost{i});
+                    lam,u(i,:),b(i,:), cost{i});
 %                 for j=1:size(interfDiGr.Nodes,1)
 %                     %update all the est of u and b of agent i itself
 %                     u{i,j} = ui{j};%only ui{i} is different from u_guess

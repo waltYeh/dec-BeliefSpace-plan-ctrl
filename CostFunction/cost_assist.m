@@ -67,7 +67,7 @@ for j = [idx, incoming_nbrs_idces]
     u(j,:,final)  = 0;
 end
 x_idx = transpose(b(idx,1:stDim,1));
-x_plattform = transpose(b(idx,7:8,1));
+% x_plattform = transpose(b(idx,7:8,1));
 P_idx = zeros(stDim, stDim); % covariance matrix
 % Extract columns of principal sqrt of covariance matrix
 % right now we are not exploiting symmetry
@@ -133,11 +133,11 @@ else
     uc = uc + rii_control*(transpose(u(idx,:))'*transpose(u(idx,:)));
 end
 edge_row = idx-1;
-formation_error = (x_idx-x_plattform-(formation_table1(edge_row,:))');%*w(2)^2 ...
+% formation_error = (x_idx-x_plattform-(formation_table1(edge_row,:))');%*w(2)^2 ...
 
 %+(x_idx-x_platf-(D.Edges.nom_formation_1(edge_row,:))')*w(1)^2;
 Q_form=1*eye(2);
-sc=sc+formation_error'*Q_form*formation_error;
+% sc=sc+formation_error'*Q_form*formation_error;
 w_cc = 1.0;
 cost = sc + ic + uc + w_cc*cc;
 

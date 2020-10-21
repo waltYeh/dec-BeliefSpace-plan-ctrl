@@ -1,5 +1,5 @@
 function c = cost_plattform_primal(D, idx, b, u,...
-    lam_di,lam_b,lam_up,lam_w,rho_d,rho_up,...
+    lam,rho,...
     horizon,stateValidityChecker)
 % one step cost, not the whole cost horizon
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -43,7 +43,7 @@ for j=1:size(b{idx},2)
         u_parallel{i} = u{i}(:,j);
     end
     c(j) =  evaluateCost(D, idx, b_parallel,u_parallel,...
-        lam_di(:,:,j),lam_b(:,:,j),lam_up(:,:,j),lam_w(:,:,j),rho_d,rho_up, horizon, ...
+        lam.lam_d(:,:,j),lam.lam_up(:,:,j),lam.lam_w(:,:,j),rho.rho_d,rho.rho_up, horizon, ...
         stateValidityChecker);
 %     else
 %         c(i) =  evaluateCost(b(:,i),u(:,i), goal, stDim, L, stateValidityChecker, varargin{1});
@@ -52,7 +52,7 @@ end
 
 end
 
-function cost = evaluateCost(D, idx, b, u, lam_di,lam_b,lam_up,lam_w,rho_d,rho_up, ...
+function cost = evaluateCost(D, idx, b, u, lam_di,lam_up,lam_w,rho_d,rho_up, ...
     L, stateValidityChecker)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Compute cost for a states according to cost model given in Section 6 
@@ -133,8 +133,8 @@ for j_nid = 1:length(nid)-1
     %     rho_d = rho_d/100;
         cost = cost + rho_d/2*norm(formation_residue + transpose(lam_di(j-1,:)))^2;
     end
-    consensus_residue = b{j}(7:8,1)-x_platf;
-    cost = cost + rho_d/2*norm(consensus_residue + transpose(lam_b(j-1,:)))^2;
+%     consensus_residue = b{j}(7:8,1)-x_platf;
+%     cost = cost + rho_d/2*norm(consensus_residue + transpose(lam_b(j-1,:)))^2;
 end
 
 if any(final)

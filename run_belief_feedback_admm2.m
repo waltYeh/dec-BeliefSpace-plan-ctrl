@@ -22,7 +22,7 @@ BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT = 6;
 REST_WISH_WITHOUT_HUMAN_INPUT = 7;
 REST_WISH_WITH_HUMAN_INPUT = 8;
 REST_WISH_WITH_OPPOSITE_HUMAN_INPUT = 9;
-show_mode = EQUAL_WEIGHT_TO_BALL_FEEDBACK;
+show_mode = EQUAL_WEIGHT_BALANCING;
 switch show_mode
     case EQUAL_WEIGHT_BALANCING
         weight_a1 = 0.5;
@@ -188,9 +188,9 @@ b0=cell(size(interfDiGr.Nodes,1),size(interfDiGr.Nodes,1));
 for i=1:size(interfDiGr.Nodes,1)
     %{4x4}x6
     b0{i,1} = [mu_a1;sig_a1(:);weight_a1;mu_a2;sig_a2(:);weight_a2];
-    b0{i,2} = [mu_b;sig_b(:);mu_a1(3:4)];
-    b0{i,3} = [mu_c;sig_c(:);mu_a1(3:4)];
-    b0{i,4} = [mu_d;sig_d(:);mu_a1(3:4)];
+    b0{i,2} = [mu_b;sig_b(:)];
+    b0{i,3} = [mu_c;sig_c(:)];
+    b0{i,4} = [mu_d;sig_d(:)];
     b0{i,5} = [mu_e;sig_e(:)];
 end
 %????????????????
@@ -272,10 +272,14 @@ for i_sim = 1:simulation_steps
                 else
                     Op.tolFun = 0.1;
                 end
+                lam.lam_d=lam_d;
+                lam.lam_b=lam_b;
+                lam.lam_up=lam_up;
+                lam.lam_w=lam_w;
                 [bi,ui,cost{i},L_opt{i},~,~, finished{i}] ...
                     = agents{i}.iLQG_one_it...
                     (interfDiGr, b0(i,:), Op, iter,u_guess(i,:),...
-                    lam_d,lam_b,lam_up,lam_w,u(i,:),b(i,:), cost{i});
+                    lam,u(i,:),b(i,:), cost{i});
 %                 for j=1:size(interfDiGr.Nodes,1)
 %                     %update all the est of u and b of agent i itself
 %                     u{i,j} = ui{j};%only ui{i} is different from u_guess

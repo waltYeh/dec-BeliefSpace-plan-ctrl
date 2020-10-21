@@ -29,7 +29,7 @@ function [g,c,gb,gu,gbb,gbu,guu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj] ...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 incoming_nbrs_idces = predecessors(D,idx)';
-beliefDim = size(b{idx},1);
+beliefDim = 6;%size(b{idx},1);
 ctrlDim = size(u{idx},1);
 paralDim = size(b{idx},2);% which can be one or equal to horizonSteps or 11
 
@@ -43,6 +43,8 @@ end
 g = cell(size(D.Nodes,1),1);
 b_formation = zeros(size(D.Nodes,1),beliefDim,paralDim);
 u_formation = zeros(size(D.Nodes,1),ctrlDim,paralDim);
+formation_table1=D.Edges.nom_formation_1;
+formation_table2=D.Edges.nom_formation_2;
 if nargout == 2
     agents_idces = [1,2,3,4,5];
     agents_idces(idx) = [];
@@ -53,7 +55,7 @@ if nargout == 2
         bj=squeeze(b{j});
         uj = squeeze(u{j});
         g{j} = belief_dyns{j}(bj, uj);
-        if size(bj,1)>6
+        if size(bj,1)>14
             for k=1:paralDim
                 [x, P, w] = b2xPw(bj(:,k), 4, 2);
                 avr_x = w(1)*x{1}(3:4,:)+w(2)*x{2}(3:4,:);
@@ -66,17 +68,20 @@ if nargout == 2
 %             avr_P = w(1)*P{1}(3:4,3:4)+w(2)*P{2}(3:4,3:4);
 %             b_formation(j,:,:) = [avr_x;avr_P(:)];
             u_formation(j,:,:) = uj(5:6,:);
+        elseif size(bj,1)<8
+            b_formation(j,:,:) = [bj(1:6,:)];
+            u_formation(j,:,:) = uj;
         else
-            b_formation(j,:,:) = bj;
+            b_formation(j,:,:) = bj(1:8,:);
             u_formation(j,:,:) = uj;
         end
     end
-    b_formation(idx,:,:) = b{idx};
+    b_formation(idx,:,:) = b{idx}(:,:);
     u_formation(idx,:,:) = u{idx};
     g{idx} = belief_dyns{idx}(b{idx}, u{idx});
 %     c = costAssistingRobot(b{idx}, u{idx}, horizonSteps, motionModel.stDim,components_amount);
     
-    c = cost_assist(D, idx,b_formation, u_formation, horizonSteps,collisionChecker);
+    c = cost_assist(D,formation_table1,formation_table2, idx,b_formation, u_formation, horizonSteps,collisionChecker);
 else
     % belief state and control indices
     ib = 1:beliefDim;
@@ -102,7 +107,7 @@ else
 % passed in, now we dont need those neighbors, but still have to pass them
 % in so that the syntax can be consistent
 %     tic
-    J       = finiteDifference(xu_dyn, [b{idx}; u{idx}]);
+    J       = finiteDifference(xu_dyn, [b{idx}(:,:); u{idx}]);
     gb      = J(:,ib,:);
     gu      = J(:,iu_begin:end,:);
 %     time_gs = toc
@@ -141,7 +146,7 @@ else
         %affecting single computation
         bj=squeeze(b{j});
         uj = squeeze(u{j});
-        if size(bj,1)>6% for position of the plattform
+        if size(bj,1)>8% for position of the plattform
             for k=1:horizonSteps
                 [x, P, w] = b2xPw(bj(:,k), 4, 2);
                 avr_x = w(1)*x{1}(3:4,:)+w(2)*x{2}(3:4,:);
@@ -150,14 +155,17 @@ else
                 
             end
             u_formation(j,:,:) = uj(5:6,:);
+        elseif size(bj,1)<8
+            b_formation(j,:,:) = [bj(1:6,:)];
+            u_formation(j,:,:) = uj;
         else
-            b_formation(j,:,:) = bj;
+            b_formation(j,:,:) = bj(1:8,:);
             u_formation(j,:,:) = uj;
         end
     end
-    b_formation(idx,:,:) = b{idx};
+    b_formation(idx,:,:) = b{idx}(:,:);
     u_formation(idx,:,:) = u{idx};
-    xu_cost = @(xu) cost_assist(D,idx,xu(:,ib,:),xu(:,iu_begin:end,:),horizonSteps,collisionChecker);    
+    xu_cost = @(xu) cost_assist(D,formation_table1,formation_table2,idx,xu(:,ib,:),xu(:,iu_begin:end,:),horizonSteps,collisionChecker);    
 %     J       = 
     
 %     % construct Jacobian adding collision cost
@@ -200,7 +208,7 @@ else
     
     
     % first calculate Hessian excluding collision cost
-    xu_cost_nocc = @(xu) cost_assist(D,idx,xu(:,ib,:),xu(:,iu_begin:end,:),horizonSteps,collisionChecker);
+    xu_cost_nocc = @(xu) cost_assist(D,formation_table1,formation_table2,idx,xu(:,ib,:),xu(:,iu_begin:end,:),horizonSteps,collisionChecker);
     xu_Jcst_nocc = @(xu) squeeze(multiAgentFiniteDifference(xu_cost_nocc,D,idx, xu));   
     % the following can only compute c_uj_uj
     % JJ = finiteDifference(fun, x, h)
@@ -247,5 +255,7 @@ else
 %     cuu     = JJ(iu,iu,:);            
 %     time_css = toc
     [g,c] = deal([]);
+    %% need extension for belief on plattform
+    
 end
 end

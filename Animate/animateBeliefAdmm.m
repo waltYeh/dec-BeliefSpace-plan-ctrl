@@ -72,7 +72,7 @@ for k = 1:nSteps-1
     for i=1:size(D.Nodes,1)  % the real states of four robots
         processNoise = agents{i}.motionModel.generateProcessNoise(x_true(i,:),u{i});
         if i==1
-            if show_mode>6% towards resting place
+            if show_mode>6 ||show_mode==3% towards resting place
                 x_mind = [x_true(5,:)';x_true(1,:)'];
                 x_mind_next = agents{i}.motionModel.evolve(x_mind,[u{i}(3:4);u{i}(5:6)],processNoise);
                 x_true(1,:) = x_mind_next(3:4)';
@@ -97,8 +97,16 @@ for k = 1:nSteps-1
 %             z{i} = agents{i}.obsModel.getObservation(x_true(i,:),'truenoise');
 
         elseif i<5
+            %% manipulated
+            [x1, P1, w1] = b2xPw(b{1,1}, 4, 2);
+            K_feedback = agents{1}.L_opt(5:6,[21,42],k);
+%             u_w = zeros(2,1);
+%             for hori=1:size(K_feedback,3)
+            u_w = K_feedback*w1;
+%             u{i} = u{i}+u_w;
             x_true(i,:) = agents{i}.motionModel.evolve(x_true(i,:)',u{i},processNoise);
             z{i} = agents{i}.obsModel.getObservation(x_true(i,:),'truenoise');
+            
         elseif i==5
             x_true(6,:) = agents{i}.motionModel.evolve(x_true(6,:)',u{i},processNoise);
             z{i} = agents{i}.obsModel.getObservation(x_true(6,:),'truenoise');  
@@ -107,7 +115,20 @@ for k = 1:nSteps-1
     %% now do the machine part
     for i = 1:size(D.Nodes,1)%agents_amount
         % b_next already contains all info of mu_i and sig_i
-        [b_next_i,mu_i,sig_i,~] = agents{i}.getNextEstimation(b{i,i},u{i},z{i});
+        if i<5 && i>1
+            [b_next_i,mu_i,sig_i,~] = agents{i}.getNextEstimation(b{i,i}(1:6),u{i},z{i});
+            components_amount=2;
+            [x_platf_comp, P_platf, w] = b2xPw(b{1,1}, 4, components_amount);
+
+            x_platf_weighted = zeros(2,components_amount);
+            for ii=1:components_amount
+                x_platf_weighted(:,ii)=transpose(x_platf_comp{ii}(3:4)*w(ii));
+            end
+            x_platf= [sum(x_platf_weighted(1,:));sum(x_platf_weighted(2,:))];
+%             b_next_i = [b_next_i;x_platf];
+        else
+            [b_next_i,mu_i,sig_i,~] = agents{i}.getNextEstimation(b{i,i},u{i},z{i});
+        end
         %should pass in the control and measurement of connected agents in
         %order to do estimations for them!
         b{i,i}=b_next_i;
@@ -281,28 +302,28 @@ plot(mu_save{5,1}(1,:),mu_save{5,1}(2,:),'go')
     title('Unterstützung Plattform und Förderband')
     xlabel('t(s)')
     ylabel('vel(m/s)')
-    legend('x','y','Band')
+%     legend('x','y','Band')
     grid
     % hold off
     subplot(2,2,2)
     title('Assistent 2')
     xlabel('t(s)')
     ylabel('vel(m/s)')
-    legend('x','y')
+%     legend('x','y')
     grid
     % hold off
     subplot(2,2,3)
     title('Assistent 3')
     xlabel('t(s)')
     ylabel('vel(m/s)')
-    legend('x','y')
+%     legend('x','y')
     grid
     % hold off
     subplot(2,2,4)
     title('Assistent 4')
     xlabel('t(s)')
     ylabel('vel(m/s)')
-    legend('x','y')
+%     legend('x','y')
     grid
 % end
 b_f = b;
@@ -352,5 +373,5 @@ for i=1:length(X)
 end
 figure(fig_xy)
 surf(x_m,y_m,Z-max(max(Z))-0.5)
-legend('wahre Plattform','Ziel A','Ziel B','Messung der Plattform','Belief A','Belief B')
+% legend('wahre Plattform','Ziel A','Ziel B','Messung der Plattform','Belief A','Belief B')
 end

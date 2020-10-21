@@ -1,4 +1,4 @@
-function c = cost_assist_primal(D, idx, b, u,lam_di,lam_up,rho_d,rho_up,horizon,  ...
+function c = cost_assist_primal(D, idx, b, u,lam,rho,horizon,  ...
     stateValidityChecker)
 % one step cost, not the whole cost horizon
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -42,7 +42,7 @@ for j=1:size(b{idx},2)
         u_parallel{i} = u{i}(:,j);
     end
     c(j) =  evaluateCost(D, idx, b_parallel,u_parallel,...
-        lam_di(:,:,j),lam_up(:,:,j),rho_d,rho_up,horizon, ...
+        lam.lam_d(:,:,j),lam.lam_up(:,:,j),rho.rho_d,rho.rho_up,horizon, ...
         stateValidityChecker);
 %     else
 %         c(i) =  evaluateCost(b(:,i),u(:,i), goal, stDim, L, stateValidityChecker, varargin{1});
@@ -125,6 +125,8 @@ edge_row = idx-1;
 formation_residue = (x_idx-x_platf-(D.Edges.nom_formation_2(edge_row,:))')*w(2)^2 ...
     +(x_idx-x_platf-(D.Edges.nom_formation_1(edge_row,:))')*w(1)^2;
 cost = cost + rho_d/2*norm(formation_residue + transpose(lam_di(idx-1,:)))^2;
+% consensus_residue = b{idx}(7:8,1)-x_platf;
+% cost = cost + rho_d/2*norm(consensus_residue + transpose(lam_b(idx-1,:)))^2;
 
 if any(final)
     % no more rho_up term in final step

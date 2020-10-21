@@ -1,4 +1,4 @@
-function c = cost_assist(D, idx, b, u, horizon, stateValidityChecker)
+function c = cost_assist(D, formation_table1,formation_table2,idx, b, u, horizon, stateValidityChecker)
 % one step cost, not the whole cost horizon
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Compute cost for vector of states according to cost model given in Section 6 
@@ -34,7 +34,7 @@ for j=1:size(b,3)
 %     end
 %     b_this_for_paral{idx} = b{idx}(:,j);
 %     u_this_for_paral{idx} = u{idx}(:,j);
-    c(j) =  evaluateCost(D, idx, squeeze(b(:,:,j)),squeeze(u(:,:,j)), horizon, stateValidityChecker);
+    c(j) =  evaluateCost(D, formation_table1,formation_table2,idx, squeeze(b(:,:,j)),squeeze(u(:,:,j)), horizon, stateValidityChecker);
 %     else
 %         c(i) =  evaluateCost(b(:,i),u(:,i), goal, stDim, L, stateValidityChecker, varargin{1});
 %     end
@@ -42,7 +42,7 @@ end
 
 end
 
-function cost = evaluateCost(D, idx, b, u, L, stateValidityChecker)
+function cost = evaluateCost(D,formation_table1,formation_table2, idx, b, u, L, stateValidityChecker)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Compute cost for a states according to cost model given in Section 6 
 % of Van Den Berg et al. IJRR 2012
@@ -67,6 +67,7 @@ for j = [idx, incoming_nbrs_idces]
     u(j,:,final)  = 0;
 end
 x_idx = transpose(b(idx,1:stDim,1));
+% x_plattform = transpose(b(idx,7:8,1));
 P_idx = zeros(stDim, stDim); % covariance matrix
 % Extract columns of principal sqrt of covariance matrix
 % right now we are not exploiting symmetry
@@ -131,7 +132,12 @@ else
 %     end
     uc = uc + rii_control*(transpose(u(idx,:))'*transpose(u(idx,:)));
 end
+edge_row = idx-1;
+% formation_error = (x_idx-x_plattform-(formation_table1(edge_row,:))');%*w(2)^2 ...
 
+%+(x_idx-x_platf-(D.Edges.nom_formation_1(edge_row,:))')*w(1)^2;
+Q_form=1*eye(2);
+% sc=sc+formation_error'*Q_form*formation_error;
 w_cc = 1.0;
 cost = sc + ic + uc + w_cc*cc;
 

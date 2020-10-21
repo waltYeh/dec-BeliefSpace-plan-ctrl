@@ -227,6 +227,14 @@ for iter = 1:Op.maxIter
     if flgChange
         t_diff = tic;
         [~,~,fx,fu,fxx,fxu,fuu,cx,cu,cxx,cxu,cuu]   = DYNCST(x, [u nan(m,1)], 1:N+1);
+        diff.fx=fx;
+        diff.fu=fu;
+        diff.cx=cx;
+        diff.cu=cu;
+        diff.cxx=cxx;
+        diff.cxu=cxu;
+        diff.cuu=cuu;
+        assignin('base', 'diffs', diff)
         trace(iter).time_derivs = toc(t_diff);
         flgChange   = 0;
     end
@@ -537,7 +545,15 @@ cu    = reshape(cu,  [m N]);
 cxx   = reshape(cxx, [n n N]);
 cxu   = reshape(cxu, [n m N]);
 cuu   = reshape(cuu, [m m N]);
-
+% cx(21,:)=0;
+% cx(42,:)=0;
+% 
+% cxx(:,21,:)=0;
+% cxx(:,42,:)=0;
+% fx(21,21,:)=0;
+% fx(42,42,:)=0;
+% fu(21,:,:)=0;
+% fu(42,:,:)=0;
 k     = zeros(m,N-1);
 K     = zeros(m,n,N-1);
 Vx    = zeros(n,N);

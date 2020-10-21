@@ -1,5 +1,5 @@
 function c = cost_plattform_primal(D, idx, b, u,...
-    lam_di,lam_up,lam_w,rho_d,rho_up,...
+    lam,rho,...
     horizon,stateValidityChecker)
 % one step cost, not the whole cost horizon
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -43,7 +43,7 @@ for j=1:size(b{idx},2)
         u_parallel{i} = u{i}(:,j);
     end
     c(j) =  evaluateCost(D, idx, b_parallel,u_parallel,...
-        lam_di(:,:,j),lam_up(:,:,j),lam_w(:,:,j),rho_d,rho_up, horizon, ...
+        lam.lam_d(:,:,j),lam.lam_up(:,:,j),lam.lam_w(:,:,j),rho.rho_d,rho.rho_up, horizon, ...
         stateValidityChecker);
 %     else
 %         c(i) =  evaluateCost(b(:,i),u(:,i), goal, stDim, L, stateValidityChecker, varargin{1});
@@ -113,6 +113,13 @@ for i_comp=1:components_amount
     
     cost = cost + component_cost(i_comp) * w(i_comp)^2;
 end
+
+x_platf_weighted = zeros(2,components_amount);
+for i=1:components_amount
+    x_platf_weighted(:,i)=transpose(x_idx{i}(3:4)*w(i));
+end
+x_platf= [sum(x_platf_weighted(1,:));sum(x_platf_weighted(2,:))];
+
 for j_nid = 1:length(nid)-1
     j = nid(j_nid);
     edge_row = eid(j_nid);
@@ -126,6 +133,8 @@ for j_nid = 1:length(nid)-1
     %     rho_d = rho_d/100;
         cost = cost + rho_d/2*norm(formation_residue + transpose(lam_di(j-1,:)))^2;
     end
+%     consensus_residue = b{j}(7:8,1)-x_platf;
+%     cost = cost + rho_d/2*norm(consensus_residue + transpose(lam_b(j-1,:)))^2;
 end
 
 if any(final)

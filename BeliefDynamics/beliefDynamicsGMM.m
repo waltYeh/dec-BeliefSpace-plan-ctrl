@@ -104,9 +104,9 @@ P_prd = A*P*A' + G*Q*G';
 P_obs = H*P_prd*H';
 S = P_obs + M*R*M';
 K = (P_prd*H')/S;
-if rcond(S)<0.001
-    keyboard
-end
+% if rcond(S)<0.001
+%     keyboard
+% end
 P_next = (eye(stDim) - K*H)*P_prd;
 % there is no a posteriori update of x because there is no measurement
 % taking place in inference of belief dynamics

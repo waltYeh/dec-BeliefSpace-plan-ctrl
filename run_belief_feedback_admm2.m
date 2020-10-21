@@ -1,7 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Demo for a 2D belief space planning scenario 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function run_belief_admm()
+function run_belief_feedback_admm2()
 addpath(genpath('./'));
 clear
 close all
@@ -22,7 +22,7 @@ BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT = 6;
 REST_WISH_WITHOUT_HUMAN_INPUT = 7;
 REST_WISH_WITH_HUMAN_INPUT = 8;
 REST_WISH_WITH_OPPOSITE_HUMAN_INPUT = 9;
-show_mode = EQUAL_WEIGHT_TO_BALL_FEEDBACK;
+show_mode = EQUAL_WEIGHT_BALANCING;
 switch show_mode
     case EQUAL_WEIGHT_BALANCING
         weight_a1 = 0.5;
@@ -59,7 +59,7 @@ mu_a2 = [3, 0.8, 5.0, 0.0]';
 % mu_c = [4., 1.0]';
 % mu_d = [6.0, 1.0]';
 mu_b = [5.2, -1.3]';
-mu_c = [4.5, 1.5]';
+mu_c = [4.2, 1.8]';
 mu_d = [7.0, 1.5]';
 mu_e = [6.0, 4]';
 sig_a1 = diag([0.01, 0.01, 0.1, 0.1]);%sigma
@@ -151,17 +151,17 @@ for i=1:size(interfDiGr.Nodes,1)
     % reaction model
     u_guess{i,1}(6,:) = (mu_a1(2)-mu_a1(4)-0.1)/horizon;
     u_guess{i,2} = zeros(agents{2}.total_uDim,horizonSteps-1);
-    u_guess{i,2}(1,:) = u_guess{i,1}(5,:);
-    u_guess{i,2}(2,:) = u_guess{i,1}(6,:);
+    u_guess{i,2}(1,:) = 1;
+    u_guess{i,2}(2,:) = 1;
     u_guess{i,3} = zeros(agents{3}.total_uDim,horizonSteps-1);
-    u_guess{i,3}(1,:) = u_guess{i,1}(5,:);
-    u_guess{i,3}(2,:) = u_guess{i,1}(6,:);
+    u_guess{i,3}(1,:) = 1;
+    u_guess{i,3}(2,:) = 1;
     u_guess{i,4} = zeros(agents{4}.total_uDim,horizonSteps-1);
-    u_guess{i,4}(1,:) = u_guess{i,1}(5,:);
-    u_guess{i,4}(2,:) = u_guess{i,1}(6,:);
-    u_guess{i,5} = zeros(agents{5}.total_uDim,horizonSteps-1);
-    u_guess{i,5}(1,:) = u_guess{i,1}(5,:);
-    u_guess{i,5}(2,:) = u_guess{i,1}(6,:);
+    u_guess{i,4}(1,:) = 1;
+    u_guess{i,4}(2,:) = 1;
+    u_guess{i,5} = zeros(agents{4}.total_uDim,horizonSteps-1);
+    u_guess{i,5}(1,:) = 1;
+    u_guess{i,5}(2,:) = 1;
 end
 % for i=1:size(interfDiGr.Nodes,1)
 %     u_guess{i,1} = zeros(agents{1}.total_uDim,horizonSteps-1);
@@ -231,6 +231,7 @@ for i_sim = 1:simulation_steps
     end
     Dim_lam_in_xy = 2;
     lam_d = zeros(size(interfDiGr.Nodes,1)-2,Dim_lam_in_xy,horizonSteps);
+    lam_b = zeros(size(interfDiGr.Nodes,1)-2,Dim_lam_in_xy,horizonSteps);
     lam_up=zeros(1,Dim_lam_in_xy,horizonSteps-1);
     lam_w = zeros(1,Dim_lam_in_xy,horizonSteps);
     tic
@@ -242,11 +243,9 @@ for i_sim = 1:simulation_steps
                     b{i,j} = [];
                 end
                 cost{i} = [];
-                agents{i}.rho.rho_d = 0.4;
-                agents{i}.rho.rho_up = 0.1;
+                agents{i}.rho_d = 0.4;
+                agents{i}.rho_up = 0.1;
             end
-            agents{1}.rho.rho_d = 0.0;
-            agents{1}.rho.rho_up =0.0;
 %         elseif iter <= 3
 %             for i = 1:size(interfDiGr.Nodes,1)
 %                 agents{i}.rho_d = 0;
@@ -259,11 +258,11 @@ for i_sim = 1:simulation_steps
 %             end
         else
             for i = 2:size(interfDiGr.Nodes,1)
-                agents{i}.rho.rho_d = 0.4;
-                agents{i}.rho.rho_up = 0.1;
+                agents{i}.rho_d = 0.4;
+                agents{i}.rho_up = 0.1;
             end
-            agents{1}.rho.rho_d = 0.0;
-            agents{1}.rho.rho_up =0.0;
+            agents{1}.rho_d = 0.4;
+            agents{1}.rho_up =0.1;
         end
 
         for i = 1:size(interfDiGr.Nodes,1)
@@ -274,7 +273,7 @@ for i_sim = 1:simulation_steps
                     Op.tolFun = 0.1;
                 end
                 lam.lam_d=lam_d;
-%                 lam.lam_b=lam_b;
+                lam.lam_b=lam_b;
                 lam.lam_up=lam_up;
                 lam.lam_w=lam_w;
                 [bi,ui,cost{i},L_opt{i},~,~, finished{i}] ...
@@ -300,9 +299,10 @@ for i_sim = 1:simulation_steps
         %% 
         if mod(iter,1)==0
             last_lam_d=lam_d;
+            last_lam_b=lam_b;
             last_lam_up=lam_up;
             last_lam_w=lam_w;
-            [lam_d,lam_up,lam_w,formation_residue,dyncouple_residue,compl_residue]=update_lam(interfDiGr,b,u, lam_d,lam_up,lam_w,horizonSteps);
+            [lam_d,lam_b,lam_up,lam_w,formation_residue,consensus_residue,dyncouple_residue,compl_residue]=update_lam(interfDiGr,b,u, lam_d,lam_b,lam_up,lam_w,horizonSteps);
             finished{1} = false;
             finished{2} = false;
             finished{3} = false;
@@ -463,7 +463,7 @@ for i_sim = 1:simulation_steps
 %     end
     time_past = (i_sim-1) * mpc_update_period;
     assignin('base', 'interfDiGr', interfDiGr)
-    assignin('base', 'b0_admm', b0)
+    assignin('base', 'b0', b0)
     assignin('base', 'agents', agents)
     assignin('base', 'update_steps', update_steps)
     assignin('base', 'time_past', time_past)
@@ -484,8 +484,9 @@ end
 % plot(error_policy_4_from_3(1,:),'.k')
 % plot(error_policy_4_from_3(2,:),'.k')
 end
-function [lam_d_new,lam_up_new,lam_w_new,formation_residue,dyncouple_residue,compl_residue]=update_lam(D,b,u, lam_d,lam_up,lam_w,horizonSteps)
+function [lam_d_new,lam_b_new,lam_up_new,lam_w_new,formation_residue,consensus_residue,dyncouple_residue,compl_residue]=update_lam(D,b,u, lam_d,lam_b,lam_up,lam_w,horizonSteps)
     formation_residue = zeros(3,2,horizonSteps);
+    consensus_residue = zeros(3,2,horizonSteps);
     dyncouple_residue = zeros(1,2,horizonSteps-1);
     compl_residue = zeros(1,2,horizonSteps);
     components_amount=2;
@@ -514,6 +515,7 @@ function [lam_d_new,lam_up_new,lam_w_new,formation_residue,dyncouple_residue,com
             formation_residue(i-1,:,k) = ...
                 (b{i,i}(1:stDim,k)-x_platf(:,k)-(D.Edges.nom_formation_2(edge_row,:))')*b{1,1}(w2_index,k)^2 ...
             +(b{i,i}(1:stDim,k)-x_platf(:,k)-(D.Edges.nom_formation_1(edge_row,:))')*b{1,1}(w1_index,k)^2;
+            consensus_residue(i-1,:,k) = b{i,i}(1:stDim,k)-x_platf(:,k);
         end
     end
     for k=1:horizonSteps-1
@@ -523,6 +525,7 @@ function [lam_d_new,lam_up_new,lam_w_new,formation_residue,dyncouple_residue,com
 %         
 %     end
     lam_d_new = lam_d + formation_residue;
+    lam_b_new = lam_b + consensus_residue;
     lam_up_new = lam_up + dyncouple_residue;
     lam_w_new = lam_w + compl_residue;
 end

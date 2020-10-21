@@ -4,7 +4,7 @@
 % and it can sense beacons in the world.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function receding_horizon_assisting_robot()
-
+close all
 addpath(genpath('./'));
 clear
 % FigList = findall(groot, 'Type', 'figure');
@@ -24,7 +24,7 @@ BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT = 6;
 REST_WISH_WITHOUT_HUMAN_INPUT = 7;
 REST_WISH_WITH_HUMAN_INPUT = 8;
 REST_WISH_WITH_OPPOSITE_HUMAN_INPUT = 9;
-show_mode = REST_WISH_WITHOUT_HUMAN_INPUT;
+show_mode = EQUAL_WEIGHT_TO_BALL_FEEDBACK;
 switch show_mode
     case EQUAL_WEIGHT_BALANCING
         weight_1 = 0.5;
@@ -112,11 +112,11 @@ Op.plotFn = plotFn;
 
 for i_sim = 1:simulation_steps
     [b,u_opt,L_opt,~,~,optimCost,~,~,tt, nIter]= iLQG_GMM(DYNCST, b0, u_guess, Op);
-    if i_sim < 2
-        show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
-    else
-        show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
-    end
+%     if i_sim < 2
+%         show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
+%     else
+%         show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
+%     end
     time_past = (i_sim-1) * mpc_update_period;
     [didCollide, b0, x_true_final] = mpc_animateGMM(10,11,b0, b, u_opt, L_opt, update_steps,time_past, mm, om,Op.lims, show_mode);
     b0(1:2) = x_true_final(1:2);

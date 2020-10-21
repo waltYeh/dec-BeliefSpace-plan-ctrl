@@ -1,6 +1,12 @@
 function [c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj] ...
         = cst_assist_primal_diff(D,idx,b,u,c_bi,c_ui,...
-        c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,lam_di,lam_up,lam_w,rho_d,rho_up)
+        c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,lam,rho)
+lam_di=lam.lam_d;
+% lam_b=lam.lam_b;
+lam_up=lam.lam_up;
+lam_w=lam.lam_w;
+rho_d=rho.rho_d;
+rho_up=rho.rho_up;
 horizon = size(c_bi,2);
 belief_dim = size(c_bi,1);
 ctrl_dim = size(c_ui,1);
@@ -34,5 +40,12 @@ for k=1:horizon
                 + rho_d * inc_c_bi;
     c_bi_bi(x_in_b,x_in_b,k) = c_bi_bi(x_in_b,x_in_b,k) ...
                 + rho_d * (w(1)^2+w(2)^2)^2 * eye(stDim);
+            
+%     consensus_residue = b{idx}(7:8,k)-x_platf;
+%     inc_c_bi = (consensus_residue + transpose(lam_b(idx-1,:,k)));
+%     x_in_b = 7:8;
+%     c_bi(x_in_b,k) = c_bi(x_in_b,k) + rho_d * inc_c_bi;
+%     c_bi_bi(x_in_b,x_in_b,k) = c_bi_bi(x_in_b,x_in_b,k) ...
+%             + rho_d * eye(stDim);
 end
 end

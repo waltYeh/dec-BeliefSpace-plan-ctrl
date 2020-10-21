@@ -370,28 +370,28 @@ if time_past<0.01
     title('Unterstützung Plattform und Förderband')
     xlabel('t(s)')
     ylabel('vel(m/s)')
-    legend('x','y','Band')
+%     legend('x','y','Band')
     grid
     % hold off
     subplot(2,2,2)
     title('Assistent 2')
     xlabel('t(s)')
     ylabel('vel(m/s)')
-    legend('x','y')
+%     legend('x','y')
     grid
     % hold off
     subplot(2,2,3)
     title('Assistent 3')
     xlabel('t(s)')
     ylabel('vel(m/s)')
-    legend('x','y')
+%     legend('x','y')
     grid
     % hold off
     subplot(2,2,4)
     title('Assistent 4')
     xlabel('t(s)')
     ylabel('vel(m/s)')
-    legend('x','y')
+%     legend('x','y')
     grid
 
     % figure(1)
@@ -432,7 +432,7 @@ for i=1:length(X)
 end
 figure(fig_xy)
 surf(x_m,y_m,Z-max(max(Z))-0.5)
-legend('wahre Plattform','Ziel A','Ziel B','Messung der Plattform','Belief A','Belief B')
+% legend('wahre Plattform','Ziel A','Ziel B','Messung der Plattform','Belief A','Belief B')
 end
 end
 function [b_next,mu,sig] = getNextEstimation(b,u,z,motionModel,obsModel)

@@ -29,7 +29,7 @@ BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT = 6;
 REST_WISH_WITHOUT_HUMAN_INPUT = 7;
 REST_WISH_WITH_HUMAN_INPUT = 8;
 REST_WISH_WITH_OPPOSITE_HUMAN_INPUT = 9;
-show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
+show_mode = EQUAL_WEIGHT_TO_BALL_FEEDBACK;
 switch show_mode
     case EQUAL_WEIGHT_BALANCING
         weight_1 = 0.5;
@@ -66,9 +66,9 @@ end
 % sig_2 = diag([0.01, 0.01, 0.1, 0.1]);
 mu_a1 = [8.5, 0.0, 5.0, 0.0]';
 mu_a2 = [3, 0.8, 5.0, 0.0]';
-mu_b = [4, -1.]';
-mu_c = [4., 1.]';
-mu_d = [6.0, 1.]';
+mu_b = [5, -1.3]';
+mu_c = [4.0, 1.1]';
+mu_d = [6.0, 1.2]';
 sig_a1 = diag([0.01, 0.01, 0.1, 0.1]);%sigma
 sig_a2 = diag([0.01, 0.01, 0.1, 0.1]);
 sig_b = diag([0.02, 0.02]);%sigma
@@ -132,16 +132,16 @@ Op.plotFn = plotFn;
 
 for i_sim = 1:simulation_steps
     [b_opt,u_opt,L_opt,~,~,optimCost,~,~,tt, nIter]= iLQG_GMM(DYNCST, b0, u_guess, Op);
-    if i_sim < 2
-        show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
-    else
-        show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
-    end
+%     if i_sim < 2
+%         show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
+%     else
+%         show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
+%     end
     time_past = (i_sim-1) * mpc_update_period;
 %     assignin('base', 'interfDiGr', interfDiGr)
     assignin('base', 'b0', b0)
-    assignin('base', 'b_opt', b_opt)
-    assignin('base', 'u_opt', u_opt)
+    assignin('base', 'b_nom', b_opt)
+    assignin('base', 'u_nom', u_opt)
     assignin('base', 'L_opt', L_opt)
     assignin('base', 'update_steps', update_steps)
     assignin('base', 'time_past', time_past)

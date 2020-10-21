@@ -234,7 +234,7 @@ for iter = 1:Op.maxIter
         diff.cxx=cxx;
         diff.cxu=cxu;
         diff.cuu=cuu;
-        assignin('base', 'diff', diff)
+        assignin('base', 'diffs', diff)
         trace(iter).time_derivs = toc(t_diff);
         flgChange   = 0;
     end

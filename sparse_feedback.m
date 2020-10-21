@@ -20,8 +20,8 @@ eps_rel = 1.e-2;
 % method
 tolAM = 1.e-2; 
 tolNT = 1.e-3;
-reweighted_Max_Iter =5;
-ADMM_Max_Iter = 10;
+reweighted_Max_Iter =8;
+ADMM_Max_Iter = 15;
 for reweightedstep = 1 : reweighted_Max_Iter
     % Solve the minimization problem using ADMM
     for ADMMstep = 1 : ADMM_Max_Iter
@@ -39,14 +39,18 @@ for reweightedstep = 1 : reweighted_Max_Iter
         mm = blksize(1);
         nn = blksize(2);            
         eps = 1e-2;
-        for ii = 1:sub_mat_amount(1)
-            for jj = 1:sub_mat_amount(2)
+        for ii = 1:n_u
+            for jj = 1:n_b
                 norm_Fiijj=0;
                 for k=1:horizon-1
                     norm_Fiijj=norm_Fiijj+ norm( F( mm*(ii-1)+1 : mm*ii, ...
                     nn*(jj-1)+1 : nn*jj ,k),'fro' );
                 end
+                if (jj>4&&jj<=20)||(jj>26&&jj<=41)
+                    norm_Fiijj=0;
+                end
                 Wnew(ii,jj) = 1 / ( norm_Fiijj + eps );% only using first time step of F
+                
             end
         end 
         W=Wnew;
@@ -105,18 +109,21 @@ for iter=1:1%AM_Max_Iter
             Ftemp = F(:,:,k) + stepsize * F_diff(:,:,k);
             phitemp_k = trace( cov_belief(:,:,k) * (cbb(:,:,k) + Ftemp' * cuu(:,:,k) * Ftemp) ) + ...
                             (rho/2) * norm( Ftemp - U(:,:,k), 'fro' )^2;
-            alpha = 0.3; 
+            alpha = 0.1; 
             beta  = 0.5;
             if ~isnan(phitemp_k) && phi(k) - phitemp_k > ...
                         stepsize * alpha * trace( - F_diff(:,:,k)' * grad_phi(:,:,k) )
 %                 stepsize
 %                 k
                 break;
+            else
+                a=0;
             end                
             stepsize = stepsize * beta;
 
-            if stepsize < 1.e-16            
+            if stepsize < 1.e-6            
                 iter
+                break;
                 error('Extremely small stepsize in F-minimization step!');            
             end 
         end%while
@@ -131,20 +138,24 @@ G=zeros(size(V));
 horizon=size(G,3)+1;
 mm=blksize(1);
 nn=blksize(2);
-p = sub_mat_amount(1);
-q = sub_mat_amount(2);
+n_u = sub_mat_amount(1);
+n_b = sub_mat_amount(2);
 for k=1:horizon-1
-    for i=1:p
-        for j=1:q
+    for i=1:n_u
+        for j=1:n_b
             wij = W(i,j);
             Vij = V( mm * (i-1) + 1:mm*i, nn * (j-1) + 1:nn*j,k);
             a = (gam / rho) * wij;
             nVij = norm( Vij, 'fro' );
             if nVij <= a
                 G( mm * (i-1) + 1:mm*i, nn * (j-1) + 1:nn*j,k) = 0;
-            else                 
-                G( mm * (i-1) + 1:mm*i, nn * (j-1) + 1:nn*j,k) = ...
-                    (1 - a/nVij) * Vij;%(14)
+            else  
+%                 if (j>4&&j<=20)||(j>26&&j<=40)
+%                     G( mm * (i-1) + 1:mm*i, nn * (j-1) + 1:nn*j,k) = 0;
+%                 else
+                    G( mm * (i-1) + 1:mm*i, nn * (j-1) + 1:nn*j,k) = ...
+                        (1 - a/nVij) * Vij;%(14)
+%                 end
             end
         end
     end

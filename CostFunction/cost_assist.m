@@ -1,4 +1,6 @@
-function c = cost_assist(D, formation_table1,formation_table2,idx, b, u, horizon, stateValidityChecker)
+function c = cost_assist(D, ...
+    idx, b, u, horizon, stateValidityChecker)
+
 % one step cost, not the whole cost horizon
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Compute cost for vector of states according to cost model given in Section 6 
@@ -34,7 +36,7 @@ for j=1:size(b,3)
 %     end
 %     b_this_for_paral{idx} = b{idx}(:,j);
 %     u_this_for_paral{idx} = u{idx}(:,j);
-    c(j) =  evaluateCost(D, formation_table1,formation_table2,idx, squeeze(b(:,:,j)),squeeze(u(:,:,j)), horizon, stateValidityChecker);
+    c(j) =  evaluateCost(D, idx, squeeze(b(:,:,j)),squeeze(u(:,:,j)), horizon, stateValidityChecker);
 %     else
 %         c(i) =  evaluateCost(b(:,i),u(:,i), goal, stDim, L, stateValidityChecker, varargin{1});
 %     end
@@ -42,7 +44,7 @@ end
 
 end
 
-function cost = evaluateCost(D,formation_table1,formation_table2, idx, b, u, L, stateValidityChecker)
+function cost = evaluateCost(D, idx, b, u, L, stateValidityChecker)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Compute cost for a states according to cost model given in Section 6 
 % of Van Den Berg et al. IJRR 2012

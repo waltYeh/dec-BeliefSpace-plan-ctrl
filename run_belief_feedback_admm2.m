@@ -270,7 +270,28 @@ for i_sim = 1:simulation_steps
     lam_b = zeros(size(commDiGr.Nodes,1)-3,Dim_lam_in_xy,horizonSteps);
     lam_up=zeros(1,Dim_lam_in_xy,horizonSteps-1);
     lam_c = zeros(1,Dim_lam_in_xy,horizonSteps);
+    lam_w = cell(size(commDiGr.Nodes,1),1);% initialize lam_w for all agents
+    % although some will not function due to limited graph connectivity
+    for i=1:size(commDiGr.Nodes,1)
+        lam_w{i} = zeros(size(commDiGr.Nodes,1),Dim_lam_in_xy,horizonSteps-1);%(4.32a)
+    end
+    last_cost_without_w=zeros(size(commDiGr.Nodes,1),1);
+    sum_cost_without_w=zeros(size(commDiGr.Nodes,1),1);
+    u=u_guess;
+    last_u = cell(size(commDiGr.Nodes,1),size(commDiGr.Nodes,1));
+    for i = 1:size(commDiGr.Nodes,1)
+        [b_rollout,costs]=agents{i}.rollout(interfDiGr,b0(i,:), u_guess(i,:));
+        for n_i=1:size(commDiGr.Nodes,1)
+            b{i,n_i} = b_rollout{n_i};
+        end
+        % do an update after the first roll out
+        noFeedback = zeros(agents{i}.total_uDim,size(b0{i,i},1),horizonSteps-1);
+        agents{i}.updatePolicy(b(i,:),u(i,:),noFeedback);
+    end
+
     tic
+    
+    %%
     for iter = 1:15
         if iter == 1
             for i = 2:size(commDiGr.Nodes,1)
@@ -281,9 +302,13 @@ for i_sim = 1:simulation_steps
                 cost{i} = [];
                 agents{i}.rho.rho_d = 0.4;
                 agents{i}.rho.rho_up = 0.1;
+                agents{i}.rho.rho_c = 100;
+                agents{i}.rho.rho_w = 1;
             end
             agents{1}.rho.rho_d = 0.0;
             agents{1}.rho.rho_up =0.0;
+            agents{1}.rho.rho_c = 100;
+            agents{1}.rho.rho_w = 1;
 %         elseif iter <= 3
 %             for i = 1:size(commDiGr.Nodes,1)
 %                 agents{i}.rho_d = 0;
@@ -298,49 +323,120 @@ for i_sim = 1:simulation_steps
             for i = 2:size(commDiGr.Nodes,1)
                 agents{i}.rho.rho_d = 0.4;
                 agents{i}.rho.rho_up = 0.1;
+                agents{i}.rho.rho_c = 100;
+                agents{i}.rho.rho_w = 1;
             end
             agents{1}.rho.rho_d = 0.0;
             agents{1}.rho.rho_up =0.0;
+            agents{1}.rho.rho_c = 100;
+            agents{1}.rho.rho_w = 1;
         end
-
-        for i = 1:size(commDiGr.Nodes,1)
-            if finished{i}~=true
-                if i==1
-                    Op.tolFun = 0.1;
-                else
-                    Op.tolFun = 0.1;
+        
+        if mod(iter,dual_update_period)==0
+            last_u = u;
+            for i = 1:size(interfDiGr.Nodes,1)
+                incoming_nbrs_idces = predecessors(interfDiGr,i)';
+                for m_underindex=1:size(interfDiGr.Nodes,1)
+                    diff_u_m = zeros(Dim_lam_in_xy,size(u{i,m_underindex},2));
+                    for s = incoming_nbrs_idces
+                        if m_underindex == 1
+                            diff_u_m = diff_u_m + (u{i,m_underindex}(5:6,:)-u{s,m_underindex}(5:6,:));
+                            agents{i}.last_u_from_com{s,m_underindex}=u{s,m_underindex}(5:6,:);
+                        else
+                            diff_u_m = diff_u_m + (u{i,m_underindex}-u{s,m_underindex});
+                            agents{i}.last_u_from_com{s,m_underindex}=u{s,m_underindex};
+                        end
+                        % in one row of old_u, they are the u^j_i, others est
+                        % about my action
+                        already_com=true;
+                    end
+                    lam_w{i}(m_underindex,:,:)=squeeze(lam_w{i}(m_underindex,:,:))+agents{i}.rho_w*diff_u_m;%(4.32b)
+                    % in the first iteration iter==1, lam_w remains zero,
+                    % because guess is identical, diff_u_m = 0
                 end
+            end
+        end
+%% iLQG
+        for i = 1:size(commDiGr.Nodes,1)
+            if 1%finished{i}~=true
                 lam.lam_d=lam_d;
-                lam.lam_b=lam_b;
+%                 lam.lam_b=lam_b;
                 lam.lam_up=lam_up;
                 lam.lam_c=lam_c;
+                lam.lam_w=lam_w;
+                cost_last{i}=cost{i};
                 [bi,ui,cost{i},L_opt{i},~,~, finished{i}] ...
                     = agents{i}.iLQG_one_it...
-                    (commDiGr, b0(i,:), Op, iter,u_guess(i,:),...
-                    lam,u(i,:),b(i,:), cost{i});
+                    (interfDiGr, b0(i,:), Op, iter,u_guess(i,:),...
+                    lam,u(i,:),b(i,:), cost_last{i},already_com);
 %                 for j=1:size(commDiGr.Nodes,1)
 %                     %update all the est of u and b of agent i itself
 %                     u{i,j} = ui{j};%only ui{i} is different from u_guess
 %                     b{i,j} = bi{j};
 %                 end
-                for j=1:size(commDiGr.Nodes,1)
-%                     if j~=i
-                        u{j,i} = ui{i};
-                        b{j,i} = bi{i};
-                        if iter ==1
-                            u_guess{j,i} = ui{i};
-                        end
-%                     end
+                u{i,i} = ui{i};
+                b{i,i} = bi{i};
+
+                if i<5%update the team robots exactly without slackness
+                    for j=1:4%size(commDiGr.Nodes,1)
+    %                     if j~=i
+                            u{j,i} = ui{i};
+                            b{j,i} = bi{i};
+                            if iter ==1
+                                u_guess{j,i} = ui{i};
+                            end
+    %                     end
+                    end
                 end
+                %% estimations of collision neighbors                
+                incoming_nbrs_idces = predecessors(interfDiGr,i)';
+
+                for j=1:size(interfDiGr.Nodes,1)
+                    if i==j
+                        continue;
+                    end
+                    if i<5 && j<5
+                        continue;
+                    end
+                    sum_last_com_t_i_s_j=0;
+                    for s=incoming_nbrs_idces
+                        if j==1
+                            last_u_ij = last_u{i,j}(5:6,:);
+                            last_u_sj = last_u{s,j}(5:6,:);
+                        else
+                            last_u_ij = last_u{i,j};
+                            last_u_sj = last_u{s,j};
+                        end
+                        sum_last_com_t_i_s_j = sum_last_com_t_i_s_j+0.5*(last_u_ij+last_u_sj);
+                    end
+                    if agents{i}.rho_w~=0
+                        if length(incoming_nbrs_idces)~=0
+                            u_ij=1/length(incoming_nbrs_idces)*(sum_last_com_t_i_s_j-squeeze(lam_w{i}(j,:,:))/2/agents{i}.rho_w);
+                            %(4.31)
+                            if j==1
+                                u{i,j}(5:6,:)=u_ij;
+                            else
+                                u{i,j}=u_ij;%no effect in first iteration because we use the last_u not u from iLQG
+                            end
+                        end
+                    end
+                end
+                [b_rollout,costs]=agents{i}.rollout(interfDiGr,b0(i,:), u(i,:));
+                for j=incoming_nbrs_idces
+                    b{i,j} = b_rollout{j};
+                end
+
+
             end% if not finished
         end% for every agent
         %% 
         if mod(iter,1)==0
             last_lam_d=lam_d;
-            last_lam_b=lam_b;
+%             last_lam_b=lam_b;
             last_lam_up=lam_up;
             last_lam_c=lam_c;
-            [lam_d,lam_b,lam_up,lam_c,formation_residue,consensus_residue,dyncouple_residue,compl_residue]=update_lam(commDiGr,b,u, lam_d,lam_b,lam_up,lam_c,horizonSteps);
+            last_lam_w=lam_w;
+            [lam_d,lam_up,lam_c,formation_residue,dyncouple_residue,compl_residue]=update_lam(commDiGr,b,u, lam_d,lam_up,lam_c,horizonSteps);
             finished{1} = false;
             finished{2} = false;
             finished{3} = false;
@@ -500,6 +596,7 @@ for i_sim = 1:simulation_steps
 %         show_mode = REST_WISH_WITHOUT_HUMAN_INPUT;
 %     end
 %     time_past = (i_sim-1) * mpc_update_period;
+    assignin('base', 'interfDiGr', interfDiGr)
     assignin('base', 'commDiGr', commDiGr)
     assignin('base', 'b0', b0)
     assignin('base', 'agents', agents)
@@ -507,10 +604,10 @@ for i_sim = 1:simulation_steps
     assignin('base', 'time_past', time_past)
     assignin('base', 'show_mode', show_mode)
     assignin('base', 'x_true', x_true)
-    for i = 1:size(commDiGr.Nodes,1)
+    for i = 1:size(interfDiGr.Nodes,1)
         agents{i}.ctrl_ptr = 1;
     end
-    [~, b0_next, x_true_next] = animateBeliefAdmm(109,110,commDiGr,agents, b0, x_true,update_steps,time_past, show_mode,true);
+    [~, b0_next, x_true_next] = animateBeliefAdmm(109,110,interfDiGr,agents, b0, x_true,update_steps,time_past, show_mode,false);
 %     b0{1}(1:2) = x_true_final(1:2);
     b0 = b0_next;
     x_true = x_true_next;
@@ -522,9 +619,9 @@ end
 % plot(error_policy_4_from_3(1,:),'.k')
 % plot(error_policy_4_from_3(2,:),'.k')
 end
-function [lam_d_new,lam_b_new,lam_up_new,lam_c_new,formation_residue,consensus_residue,dyncouple_residue,compl_residue]=update_lam(D,b,u, lam_d,lam_b,lam_up,lam_c,horizonSteps)
+function [lam_d_new,lam_up_new,lam_c_new,formation_residue,dyncouple_residue,compl_residue]=update_lam(D,b,u, lam_d,lam_up,lam_c,horizonSteps)
     formation_residue = zeros(3,2,horizonSteps);
-    consensus_residue = zeros(3,2,horizonSteps);
+%     consensus_residue = zeros(3,2,horizonSteps);
     dyncouple_residue = zeros(1,2,horizonSteps-1);
     compl_residue = zeros(1,2,horizonSteps);
     components_amount=2;
@@ -553,7 +650,7 @@ function [lam_d_new,lam_b_new,lam_up_new,lam_c_new,formation_residue,consensus_r
             formation_residue(i-1,:,k) = ...
                 (b{i,i}(1:stDim,k)-x_platf(:,k)-(D.Edges.nom_formation_2(edge_row,:))')*b{1,1}(w2_index,k)^2 ...
             +(b{i,i}(1:stDim,k)-x_platf(:,k)-(D.Edges.nom_formation_1(edge_row,:))')*b{1,1}(w1_index,k)^2;
-            consensus_residue(i-1,:,k) = b{i,i}(1:stDim,k)-x_platf(:,k);
+%             consensus_residue(i-1,:,k) = b{i,i}(1:stDim,k)-x_platf(:,k);
         end
     end
     for k=1:horizonSteps-1
@@ -563,7 +660,7 @@ function [lam_d_new,lam_b_new,lam_up_new,lam_c_new,formation_residue,consensus_r
 %         
 %     end
     lam_d_new = lam_d + formation_residue;
-    lam_b_new = lam_b + consensus_residue;
+%     lam_b_new = lam_b + consensus_residue;
     lam_up_new = lam_up + dyncouple_residue;
     lam_c_new = lam_c + compl_residue;
 end

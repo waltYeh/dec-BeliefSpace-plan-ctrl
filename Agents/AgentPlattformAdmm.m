@@ -41,13 +41,16 @@ classdef AgentPlattformAdmm < AgentBase
         derivatives;
         lambda; 
         dlambda;
+        rho;
         flgChange;
         P_feedback= 1.0;
         cst_primal;
         cst_primal_diff;
         rho_d = 5;
         rho_up = 1.0;
-        rho;
+        rho_c = 1.0;
+        rho_w = 1.0;
+        
     end
     
     methods 
@@ -61,6 +64,8 @@ classdef AgentPlattformAdmm < AgentBase
             svc = @(xi,ri, xj, rj)isStateValid_multiagent(xi,ri, xj, rj);
             obj.rho.rho_d=obj.rho_d;
             obj.rho.rho_up=obj.rho_up;
+            obj.rho.rho_c=obj.rho_c;
+            obj.rho.rho_w=obj.rho_w;
             obj.dyn_cst  = @(D,idx,b,u,i) beliefDynCost_plattform(D,idx,b,u,horizonSteps,false,obj.motionModel,obj.obsModel,belief_dyns);
             obj.cst_primal = @(D,idx,b,u,lam,i) beliefDynCost_plattform_primal...
                 (D,idx,b,u,lam,obj.rho,horizonSteps,false,...
@@ -80,12 +85,19 @@ classdef AgentPlattformAdmm < AgentBase
         function [x, u, cost, L, Vx, Vxx, finished]= ...
                 iLQG_one_it...
                 (obj,D, b0, Op, iter, u_guess, lam,...
-                u_last,x_last, cost_last)
+                u_last,x_last, cost_last,already_com)
             if iter == 1
                 obj.lambda = [];
                 obj.dlambda = [];
                 obj.flgChange = [];
             end
+%             last_u_all_about_me = cell(size(obj.last_u_from_com,1),1);
+%             if already_com
+%                 for j=1:size(obj.last_u_from_com,1)
+%                     last_u_all_about_me{j}=obj.last_u_from_com{j,obj.digraph_idx};
+%                 end
+%                 last_u_all_about_me{obj.digraph_idx}=u_last{obj.digraph_idx};
+%             end
             [x, u, L, Vx, Vxx, cost, obj.lambda, obj.dlambda, finished,...
                 obj.flgChange,derivatives_cell] = ...
                 iLQG_admm_one_iter(...
@@ -97,6 +109,9 @@ classdef AgentPlattformAdmm < AgentBase
                 cost_last,obj.flgChange,obj.derivatives, obj.u_lims);
             
             obj.derivatives = derivatives_cell;
+        end
+        function [b,c]=rollout(obj,D,b0, u)
+            [b,c] = iLQG_rollout(D,obj.digraph_idx,obj.dyn_cst, b0, u, obj.u_lims);
         end
         function updatePolicy(obj, b_n_idx,u_n_idx,L)
             %b_n {4}x42x61, u_n {4}x6x60, L 6x42x60

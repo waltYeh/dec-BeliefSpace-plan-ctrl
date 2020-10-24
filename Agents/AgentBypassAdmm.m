@@ -1,4 +1,4 @@
-classdef AgentComplementAdmm < AgentBase 
+classdef AgentBypassAdmm < AgentBase 
     properties (Constant = true) 
         % note that all properties must be constant, because we have a lot of copies of this object and it can take a lot of memory otherwise.
 %         compStateDim = 4; % state dimension
@@ -45,10 +45,11 @@ classdef AgentComplementAdmm < AgentBase
         rho_up = 1.0;
         rho_c = 1.0;
         rho_w = 1.0;
+        last_u_from_com;
     end
     
     methods 
-        function obj = AgentComplementAdmm(dt_input,horizonSteps, node_idx, belief_dyns)
+        function obj = AgentBypassAdmm(dt_input,horizonSteps, node_idx, belief_dyns)
             obj@AgentBase();  
             obj.digraph_idx = node_idx;
             obj.derivatives = {};
@@ -56,23 +57,26 @@ classdef AgentComplementAdmm < AgentBase
             obj.motionModel = TwoDPointRobot(dt_input); % motion model
             obj.obsModel = TwoDSimpleObsModel(); % observation model
             svc = @(xi,ri, xj, rj)isStateValid_multiagent(xi,ri, xj, rj);
-            obj.dyn_cst  = @(D,idx,b,u,i) beliefDynCost_compl(D,idx,b,u,...
-                horizonSteps,false,obj.motionModel,obj.obsModel, belief_dyns, svc);
             obj.rho.rho_d=obj.rho_d;
             obj.rho.rho_up=obj.rho_up;
             obj.rho.rho_c=obj.rho_c;
             obj.rho.rho_w=obj.rho_w;
-            obj.cst_primal = @(D,idx,b,u,lam,i) beliefDynCost_compl_primal...
-                (D,idx,b,u,lam,obj.rho,horizonSteps,false,...
+            obj.dyn_cst  = @(D,idx,b,u,i) beliefDynCost_bypass(D,idx,b,u,...
+                horizonSteps,false,obj.motionModel,obj.obsModel, belief_dyns, svc);
+            obj.cst_primal = @(D,idx,b,u,slack_u,lam,i) beliefDynCost_bypass_primal...
+                (D,idx,b,u,slack_u,lam,obj.rho,horizonSteps,false,...
                 obj.motionModel,obj.obsModel, belief_dyns, svc);
 
-            obj.cst_primal_diff = @(D,idx,b,u,c_bi,c_ui,...
-                c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,lam)cst_compl_primal_diff...
-                (D,idx,b,u,c_bi,c_ui,...
+            obj.cst_primal_diff = @(D,idx,b,u,slack_u,c_bi,c_ui,...
+                c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,lam)cst_bypass_primal_diff...
+                (D,idx,b,u,slack_u,c_bi,c_ui,...
                 c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,lam,obj.rho);
             obj.lambda = []; 
             obj.dlambda = [];
             obj.flgChange = [];
+            n_agents = size(belief_dyns,1);
+            obj.last_u_from_com = cell(n_agents,n_agents);
+
         end
         
 %         function [b_nom,u_nom,L_opt,Vx,Vxx,cost]= iLQG_agent(obj,D, b0, u_guess, Op)
@@ -82,12 +86,20 @@ classdef AgentComplementAdmm < AgentBase
         function [x, u, cost, L, Vx, Vxx, finished]= ...
                 iLQG_one_it...
                 (obj,D, b0, Op, iter, u_guess, lam,...
-                u_last,x_last, cost_last)
+                u_last,x_last, cost_last,already_com)
             if iter == 1
                 obj.lambda = [];
                 obj.dlambda = [];
                 obj.flgChange = [];
             end
+            last_u_all_about_me = cell(size(obj.last_u_from_com,1),1);
+            if already_com
+                for j=1:size(obj.last_u_from_com,1)
+                    last_u_all_about_me{j}=obj.last_u_from_com{j,obj.digraph_idx};
+                end
+                last_u_all_about_me{obj.digraph_idx}=u_last{obj.digraph_idx};
+            end
+
             [x, u, L, Vx, Vxx, cost, obj.lambda, obj.dlambda, finished,...
                 obj.flgChange,derivatives_cell] = ...
                 iLQG_admm_one_iter(...
@@ -95,7 +107,7 @@ classdef AgentComplementAdmm < AgentBase
                 obj.dyn_cst,obj.cst_primal, obj.cst_primal_diff,...
                 b0, Op, iter,u_guess,...
                 lam,...
-                obj.lambda, obj.dlambda, u_last,x_last, ...
+                obj.lambda, obj.dlambda, u_last,last_u_all_about_me,x_last, ...
                 cost_last,obj.flgChange,obj.derivatives, obj.u_lims);
             
             obj.derivatives = derivatives_cell;
@@ -114,8 +126,7 @@ classdef AgentComplementAdmm < AgentBase
         end
         function u = getNextControl(obj, b)
             diff_b = b{obj.digraph_idx} - obj.b_nom{obj.digraph_idx}(:,obj.ctrl_ptr);
-            u = obj.u_nom{obj.digraph_idx}(:,obj.ctrl_ptr) + obj.P_feedback*obj.L_opt(:,1:size(diff_b,1),obj.ctrl_ptr)*diff_b;
-            % dim is 6
+            u = obj.u_nom{obj.digraph_idx}(:,obj.ctrl_ptr) + obj.P_feedback*obj.L_opt(:,:,obj.ctrl_ptr)*diff_b;
             for i_u = 1:size(obj.u_lims,1)
                 u(i_u)=min(obj.u_lims(i_u,2), max(obj.u_lims(i_u,1), u(i_u)));
             end

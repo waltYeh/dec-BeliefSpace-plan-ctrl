@@ -22,7 +22,7 @@ BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT = 6;
 REST_WISH_WITHOUT_HUMAN_INPUT = 7;
 REST_WISH_WITH_HUMAN_INPUT = 8;
 REST_WISH_WITH_OPPOSITE_HUMAN_INPUT = 9;
-show_mode = EQUAL_WEIGHT_TO_BALL_FEEDBACK;
+show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
 switch show_mode
     case EQUAL_WEIGHT_BALANCING
         weight_a1 = 0.5;
@@ -232,7 +232,7 @@ for i_sim = 1:simulation_steps
     Dim_lam_in_xy = 2;
     lam_d = zeros(size(interfDiGr.Nodes,1)-2,Dim_lam_in_xy,horizonSteps);
     lam_up=zeros(1,Dim_lam_in_xy,horizonSteps-1);
-    lam_w = zeros(1,Dim_lam_in_xy,horizonSteps);
+    lam_c = zeros(1,Dim_lam_in_xy,horizonSteps);
     tic
     for iter = 1:15
         if iter == 1
@@ -244,9 +244,11 @@ for i_sim = 1:simulation_steps
                 cost{i} = [];
                 agents{i}.rho.rho_d = 0.4;
                 agents{i}.rho.rho_up = 0.1;
+                agents{i}.rho.rho_c = 100;
             end
-            agents{1}.rho.rho_d = 0.0;
-            agents{1}.rho.rho_up =0.0;
+            agents{1}.rho.rho_d = 0.4;
+            agents{1}.rho.rho_up =0.1;
+            agents{1}.rho.rho_c = 100;
 %         elseif iter <= 3
 %             for i = 1:size(interfDiGr.Nodes,1)
 %                 agents{i}.rho_d = 0;
@@ -261,9 +263,11 @@ for i_sim = 1:simulation_steps
             for i = 2:size(interfDiGr.Nodes,1)
                 agents{i}.rho.rho_d = 0.4;
                 agents{i}.rho.rho_up = 0.1;
+                agents{i}.rho.rho_c = 100;
             end
-            agents{1}.rho.rho_d = 0.0;
-            agents{1}.rho.rho_up =0.0;
+            agents{1}.rho.rho_d = 0.4;
+            agents{1}.rho.rho_up =0.1;
+            agents{1}.rho.rho_c = 100;
         end
 
         for i = 1:size(interfDiGr.Nodes,1)
@@ -276,7 +280,7 @@ for i_sim = 1:simulation_steps
                 lam.lam_d=lam_d;
 %                 lam.lam_b=lam_b;
                 lam.lam_up=lam_up;
-                lam.lam_w=lam_w;
+                lam.lam_c=lam_c;
                 [bi,ui,cost{i},L_opt{i},~,~, finished{i}] ...
                     = agents{i}.iLQG_one_it...
                     (interfDiGr, b0(i,:), Op, iter,u_guess(i,:),...
@@ -301,8 +305,8 @@ for i_sim = 1:simulation_steps
         if mod(iter,1)==0
             last_lam_d=lam_d;
             last_lam_up=lam_up;
-            last_lam_w=lam_w;
-            [lam_d,lam_up,lam_w,formation_residue,dyncouple_residue,compl_residue]=update_lam(interfDiGr,b,u, lam_d,lam_up,lam_w,horizonSteps);
+            last_lam_c=lam_c;
+            [lam_d,lam_up,lam_c,formation_residue,dyncouple_residue,compl_residue]=update_lam(interfDiGr,b,u, lam_d,lam_up,lam_c,horizonSteps);
             finished{1} = false;
             finished{2} = false;
             finished{3} = false;
@@ -384,9 +388,9 @@ for i_sim = 1:simulation_steps
             h16=plot(1:horizonSteps,squeeze(lam_d(3,2,:)),'r-','LineWidth',2);
             title('lam_d3')
             subplot(2,3,5)
-            h155=plot(1:horizonSteps,squeeze(lam_w(1,1,:)),'b-','LineWidth',2);
+            h155=plot(1:horizonSteps,squeeze(lam_c(1,1,:)),'b-','LineWidth',2);
             hold on
-            h166=plot(1:horizonSteps,squeeze(lam_w(1,2,:)),'r-','LineWidth',2);
+            h166=plot(1:horizonSteps,squeeze(lam_c(1,2,:)),'r-','LineWidth',2);
             title('lam_w')
             figure(89)
             subplot(2,3,1)
@@ -410,9 +414,9 @@ for i_sim = 1:simulation_steps
             plot([iter-1,iter],[sum(squeeze(last_lam_d(3,2,:)),'all'),sum(squeeze(lam_d(3,2,:)),'all')],'r-*')
             title('lam_d3')
             subplot(2,3,5)
-            plot([iter-1,iter],[sum(squeeze(last_lam_w(1,1,:)),'all'),sum(squeeze(lam_w(1,1,:)),'all')],'b-*')
+            plot([iter-1,iter],[sum(squeeze(last_lam_c(1,1,:)),'all'),sum(squeeze(lam_c(1,1,:)),'all')],'b-*')
             hold on
-            plot([iter-1,iter],[sum(squeeze(last_lam_w(1,2,:)),'all'),sum(squeeze(lam_w(1,2,:)),'all')],'r-*')
+            plot([iter-1,iter],[sum(squeeze(last_lam_c(1,2,:)),'all'),sum(squeeze(lam_c(1,2,:)),'all')],'r-*')
             title('lam_w')
         end
         
@@ -484,7 +488,7 @@ end
 % plot(error_policy_4_from_3(1,:),'.k')
 % plot(error_policy_4_from_3(2,:),'.k')
 end
-function [lam_d_new,lam_up_new,lam_w_new,formation_residue,dyncouple_residue,compl_residue]=update_lam(D,b,u, lam_d,lam_up,lam_w,horizonSteps)
+function [lam_d_new,lam_up_new,lam_c_new,formation_residue,dyncouple_residue,compl_residue]=update_lam(D,b,u, lam_d,lam_up,lam_c,horizonSteps)
     formation_residue = zeros(3,2,horizonSteps);
     dyncouple_residue = zeros(1,2,horizonSteps-1);
     compl_residue = zeros(1,2,horizonSteps);
@@ -524,5 +528,5 @@ function [lam_d_new,lam_up_new,lam_w_new,formation_residue,dyncouple_residue,com
 %     end
     lam_d_new = lam_d + formation_residue;
     lam_up_new = lam_up + dyncouple_residue;
-    lam_w_new = lam_w + compl_residue;
+    lam_c_new = lam_c + compl_residue;
 end

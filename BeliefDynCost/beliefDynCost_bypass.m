@@ -1,5 +1,5 @@
 function [g,c,gb,gu,gbb,gbu,guu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj] ...
-    = beliefDynCost_assist(D,idx,b,u,horizonSteps,full_DDP,motionModel,obsModel,belief_dyns, collisionChecker)
+    = beliefDynCost_bypass(D,idx,b,u,horizonSteps,full_DDP,motionModel,obsModel,belief_dyns, collisionChecker)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % A utility function that combines belief dynamics and cost
 % uses helper function finite_difference() to compute derivatives
@@ -29,7 +29,7 @@ function [g,c,gb,gu,gbb,gbu,guu,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj] ...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 incoming_nbrs_idces = predecessors(D,idx)';
-beliefDim = 6;%size(b{idx},1);
+beliefDim = size(b{idx},1);
 ctrlDim = size(u{idx},1);
 paralDim = size(b{idx},2);% which can be one or equal to horizonSteps or 11
 
@@ -43,10 +43,8 @@ end
 g = cell(size(D.Nodes,1),1);
 b_formation = zeros(size(D.Nodes,1),beliefDim,paralDim);
 u_formation = zeros(size(D.Nodes,1),ctrlDim,paralDim);
-% formation_table1=D.Edges.nom_formation_1;
-% formation_table2=D.Edges.nom_formation_2;
 if nargout == 2
-    agents_idces = [1,2,3,4,5];
+    agents_idces = [1,2,3,4,5,6];
     agents_idces(idx) = [];
     for j = agents_idces
         % the belief of agent idx about agent i
@@ -76,12 +74,12 @@ if nargout == 2
             u_formation(j,:,:) = uj;
         end
     end
-    b_formation(idx,:,:) = b{idx}(:,:);
+    b_formation(idx,:,:) = b{idx};
     u_formation(idx,:,:) = u{idx};
     g{idx} = belief_dyns{idx}(b{idx}, u{idx});
 %     c = costAssistingRobot(b{idx}, u{idx}, horizonSteps, motionModel.stDim,components_amount);
     
-    c = cost_assist(D, idx,b_formation, u_formation, horizonSteps,collisionChecker);
+    c = cost_bypass(D, idx,b_formation, u_formation, horizonSteps,collisionChecker);
 else
     % belief state and control indices
     ib = 1:beliefDim;
@@ -107,7 +105,7 @@ else
 % passed in, now we dont need those neighbors, but still have to pass them
 % in so that the syntax can be consistent
 %     tic
-    J       = finiteDifference(xu_dyn, [b{idx}(:,:); u{idx}]);
+    J       = finiteDifference(xu_dyn, [b{idx}; u{idx}]);
     gb      = J(:,ib,:);
     gu      = J(:,iu_begin:end,:);
 %     time_gs = toc
@@ -146,7 +144,7 @@ else
         %affecting single computation
         bj=squeeze(b{j});
         uj = squeeze(u{j});
-        if size(bj,1)>8% for position of the plattform
+        if size(bj,1)>6% for position of the plattform
             for k=1:horizonSteps
                 [x, P, w] = b2xPw(bj(:,k), 4, 2);
                 avr_x = w(1)*x{1}(3:4,:)+w(2)*x{2}(3:4,:);
@@ -155,17 +153,14 @@ else
                 
             end
             u_formation(j,:,:) = uj(5:6,:);
-        elseif size(bj,1)<8
-            b_formation(j,:,:) = bj(1:6,:);
-            u_formation(j,:,:) = uj;
         else
-            b_formation(j,:,:) = bj(1:8,:);
+            b_formation(j,:,:) = bj;
             u_formation(j,:,:) = uj;
         end
     end
-    b_formation(idx,:,:) = b{idx}(:,:);
+    b_formation(idx,:,:) = b{idx};
     u_formation(idx,:,:) = u{idx};
-    xu_cost = @(xu) cost_assist(D,idx,xu(:,ib,:),xu(:,iu_begin:end,:),horizonSteps,collisionChecker);    
+    xu_cost = @(xu) cost_bypass(D,idx,xu(:,ib,:),xu(:,iu_begin:end,:),horizonSteps,collisionChecker);    
 %     J       = 
     
 %     % construct Jacobian adding collision cost
@@ -181,64 +176,46 @@ else
 % input dim 4*8*41
 %         tic
         J       = multiAgentFiniteDifference(xu_cost,D,idx, squeeze(cat(2,b_formation(:,:,:), u_formation(:,:,:))));
-        
-%         xu_sigma =  @(b_f) sigmaToCollide_multiagent_D(D,idx,b_f(:,:,:),motionModel.stDim,collisionChecker);
-%         
-%         
-%         dsigma_db  = squeeze(multiAgentFiniteDifference(xu_sigma,D,idx, b_formation,1e-1)); % need to have a large step size to see derivative in collision
-%         % J has the size 4x8x61, dsigma_db 4x6x61 -> 4x8x61
-%         dsigma_db = cat(2,dsigma_db,zeros(size(D.Nodes,1),motionModel.ctDim,size(dsigma_db,3))); % jacobian w.r.t u is zero for collision
-%         nSigma = sigmaToCollide_multiagent_D(D,idx,b_formation, motionModel.stDim, collisionChecker);
-% %         bb =1;
-%         for j = [idx,incoming_nbrs_idces]
-%             for k = 1:size(dsigma_db,3)  %horizon             
-%                 J(j,:,k) = J(j,:,k) + ((-1/2)/(exp(nSigma(j,k)/2)-1)) * dsigma_db(j,:,k);
-%                 
-%             end
-% %             bb=bb+1;
-%         end
-        
+        coll_avoid=false;
+        Q_coll=1;
+        if coll_avoid
+            xu_sigma =  @(b_f) sigmaToCollide_multiagent_D(D,idx,b_f(:,:,:),motionModel.stDim,collisionChecker);
+            dsigma_db  = squeeze(multiAgentFiniteDifference(xu_sigma,D,idx, b_formation,1e-1)); % need to have a large step size to see derivative in collision
+            % J has the size 4x8x61, dsigma_db 4x6x61 -> 4x8x61
+            dsigma_db = cat(2,dsigma_db,zeros(size(D.Nodes,1),motionModel.ctDim,size(dsigma_db,3))); % jacobian w.r.t u is zero for collision
+            nSigma = sigmaToCollide_multiagent_D(D,idx,b_formation, motionModel.stDim, collisionChecker);
+            for j = [idx,incoming_nbrs_idces]
+                for k = 1:size(dsigma_db,3)  %horizon             
+                    delta_J_k = Q_coll*((-1/2)/(exp(nSigma(j,k)/2)-1)) * dsigma_db(j,:,k);
+                    J(j,:,k) = J(j,:,k) + delta_J_k;
+                    if j==idx
+                        figure(122)
+                        quiver(b_formation(idx,1,k),b_formation(idx,2,k),delta_J_k(1)/200,delta_J_k(2)/200)
+                        hold on
+                        axis equal
+                    end
+                end
+            end
+        end
         c_bi      = squeeze(J(idx,ib,:));% 1x6x41
         c_ui      = squeeze(J(idx,iu_begin:end,:));%1x2x41
-%     end
-%     J       = finiteDifference(xu_cost, squeeze(cat(2,b(idx,:,:), u(idx,:,:))));
-%     cb(idx,:,:)     = J(1,ib,:);
-%     cu(idx,:,:)      = J(1,iu_begin:end,:);
+
     %% cost second derivatives
     
     
     % first calculate Hessian excluding collision cost
-    xu_cost_nocc = @(xu) cost_assist(D,idx,xu(:,ib,:),xu(:,iu_begin:end,:),horizonSteps,collisionChecker);
+    xu_cost_nocc = @(xu) cost_bypass(D,idx,xu(:,ib,:),xu(:,iu_begin:end,:),horizonSteps,collisionChecker);
     xu_Jcst_nocc = @(xu) squeeze(multiAgentFiniteDifference(xu_cost_nocc,D,idx, xu));   
-    % the following can only compute c_uj_uj
-    % JJ = finiteDifference(fun, x, h)
-%     for j = incoming_nbrs_idces
-%         JJ{j}   = finiteDifference(xu_Jcst_nocc, squeeze(cat(2,b(:,:,:), u(:,:,:))));
-%         JJ{j}     = 0.5*(JJ{j} + permute(JJ{j},[2 1 3]));%symmetrize  
-%         cbb{j}     = JJ{j}(ib,ib,:);
-%         cbu{j}     = JJ{j}(ib,iu_begin:end,:);
-%         cuu{j}     = JJ{j}(iu_begin:end,iu_begin:end,:); 
-%     end
-% input dim 4*8*41
+
     JJ   = multiAgentFiniteDifference2(xu_Jcst_nocc, D,idx,squeeze(cat(2,b_formation(:,:,:), u_formation(:,:,:))));
-    % construct Hessian adding collision cost
-%     for i = 1:size(dsigma_db,2)
-%         jjt = dsigma_db(:,i)*dsigma_db(:,i)';        
-%         JJ(:,:,i) = JJ(:,:,i) + ((1/4)*exp(nSigma(i)/2)/(exp(nSigma(i)/2)-1)^2) * 0.5*(jjt+jjt');
-%     end
-    %4x8x8x41
-    %     JJ{idx}      = 0.5*(JJ{idx} + permute(JJ{idx},[2 1 3]));%symmetrize  
-%     cbb{idx}     = JJ{idx}(ib,ib,:);
-%     cbu{idx}     = JJ{idx}(ib,iu_begin:end,:);
-%     cuu{idx}     = JJ{idx}(iu_begin:end,iu_begin:end,:); 
-    % construct Hessian adding collision cost
-%     for j = [idx,incoming_nbrs_idces]
-%         for k = 1:size(dsigma_db,3)
-%             jjt = dsigma_db(j,:,k)*dsigma_db(j,:,k)';        
-%             JJ(j,:,:,k) = JJ(j,:,:,k) + ((1/4)*exp(nSigma(j,k)/2)/(exp(nSigma(j,k)/2)-1)^2) * 0.5*(jjt+jjt');
-%         end
-%     end 
-    
+    if coll_avoid
+        for j = [idx,incoming_nbrs_idces]
+            for k = 1:size(dsigma_db,3)
+                jjt = dsigma_db(j,:,k)*dsigma_db(j,:,k)';        
+                JJ(j,:,:,k) = JJ(j,:,:,k) + Q_coll* ((1/4)*exp(nSigma(j,k)/2)/(exp(nSigma(j,k)/2)-1)^2) * 0.5*(jjt+jjt');
+            end
+        end 
+    end
     c_bi_bi = squeeze(JJ(idx,ib,ib,:));% the more edges coming into i, the higher
     % usually eye or 2*eye
     c_bi_ui = squeeze(0.5 * (JJ(idx,ib,iu_begin:end,:) + permute(JJ(idx,iu_begin:end,ib,:),[1 3 2 4])));
@@ -255,7 +232,5 @@ else
 %     cuu     = JJ(iu,iu,:);            
 %     time_css = toc
     [g,c] = deal([]);
-    %% need extension for belief on plattform
-    
 end
 end

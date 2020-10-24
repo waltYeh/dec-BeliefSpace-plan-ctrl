@@ -43,6 +43,8 @@ classdef AgentAssistAdmm < AgentBase
         cst_primal_diff;
         rho_d = 5;
         rho_up = 1.0;
+        rho_c = 1.0;
+        rho_w = 1.0;
     end
     
     methods 
@@ -56,6 +58,8 @@ classdef AgentAssistAdmm < AgentBase
             svc = @(xi,ri, xj, rj)isStateValid_multiagent(xi,ri, xj, rj);
             obj.rho.rho_d=obj.rho_d;
             obj.rho.rho_up=obj.rho_up;
+            obj.rho.rho_c=obj.rho_c;
+            obj.rho.rho_w=obj.rho_w;
             obj.dyn_cst  = @(D,idx,b,u,i) beliefDynCost_assist(D,idx,b,u,...
                 horizonSteps,false,obj.motionModel,obj.obsModel, belief_dyns, svc);
             obj.cst_primal = @(D,idx,b,u,lam,i) beliefDynCost_assist_primal...
@@ -96,6 +100,10 @@ classdef AgentAssistAdmm < AgentBase
             
             obj.derivatives = derivatives_cell;
         end
+        function [b,c]=rollout(obj,D,b0, u)
+            [b,c] = iLQG_rollout(D,obj.digraph_idx,obj.dyn_cst, b0, u, obj.u_lims);
+        end
+
         function updatePolicy(obj,b_n_idx,u_n_idx,L)
             %b_n 6x61, u_n 2x60, L 2x6x60
             obj.policyHorizon = size(b_n_idx{obj.digraph_idx},2);
@@ -106,9 +114,7 @@ classdef AgentAssistAdmm < AgentBase
         end
         function u = getNextControl(obj, b)
             diff_b = b{obj.digraph_idx} - obj.b_nom{obj.digraph_idx}(:,obj.ctrl_ptr);
-%             obj.L_opt(:,7:8,obj.ctrl_ptr)=0;
             u = obj.u_nom{obj.digraph_idx}(:,obj.ctrl_ptr) + obj.P_feedback*obj.L_opt(:,:,obj.ctrl_ptr)*diff_b;
-            % dim is 6
             for i_u = 1:size(obj.u_lims,1)
                 u(i_u)=min(obj.u_lims(i_u,2), max(obj.u_lims(i_u,1), u(i_u)));
             end

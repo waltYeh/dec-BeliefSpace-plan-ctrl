@@ -76,6 +76,10 @@ classdef AgentPlattform < AgentBase
                 u_guess,obj.lambda, obj.dlambda, u_last,x_last, cost_last,obj.flgChange,obj.derivatives, obj.u_lims);
             obj.derivatives = derivatives_cell;
         end
+        function [b,c]=rollout(obj,D,b0, u)
+            [b,c] = iLQG_rollout(D,obj.digraph_idx,obj.dyn_cst, b0, u, obj.u_lims);
+        end
+
         function updatePolicy(obj, b_n_idx,u_n_idx,L)
             %b_n {4}x42x61, u_n {4}x6x60, L 6x42x60
             obj.policyHorizon = size(b_n_idx{obj.digraph_idx},2);

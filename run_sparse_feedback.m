@@ -1,7 +1,8 @@
+addpath(genpath('./'));
 options.rho=10;
 options.gam=1;
 options.reweightedIter=5;
-% show_mode=2;
+show_mode=2;
 [G,W]=sparse_feedback(L_opt,diffs,b_nom,options);
 mm = HumanMind(dt); % motion model
 om = HumanReactionModel(); % observation model

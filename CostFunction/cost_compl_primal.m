@@ -42,7 +42,7 @@ for j=1:size(b{idx},2)
         u_parallel{i} = u{i}(:,j);
     end
     c(j) =  evaluateCost(D, idx, b_parallel,u_parallel,...
-        lam.lam_d(:,:,j),lam.lam_up(:,:,j),lam.lam_w(:,:,j),rho.rho_d,rho.rho_up,horizon, ...
+        lam.lam_d(:,:,j),lam.lam_up(:,:,j),lam.lam_c(:,:,j),rho.rho_d,rho.rho_up,horizon, ...
         stateValidityChecker);
 %     else
 %         c(i) =  evaluateCost(b(:,i),u(:,i), goal, stDim, L, stateValidityChecker, varargin{1});
@@ -51,7 +51,7 @@ end
 
 end
 
-function cost = evaluateCost(D, idx, b, u, lam_di,lam_up,lam_w,rho_d,rho_up, ...
+function cost = evaluateCost(D, idx, b, u, lam_di,lam_up,lam_c,rho_d,rho_up, ...
     L, stateValidityChecker)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Compute cost for a states according to cost model given in Section 6 
@@ -113,7 +113,7 @@ uc = 0;
 rii_control = 0.1;
 if any(final)
     compl_residue = w(1)^2*(x_idx-x_goals(:,2))+w(2)^2*(x_idx-x_goals(:,1));
-    cost = cost + 100*rho_d/2*norm(compl_residue + transpose(lam_w))^2;
+    cost = cost + 100*rho_d/2*norm(compl_residue + transpose(lam_c))^2;
 
 else
 %     nSigma = sigmaToCollide_multiagent_D(D,idx,b,2,stateValidityChecker);

@@ -400,7 +400,7 @@ Dim_lam_in_xy = 2;
 lam_d_new = zeros(n_agent-2,Dim_lam_in_xy,K,horizon+1);
 % lam_b_new = zeros(n_agent-2,Dim_lam_in_xy,K,horizon+1);
 lam_up_new = zeros(1,Dim_lam_in_xy,K,horizon);
-lam_w_new = zeros(1,Dim_lam_in_xy,K,horizon+1);
+lam_c_new = zeros(1,Dim_lam_in_xy,K,horizon+1);
 cnew        = zeros(1,1,K,horizon+1);% one agent, one dim c
 cnew_origin = zeros(1,1,K,horizon+1);
 for k = 1:horizon
@@ -414,7 +414,7 @@ for k = 1:horizon
 %         uC_lambda_new{i}(:,:,k) = uC_lambda{i}(:,k*K1);
     end
     lam_up_new(1,:,:,k) = lam.lam_up(1,:,k*K1);
-    lam_w_new(1,:,:,k) = lam.lam_w(1,:,k*K1);
+    lam_c_new(1,:,:,k) = lam.lam_c(1,:,k*K1);
     if ~isempty(l)
         % feedforward control term should not be too agressive, Alpha < 1
         unew{idx}(:,:,k) = squeeze(unew{idx}(:,:,k)) + l(:,k)*Alpha;
@@ -459,7 +459,7 @@ for k = 1:horizon
     lam_d_k = zeros(n_agent-2,Dim_lam_in_xy,K);
 %     lam_b_k = zeros(n_agent-2,Dim_lam_in_xy,K);
     lam_up_k = zeros(1,Dim_lam_in_xy,K);
-    lam_w_k = zeros(1,Dim_lam_in_xy,K);
+    lam_c_k = zeros(1,Dim_lam_in_xy,K);
     for i=1:n_agent
         xnew_k{i}=xnew{i}(:,:,k);
         unew_k{i}=unew{i}(:,:,k);
@@ -471,11 +471,11 @@ for k = 1:horizon
 %         lam_b_k(i,:,:) = lam_b_new(i,:,:,k);
     end
     lam_up_k(1,:,:) = lam_up_new(1,:,:,k);
-    lam_w_k(1,:,:) = lam_w_new(1,:,:,k);
+    lam_c_k(1,:,:) = lam_c_new(1,:,:,k);
     lam_k.lam_d=lam_d_k;
 %     lam_k.lam_b=lam_b_k;
     lam_k.lam_up=lam_up_k;
-    lam_k.lam_w=lam_w_k;
+    lam_k.lam_c=lam_c_k;
     [xnew_next,cnew_origin_k]  = DYNCST(D,idx,xnew_k, unew_k, k*K1);
     [~,cnew_k]=DYNCST_primal(D,idx,xnew_k, unew_k, lam_k ,k*K1);
     incoming_nbrs_idces = predecessors(D,idx)';
@@ -499,11 +499,11 @@ for i=1:n_agent-2
 %     lam_b_k(i,:,:) = lam_b_new(i,:,:,horizon+1);
 end
 lam_up_k(1,:,:) = nan(Dim_lam_in_xy,K,1);
-lam_w_k(1,:,:) = lam_w_new(1,:,:,horizon+1);
+lam_c_k(1,:,:) = lam_c_new(1,:,:,horizon+1);
 lam_k.lam_d=lam_d_k;
 % lam_k.lam_b=lam_b_k;
 lam_k.lam_up=lam_up_k;
-lam_k.lam_w=lam_w_k;
+lam_k.lam_c=lam_c_k;
 [~, cnew_origin(:,:,:,horizon+1)] = DYNCST(D,idx,xnew_k,unew_k,k);
 [~, cnew(:,:,:,horizon+1)] = DYNCST_primal(D,idx,xnew_k,unew_k,lam_k,k);
 for i=1:n_agent

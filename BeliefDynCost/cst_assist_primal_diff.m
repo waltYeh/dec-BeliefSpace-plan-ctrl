@@ -4,7 +4,7 @@ function [c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj] ...
 lam_di=lam.lam_d;
 % lam_b=lam.lam_b;
 lam_up=lam.lam_up;
-lam_w=lam.lam_w;
+% lam_w=lam.lam_w;
 rho_d=rho.rho_d;
 rho_up=rho.rho_up;
 horizon = size(c_bi,2);

@@ -2,6 +2,9 @@
 % Demo for a 2D belief space planning scenario 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function run_belief_feedback_admm()
+%% this file added lambda_b, which is not used, added weight as additional
+%% belief for assistants, but not usable, others are the same as run_belief_admm
+
 addpath(genpath('./'));
 clear
 close all

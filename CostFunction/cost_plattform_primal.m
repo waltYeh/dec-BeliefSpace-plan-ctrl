@@ -43,7 +43,7 @@ for j=1:size(b{idx},2)
         u_parallel{i} = u{i}(:,j);
     end
     c(j) =  evaluateCost(D, idx, b_parallel,u_parallel,...
-        lam.lam_d(:,:,j),lam.lam_up(:,:,j),lam.lam_w(:,:,j),rho.rho_d,rho.rho_up, horizon, ...
+        lam.lam_d(:,:,j),lam.lam_up(:,:,j),lam.lam_c(:,:,j),rho.rho_d,rho.rho_up, horizon, ...
         stateValidityChecker);
 %     else
 %         c(i) =  evaluateCost(b(:,i),u(:,i), goal, stDim, L, stateValidityChecker, varargin{1});
@@ -52,7 +52,7 @@ end
 
 end
 
-function cost = evaluateCost(D, idx, b, u, lam_di,lam_up,lam_w,rho_d,rho_up, ...
+function cost = evaluateCost(D, idx, b, u, lam_di,lam_up,lam_c,rho_d,rho_up, ...
     L, stateValidityChecker)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Compute cost for a states according to cost model given in Section 6 
@@ -141,7 +141,7 @@ if any(final)
     % no more rho_up term in final step
     x_compl = b{5}(1:stDim,1);
     compl_residue = w(1)^2*(x_compl-x_goals(:,2))+w(2)^2*(x_compl-x_goals(:,1));
-    cost = cost + 100*rho_d/2*norm(compl_residue + transpose(lam_w))^2;
+    cost = cost + 100*rho_d/2*norm(compl_residue + transpose(lam_c))^2;
 
 else
     u_residue = 3*u{idx}(5:6,:);

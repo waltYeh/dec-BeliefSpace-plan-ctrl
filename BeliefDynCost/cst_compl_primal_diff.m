@@ -4,7 +4,7 @@ function [c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj] ...
 lam_di=lam.lam_d;
 % lam_b=lam.lam_b;
 lam_up=lam.lam_up;
-lam_w=lam.lam_w;
+lam_c=lam.lam_c;
 rho_d=rho.rho_d;
 rho_up=rho.rho_up;
 
@@ -40,7 +40,7 @@ for k=horizon:horizon
     compl_residue = w(1)^2*(x_idx-x_goals(:,2))+w(2)^2*(x_idx-x_goals(:,1));
 
     x_in_b = 1:2;
-    inc_c_bi = (compl_residue + transpose(lam_w(1,:,k)))*(w(1)^2+w(2)^2);
+    inc_c_bi = (compl_residue + transpose(lam_c(1,:,k)))*(w(1)^2+w(2)^2);
     c_bi(x_in_b,k) = c_bi(x_in_b,k) ...
                 + 100*rho_d * inc_c_bi;
     c_bi_bi(x_in_b,x_in_b,k) = c_bi_bi(x_in_b,x_in_b,k) ...

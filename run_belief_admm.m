@@ -234,7 +234,7 @@ for i_sim = 1:simulation_steps
     lam_up=zeros(1,Dim_lam_in_xy,horizonSteps-1);
     lam_c = zeros(1,Dim_lam_in_xy,horizonSteps);
     tic
-    for iter = 1:15
+    for iter = 1:12
         if iter == 1
             for i = 2:size(interfDiGr.Nodes,1)
                 for j = 1:size(interfDiGr.Nodes,1)
@@ -269,7 +269,7 @@ for i_sim = 1:simulation_steps
             agents{1}.rho.rho_up =0.1;
             agents{1}.rho.rho_c = 100;
         end
-
+        
         for i = 1:size(interfDiGr.Nodes,1)
             if finished{i}~=true
                 if i==1
@@ -285,23 +285,36 @@ for i_sim = 1:simulation_steps
                     = agents{i}.iLQG_one_it...
                     (interfDiGr, b0(i,:), Op, iter,u_guess(i,:),...
                     lam,u(i,:),b(i,:), cost{i});
-%                 for j=1:size(interfDiGr.Nodes,1)
+                for j=1:size(interfDiGr.Nodes,1)
 %                     %update all the est of u and b of agent i itself
 %                     u{i,j} = ui{j};%only ui{i} is different from u_guess
-%                     b{i,j} = bi{j};
-%                 end
-                for j=1:size(interfDiGr.Nodes,1)
-%                     if j~=i
-                        u{j,i} = ui{i};
-                        b{j,i} = bi{i};
-                        if iter ==1
-                            u_guess{j,i} = ui{i};
-                        end
-%                     end
+                    b{i,j} = bi{j};
+                    u{i,j} = ui{j};
                 end
+%                 for j=1:size(interfDiGr.Nodes,1)
+%                     if iter ==1
+%                         u_guess{j,i} = ui{i};
+%                     end
+%                 end
+                
             end% if not finished
         end% for every agent
         %% 
+        for i=1:size(interfDiGr.Nodes,1)
+            if i==1
+                    for j=1:size(interfDiGr.Nodes,1)
+    %                     if j~=i
+
+                            u{j,i} = u{i,i};
+    %                         if j==i
+    %                             b{j,i} = bi{i};
+    %                         end
+
+                    end
+                elseif i<5
+                    u{1,i} = u{i,i};
+            end
+        end
         if mod(iter,1)==0
             last_lam_d=lam_d;
             last_lam_up=lam_up;
@@ -498,7 +511,7 @@ function [lam_d_new,lam_up_new,lam_c_new,formation_residue,dyncouple_residue,com
     x_platf = zeros(2,horizonSteps);
     x_goals = zeros(2,components_amount,horizonSteps);
     for k=1:horizonSteps
-        [x_platf_comp, P_platf, w] = b2xPw(b{1,1}(:,k), stDim_platf, components_amount);
+        [x_platf_comp, P_platf, w] = b2xPw(b{5,1}(:,k), stDim_platf, components_amount);
 
         x_platf_weighted = zeros(2,components_amount);
         for i=1:components_amount
@@ -511,17 +524,29 @@ function [lam_d_new,lam_up_new,lam_c_new,formation_residue,dyncouple_residue,com
             +w(2)^2*(b{5,5}(1:stDim,k)-x_goals(:,1,k));
     end
     for i=2:4
+        components_amount=2;
+        stDim_platf = 4;
+        stDim=2;
+        x_platf = zeros(2,horizonSteps);
+        x_goals = zeros(2,components_amount,horizonSteps);
         edge_row = i-1;
         for k=1:horizonSteps
+            [x_platf_comp, P_platf, w] = b2xPw(b{i,1}(:,k), stDim_platf, components_amount);
+
+            x_platf_weighted = zeros(2,components_amount);
+            for j=1:components_amount
+                x_platf_weighted(:,j)=transpose(x_platf_comp{j}(3:4)*w(j));
+            end
+            x_platf(:,k)= [sum(x_platf_weighted(1,:));sum(x_platf_weighted(2,:))];
             w1_index = 21;
             w2_index = 42;
             formation_residue(i-1,:,k) = ...
-                (b{i,i}(1:stDim,k)-x_platf(:,k)-(D.Edges.nom_formation_2(edge_row,:))')*b{1,1}(w2_index,k)^2 ...
-            +(b{i,i}(1:stDim,k)-x_platf(:,k)-(D.Edges.nom_formation_1(edge_row,:))')*b{1,1}(w1_index,k)^2;
+                (b{i,i}(1:stDim,k)-x_platf(:,k)-(D.Edges.nom_formation_2(edge_row,:))')*w(2)^2 ...
+            +(b{i,i}(1:stDim,k)-x_platf(:,k)-(D.Edges.nom_formation_1(edge_row,:))')*w(1)^2;
         end
     end
     for k=1:horizonSteps-1
-        dyncouple_residue(1,:,k) = 3*u{1,1}(5:6,k)-u{2,2}(:,k)-u{3,3}(:,k)-u{4,4}(:,k);
+        dyncouple_residue(1,:,k) = 3*u{1,1}(5:6,k)-u{1,2}(:,k)-u{1,3}(:,k)-u{1,4}(:,k);
     end
 %     for k=1:horizonSteps
 %         

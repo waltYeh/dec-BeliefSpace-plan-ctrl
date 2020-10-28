@@ -3,7 +3,7 @@ function [c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj] ...
         c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,lam,rho)
 lam_di=lam.lam_d;
 % lam_b=lam.lam_b;
-lam_up=lam.lam_up;
+lam_up=squeeze(lam.lam_up);
 % lam_w=lam.lam_w;
 rho_d=rho.rho_d;
 rho_up=rho.rho_up;
@@ -12,15 +12,27 @@ belief_dim = size(c_bi,1);
 ctrl_dim = size(c_ui,1);
 stDim=2;
 n_agent = size(D.Nodes,1);
+c_ui_inc = zeros(size(c_ui));
+u_residue = zeros(ctrl_dim,horizon);
 for k=1:horizon-1
 %     c_bi(:,k) = c_bi(:,k) + rho(1) * (x{idx}(:,k) - );
     uj_sum = zeros(ctrl_dim,1);
     for j = 2:n_agent-1
         uj_sum = uj_sum + u{j}(:,k);
     end   
-    c_ui(:,k) = c_ui(:,k) -rho_up * (3*u{1}(5:6,k) - uj_sum + transpose(lam_up(1,:,k)));
-    c_ui_ui(:,:,k) = c_ui_ui(:,:,k) + rho_up * eye(ctrl_dim);
+    u_residue(:,k) = 3*u{1}(5:6,k) - uj_sum;
+    c_ui_inc(:,k) = -rho_up * (u_residue(:,k) + lam_up(:,k));
 end
+for k=1:horizon-1
+    c_ui(:,k) = c_ui(:,k) + c_ui_inc(:,k);
+    c_ui_ui(:,:,k) = c_ui_ui(:,:,k) + rho_up * eye(ctrl_dim);
+%     figure(122)
+%     quiver(b{idx}(1,k),b{idx}(2,k),c_ui_inc(1,k),c_ui_inc(2,k))
+%     hold on
+%     axis equal
+end
+
+
 for k=1:horizon
     components_amount=2;
     stDim_platf = 4;

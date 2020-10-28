@@ -144,21 +144,40 @@ agents{5} = AgentComplementAdmm(dt,horizonSteps,5,belief_dyns);
 %% Setup start and goal/target state
 
 u_guess=cell(size(interfDiGr.Nodes,1),size(interfDiGr.Nodes,1));
-for i=1:size(interfDiGr.Nodes,1)
+for i=1:2
     u_guess{i,1} = zeros(agents{1}.total_uDim,horizonSteps-1);
     u_guess{i,1}(5,:) = (mu_a1(1)-mu_a1(3)-0.1)/horizon;
     % -0.1 to avoid bad matrix condition caused by Jacobian of human
     % reaction model
     u_guess{i,1}(6,:) = (mu_a1(2)-mu_a1(4)-0.1)/horizon;
     u_guess{i,2} = zeros(agents{2}.total_uDim,horizonSteps-1);
-    u_guess{i,2}(1,:) = u_guess{i,1}(5,:);
-    u_guess{i,2}(2,:) = u_guess{i,1}(6,:);
+    u_guess{i,2}(1,:) = -u_guess{i,1}(5,:);
+    u_guess{i,2}(2,:) = -u_guess{i,1}(6,:);
     u_guess{i,3} = zeros(agents{3}.total_uDim,horizonSteps-1);
-    u_guess{i,3}(1,:) = u_guess{i,1}(5,:);
-    u_guess{i,3}(2,:) = u_guess{i,1}(6,:);
+    u_guess{i,3}(1,:) = -u_guess{i,1}(5,:);
+    u_guess{i,3}(2,:) = -u_guess{i,1}(6,:);
     u_guess{i,4} = zeros(agents{4}.total_uDim,horizonSteps-1);
     u_guess{i,4}(1,:) = u_guess{i,1}(5,:);
     u_guess{i,4}(2,:) = u_guess{i,1}(6,:);
+    u_guess{i,5} = zeros(agents{5}.total_uDim,horizonSteps-1);
+    u_guess{i,5}(1,:) = u_guess{i,1}(5,:);
+    u_guess{i,5}(2,:) = u_guess{i,1}(6,:);
+end
+for i=3:size(interfDiGr.Nodes,1)
+    u_guess{i,1} = zeros(agents{1}.total_uDim,horizonSteps-1);
+    u_guess{i,1}(5,:) = -(mu_a1(1)-mu_a1(3)-0.1)/horizon;
+    % -0.1 to avoid bad matrix condition caused by Jacobian of human
+    % reaction model
+    u_guess{i,1}(6,:) = -(mu_a1(2)-mu_a1(4)-0.1)/horizon;
+    u_guess{i,2} = zeros(agents{2}.total_uDim,horizonSteps-1);
+    u_guess{i,2}(1,:) = -u_guess{i,1}(5,:);
+    u_guess{i,2}(2,:) = -u_guess{i,1}(6,:);
+    u_guess{i,3} = zeros(agents{3}.total_uDim,horizonSteps-1);
+    u_guess{i,3}(1,:) = -u_guess{i,1}(5,:);
+    u_guess{i,3}(2,:) = -u_guess{i,1}(6,:);
+    u_guess{i,4} = zeros(agents{4}.total_uDim,horizonSteps-1);
+    u_guess{i,4}(1,:) = -u_guess{i,1}(5,:);
+    u_guess{i,4}(2,:) = -u_guess{i,1}(6,:);
     u_guess{i,5} = zeros(agents{5}.total_uDim,horizonSteps-1);
     u_guess{i,5}(1,:) = u_guess{i,1}(5,:);
     u_guess{i,5}(2,:) = u_guess{i,1}(6,:);
@@ -234,7 +253,7 @@ for i_sim = 1:simulation_steps
     lam_up=zeros(1,Dim_lam_in_xy,horizonSteps-1);
     lam_c = zeros(1,Dim_lam_in_xy,horizonSteps);
     tic
-    for iter = 1:12
+    for iter = 1:15
         if iter == 1
             for i = 2:size(interfDiGr.Nodes,1)
                 for j = 1:size(interfDiGr.Nodes,1)
@@ -242,13 +261,13 @@ for i_sim = 1:simulation_steps
                     b{i,j} = [];
                 end
                 cost{i} = [];
-                agents{i}.rho.rho_d = 0.4;
-                agents{i}.rho.rho_up = 0.1;
-                agents{i}.rho.rho_c = 100;
+                agents{i}.rho.rho_d = 0.1;
+                agents{i}.rho.rho_up = 0.05;
+                agents{i}.rho.rho_c = 50;
             end
-            agents{1}.rho.rho_d = 0.4;
-            agents{1}.rho.rho_up =0.1;
-            agents{1}.rho.rho_c = 100;
+            agents{1}.rho.rho_d = 0.1;
+            agents{1}.rho.rho_up =0.05;
+            agents{1}.rho.rho_c = 50;
 %         elseif iter <= 3
 %             for i = 1:size(interfDiGr.Nodes,1)
 %                 agents{i}.rho_d = 0;
@@ -261,17 +280,17 @@ for i_sim = 1:simulation_steps
 %             end
         else
             for i = 2:size(interfDiGr.Nodes,1)
-                agents{i}.rho.rho_d = 0.4;
-                agents{i}.rho.rho_up = 0.1;
-                agents{i}.rho.rho_c = 100;
+                agents{i}.rho.rho_d = 0.1;
+                agents{i}.rho.rho_up = 0.05;
+                agents{i}.rho.rho_c = 50;
             end
-            agents{1}.rho.rho_d = 0.4;
-            agents{1}.rho.rho_up =0.1;
-            agents{1}.rho.rho_c = 100;
+            agents{1}.rho.rho_d = 0.1;
+            agents{1}.rho.rho_up =0.05;
+            agents{1}.rho.rho_c = 50;
         end
         
         for i = 1:size(interfDiGr.Nodes,1)
-            if finished{i}~=true
+            if 1%finished{i}~=true
                 if i==1
                     Op.tolFun = 0.1;
                 else
@@ -302,17 +321,14 @@ for i_sim = 1:simulation_steps
         %% 
         for i=1:size(interfDiGr.Nodes,1)
             if i==1
-                    for j=1:size(interfDiGr.Nodes,1)
-    %                     if j~=i
-
-                            u{j,i} = u{i,i};
-    %                         if j==i
-    %                             b{j,i} = bi{i};
-    %                         end
-
-                    end
-                elseif i<5
-                    u{1,i} = u{i,i};
+                for j=2:size(interfDiGr.Nodes,1)
+                    u{j,i} = u{i,i};
+                end
+            elseif i<5
+                u{1,i} = u{i,i};
+%                 u{2,i} = u{i,i};
+%                 u{3,i} = u{i,i};
+%                 u{4,i} = u{i,i};
             end
         end
         if mod(iter,1)==0

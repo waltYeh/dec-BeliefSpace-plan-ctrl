@@ -24,7 +24,7 @@ BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT = 6;
 REST_WISH_WITHOUT_HUMAN_INPUT = 7;
 REST_WISH_WITH_HUMAN_INPUT = 8;
 REST_WISH_WITH_OPPOSITE_HUMAN_INPUT = 9;
-show_mode = EQUAL_WEIGHT_TO_BALL_FEEDBACK;
+show_mode = EQUAL_WEIGHT_TO_REST_FEEDBACK;
 switch show_mode
     case EQUAL_WEIGHT_BALANCING
         weight_1 = 0.5;
@@ -107,7 +107,7 @@ Op.plot = -1; % plot the derivatives as well
 line_handle = line([0 0],[0 0],'color','r','linewidth',2);
 plotFn = @(x) set(line_handle,'Xdata',x(1,:),'Ydata',x(2,:));
 Op.plotFn = plotFn;
-
+Op.tolFun=0.01;
 %% === run the optimization
 
 for i_sim = 1:simulation_steps

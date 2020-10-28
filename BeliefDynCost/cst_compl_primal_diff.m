@@ -1,12 +1,12 @@
 function [c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj] ...
         = cst_compl_primal_diff(D,idx,b,u,c_bi,c_ui,...
         c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,lam,rho)
-lam_di=lam.lam_d;
+% lam_di=lam.lam_d;
 % lam_b=lam.lam_b;
-lam_up=lam.lam_up;
+% lam_up=lam.lam_up;
 lam_c=lam.lam_c;
-rho_d=rho.rho_d;
-rho_up=rho.rho_up;
+rho_c=rho.rho_c;
+% rho_up=rho.rho_up;
 
 horizon = size(c_bi,2);
 belief_dim = size(c_bi,1);
@@ -42,8 +42,8 @@ for k=horizon:horizon
     x_in_b = 1:2;
     inc_c_bi = (compl_residue + transpose(lam_c(1,:,k)))*(w(1)^2+w(2)^2);
     c_bi(x_in_b,k) = c_bi(x_in_b,k) ...
-                + 100*rho_d * inc_c_bi;
+                + rho_c * inc_c_bi;
     c_bi_bi(x_in_b,x_in_b,k) = c_bi_bi(x_in_b,x_in_b,k) ...
-                + 100*rho_d * (w(1)^2+w(2)^2)^2*eye(stDim);
+                + rho_c * (w(1)^2+w(2)^2)^2*eye(stDim);
 end
 end

@@ -360,8 +360,8 @@ b_f = b;
 %     ylabel('Gewicht')
 % end
 x_true_final = x_true;
-[x_m,y_m] = meshgrid(1:0.5:10,-2:0.5:5);
-X=1:0.5:10;
+[x_m,y_m] = meshgrid(1:0.5:11,-2:0.5:5);
+X=1:0.5:11;
 Y=-2:0.5:5;
 Z = zeros(size(x_m,1),size(x_m,2));
 for i=1:length(X)

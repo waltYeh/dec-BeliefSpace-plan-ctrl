@@ -52,6 +52,7 @@ switch show_mode
         weight_a1 = 0.05;
         weight_a2 = 0.95;
 end
+complete_graph = true;
 %% tuned parameters
 mu_a1 = [8.5, 0.0, 5.0, 0.0]';
 mu_a2 = [3, 0.8, 5.0, 0.0]';
@@ -144,43 +145,62 @@ agents{5} = AgentComplementAdmm(dt,horizonSteps,5,belief_dyns);
 %% Setup start and goal/target state
 
 u_guess=cell(size(interfDiGr.Nodes,1),size(interfDiGr.Nodes,1));
-for i=1:2
+% for i=1:2
+%     u_guess{i,1} = zeros(agents{1}.total_uDim,horizonSteps-1);
+%     u_guess{i,1}(5,:) = (mu_a1(1)-mu_a1(3)-0.1)/horizon;
+%     -0.1 to avoid bad matrix condition caused by Jacobian of human
+%     reaction model
+%     u_guess{i,1}(6,:) = (mu_a1(2)-mu_a1(4)-0.1)/horizon;
+%     u_guess{i,2} = zeros(agents{2}.total_uDim,horizonSteps-1);
+%     u_guess{i,2}(1,:) = -u_guess{i,1}(6,:);
+%     u_guess{i,2}(2,:) = -u_guess{i,1}(6,:);
+%     u_guess{i,3} = zeros(agents{3}.total_uDim,horizonSteps-1);
+%     u_guess{i,3}(1,:) = -u_guess{i,1}(5,:);
+%     u_guess{i,3}(2,:) = -u_guess{i,1}(6,:);
+%     u_guess{i,4} = zeros(agents{4}.total_uDim,horizonSteps-1);
+%     u_guess{i,4}(1,:) = u_guess{i,1}(5,:);
+%     u_guess{i,4}(2,:) = u_guess{i,1}(5,:);
+%     u_guess{i,5} = zeros(agents{5}.total_uDim,horizonSteps-1);
+%     u_guess{i,5}(1,:) = u_guess{i,1}(5,:);
+%     u_guess{i,5}(2,:) = u_guess{i,1}(6,:);
+% end
+% for i=3:size(interfDiGr.Nodes,1)
+%     u_guess{i,1} = zeros(agents{1}.total_uDim,horizonSteps-1);
+%     u_guess{i,1}(5,:) = -(mu_a1(1)-mu_a1(3)-0.1)/horizon;
+%     -0.1 to avoid bad matrix condition caused by Jacobian of human
+%     reaction model
+%     u_guess{i,1}(6,:) = -(mu_a1(2)-mu_a1(4)-0.1)/horizon;
+%     u_guess{i,2} = zeros(agents{2}.total_uDim,horizonSteps-1);
+%     u_guess{i,2}(1,:) = -u_guess{i,1}(5,:);
+%     u_guess{i,2}(2,:) = -u_guess{i,1}(6,:);
+%     u_guess{i,3} = zeros(agents{3}.total_uDim,horizonSteps-1);
+%     u_guess{i,3}(1,:) = -u_guess{i,1}(6,:);
+%     u_guess{i,3}(2,:) = -u_guess{i,1}(5,:);
+%     u_guess{i,4} = zeros(agents{4}.total_uDim,horizonSteps-1);
+%     u_guess{i,4}(1,:) = -u_guess{i,1}(5,:);
+%     u_guess{i,4}(2,:) = -u_guess{i,1}(6,:);
+%     u_guess{i,5} = zeros(agents{5}.total_uDim,horizonSteps-1);
+%     u_guess{i,5}(1,:) = u_guess{i,1}(5,:);
+%     u_guess{i,5}(2,:) = u_guess{i,1}(6,:);
+% end
+for i=1:size(interfDiGr.Nodes,1)
     u_guess{i,1} = zeros(agents{1}.total_uDim,horizonSteps-1);
-    u_guess{i,1}(5,:) = (mu_a1(1)-mu_a1(3)-0.1)/horizon;
-    % -0.1 to avoid bad matrix condition caused by Jacobian of human
-    % reaction model
-    u_guess{i,1}(6,:) = (mu_a1(2)-mu_a1(4)-0.1)/horizon;
+%     u_guess{i,1}(5,:) = (mu_a1(1)-mu_a1(3)-0.1)/horizon;
+%     % -0.1 to avoid bad matrix condition caused by Jacobian of human
+%     % reaction model
+%     u_guess{i,1}(6,:) = (mu_a1(2)-mu_a1(4)-0.1)/horizon;
     u_guess{i,2} = zeros(agents{2}.total_uDim,horizonSteps-1);
-    u_guess{i,2}(1,:) = -u_guess{i,1}(5,:);
-    u_guess{i,2}(2,:) = -u_guess{i,1}(6,:);
+%     u_guess{i,2}(1,:) = 0;
+%     u_guess{i,2}(2,:) = 0;
     u_guess{i,3} = zeros(agents{3}.total_uDim,horizonSteps-1);
-    u_guess{i,3}(1,:) = -u_guess{i,1}(5,:);
-    u_guess{i,3}(2,:) = -u_guess{i,1}(6,:);
+%     u_guess{i,3}(1,:) = -u_guess{i,1}(6,:);
+%     u_guess{i,3}(2,:) = -u_guess{i,1}(5,:);
     u_guess{i,4} = zeros(agents{4}.total_uDim,horizonSteps-1);
-    u_guess{i,4}(1,:) = u_guess{i,1}(5,:);
-    u_guess{i,4}(2,:) = u_guess{i,1}(6,:);
+%     u_guess{i,4}(1,:) = -u_guess{i,1}(5,:);
+%     u_guess{i,4}(2,:) = -u_guess{i,1}(6,:);
     u_guess{i,5} = zeros(agents{5}.total_uDim,horizonSteps-1);
-    u_guess{i,5}(1,:) = u_guess{i,1}(5,:);
-    u_guess{i,5}(2,:) = u_guess{i,1}(6,:);
-end
-for i=3:size(interfDiGr.Nodes,1)
-    u_guess{i,1} = zeros(agents{1}.total_uDim,horizonSteps-1);
-    u_guess{i,1}(5,:) = -(mu_a1(1)-mu_a1(3)-0.1)/horizon;
-    % -0.1 to avoid bad matrix condition caused by Jacobian of human
-    % reaction model
-    u_guess{i,1}(6,:) = -(mu_a1(2)-mu_a1(4)-0.1)/horizon;
-    u_guess{i,2} = zeros(agents{2}.total_uDim,horizonSteps-1);
-    u_guess{i,2}(1,:) = -u_guess{i,1}(5,:);
-    u_guess{i,2}(2,:) = -u_guess{i,1}(6,:);
-    u_guess{i,3} = zeros(agents{3}.total_uDim,horizonSteps-1);
-    u_guess{i,3}(1,:) = -u_guess{i,1}(5,:);
-    u_guess{i,3}(2,:) = -u_guess{i,1}(6,:);
-    u_guess{i,4} = zeros(agents{4}.total_uDim,horizonSteps-1);
-    u_guess{i,4}(1,:) = -u_guess{i,1}(5,:);
-    u_guess{i,4}(2,:) = -u_guess{i,1}(6,:);
-    u_guess{i,5} = zeros(agents{5}.total_uDim,horizonSteps-1);
-    u_guess{i,5}(1,:) = u_guess{i,1}(5,:);
-    u_guess{i,5}(2,:) = u_guess{i,1}(6,:);
+%     u_guess{i,5}(1,:) = u_guess{i,1}(5,:);
+%     u_guess{i,5}(2,:) = u_guess{i,1}(6,:);
 end
 % for i=1:size(interfDiGr.Nodes,1)
 %     u_guess{i,1} = zeros(agents{1}.total_uDim,horizonSteps-1);
@@ -253,7 +273,8 @@ for i_sim = 1:simulation_steps
     lam_up=zeros(1,Dim_lam_in_xy,horizonSteps-1);
     lam_c = zeros(1,Dim_lam_in_xy,horizonSteps);
     tic
-    for iter = 1:15
+    max_iter = 30;
+    for iter = 1:max_iter
         if iter == 1
             for i = 2:size(interfDiGr.Nodes,1)
                 for j = 1:size(interfDiGr.Nodes,1)
@@ -261,13 +282,13 @@ for i_sim = 1:simulation_steps
                     b{i,j} = [];
                 end
                 cost{i} = [];
-                agents{i}.rho.rho_d = 0.1;
+                agents{i}.rho.rho_d = 0.0;
                 agents{i}.rho.rho_up = 0.05;
-                agents{i}.rho.rho_c = 50;
+                agents{i}.rho.rho_c = 0;
             end
-            agents{1}.rho.rho_d = 0.1;
+            agents{1}.rho.rho_d = 0.0;
             agents{1}.rho.rho_up =0.05;
-            agents{1}.rho.rho_c = 50;
+            agents{1}.rho.rho_c = 0;
 %         elseif iter <= 3
 %             for i = 1:size(interfDiGr.Nodes,1)
 %                 agents{i}.rho_d = 0;
@@ -280,13 +301,13 @@ for i_sim = 1:simulation_steps
 %             end
         else
             for i = 2:size(interfDiGr.Nodes,1)
-                agents{i}.rho.rho_d = 0.1;
+                agents{i}.rho.rho_d = 0.0;
                 agents{i}.rho.rho_up = 0.05;
-                agents{i}.rho.rho_c = 50;
+                agents{i}.rho.rho_c = 0;
             end
-            agents{1}.rho.rho_d = 0.1;
+            agents{1}.rho.rho_d = 0.0;
             agents{1}.rho.rho_up =0.05;
-            agents{1}.rho.rho_c = 50;
+            agents{1}.rho.rho_c = 0;
         end
         
         for i = 1:size(interfDiGr.Nodes,1)
@@ -321,14 +342,26 @@ for i_sim = 1:simulation_steps
         %% 
         for i=1:size(interfDiGr.Nodes,1)
             if i==1
+                % all other agents should know the plattform, so they
+                % controls the formation or the choice of target
                 for j=2:size(interfDiGr.Nodes,1)
-                    u{j,i} = u{i,i};
+                    if complete_graph
+%                         a=0
+%                     else
+                        u{j,1} = u{i,1};
+                    end
                 end
             elseif i<5
+                %the plattform knows others because the plattform 
+                %is in charge of the u of assist 2,3,4
                 u{1,i} = u{i,i};
-%                 u{2,i} = u{i,i};
-%                 u{3,i} = u{i,i};
-%                 u{4,i} = u{i,i};
+                if complete_graph
+%                     a=0
+%                 else
+                    u{2,i} = u{i,i};
+                    u{3,i} = u{i,i};
+                    u{4,i} = u{i,i};
+                end
             end
         end
         if mod(iter,1)==0
@@ -341,6 +374,7 @@ for i_sim = 1:simulation_steps
             finished{3} = false;
             finished{4} = false;
             finished{5} = false;
+            tt=0:dt:horizon;
             figure(20)
 %             subplot(2,2,1)
             if iter>1
@@ -366,34 +400,38 @@ for i_sim = 1:simulation_steps
                 set(h155,'LineWidth',0.5)
                 set(h166,'LineWidth',0.5)
             end
-            
+%             if iter == max_iter
             subplot(2,3,2)
             title('agent 2 residue')
-            h1=plot(1:horizonSteps,squeeze(formation_residue(1,1,:)),'b','LineWidth',2);
+            h1=plot(tt,squeeze(formation_residue(1,1,:)),'b','LineWidth',2);
             hold on
-            h2=plot(1:horizonSteps,squeeze(formation_residue(1,2,:)),'k','LineWidth',2);
+            h2=plot(tt,squeeze(formation_residue(1,2,:)),'k','LineWidth',2);
             subplot(2,3,3)
             title('agent 3 residue')
-            h3=plot(1:horizonSteps,squeeze(formation_residue(2,1,:)),'b','LineWidth',2);
+            h3=plot(tt,squeeze(formation_residue(2,1,:)),'b','LineWidth',2);
             hold on
-            h4=plot(1:horizonSteps,squeeze(formation_residue(2,2,:)),'k','LineWidth',2);
+            h4=plot(tt,squeeze(formation_residue(2,2,:)),'k','LineWidth',2);
             subplot(2,3,4)
             title('agent 4 residue')
-            h5=plot(1:horizonSteps,squeeze(formation_residue(3,1,:)),'b','LineWidth',2);
+            h5=plot(tt,squeeze(formation_residue(3,1,:)),'b','LineWidth',2);
             hold on
-            h6=plot(1:horizonSteps,squeeze(formation_residue(3,2,:)),'k','LineWidth',2);
+            h6=plot(tt,squeeze(formation_residue(3,2,:)),'k','LineWidth',2);
             
             subplot(2,3,1)
             title('force balance residue')
-            h7=plot(1:horizonSteps-1,squeeze(dyncouple_residue(1,1,:)),'b','LineWidth',2);
+            h7=plot(tt(1:end-1),squeeze(dyncouple_residue(1,1,:)),'b','LineWidth',2);
             hold on
-            h8=plot(1:horizonSteps-1,squeeze(dyncouple_residue(1,2,:)),'k','LineWidth',2);
+            h8=plot(tt(1:end-1),squeeze(dyncouple_residue(1,2,:)),'k','LineWidth',2);
             
             subplot(2,3,5)
-            h77=plot(1:horizonSteps,squeeze(compl_residue(1,1,:)),'b','LineWidth',2);
+            h77=plot(tt,squeeze(compl_residue(1,1,:)),'b','LineWidth',2);
             hold on
-            h88=plot(1:horizonSteps,squeeze(compl_residue(1,2,:)),'k','LineWidth',2);
+            h88=plot(tt,squeeze(compl_residue(1,2,:)),'k','LineWidth',2);
             
+            figure(80)
+            h7=plot(tt(1:end-1),squeeze(dyncouple_residue(1,1,:)),'b','LineWidth',2);
+            hold on
+            h8=plot(tt(1:end-1),squeeze(dyncouple_residue(1,2,:)),'k','LineWidth',2);
             
             figure(88)
             subplot(2,3,1)
@@ -447,6 +485,7 @@ for i_sim = 1:simulation_steps
             hold on
             plot([iter-1,iter],[sum(squeeze(last_lam_c(1,2,:)),'all'),sum(squeeze(lam_c(1,2,:)),'all')],'r-*')
             title('lam_w')
+%             end
         end
         
 %         lam_d(lam_d>1.0)=1.0;
@@ -494,14 +533,26 @@ for i_sim = 1:simulation_steps
 %     else
 %         show_mode = REST_WISH_WITHOUT_HUMAN_INPUT;
 %     end
+    lam.lam_d=lam_d;
+    lam.lam_up=lam_up;
+    lam.lam_c=lam_c;
     time_past = (i_sim-1) * mpc_update_period;
     assignin('base', 'interfDiGr', interfDiGr)
     assignin('base', 'b0_admm', b0)
-    assignin('base', 'agents', agents)
+    if complete_graph
+        assignin('base', 'agents', agents)
+    else
+        assignin('base', 'agents_unkn', agents)
+    end
     assignin('base', 'update_steps', update_steps)
     assignin('base', 'time_past', time_past)
     assignin('base', 'show_mode', show_mode)
     assignin('base', 'x_true', x_true)
+    if complete_graph
+        assignin('base', 'lam', lam)
+    else
+        assignin('base', 'lam_unkn', lam)
+    end
     for i = 1:size(interfDiGr.Nodes,1)
         agents{i}.ctrl_ptr = 1;
     end
@@ -526,7 +577,7 @@ function [lam_d_new,lam_up_new,lam_c_new,formation_residue,dyncouple_residue,com
     stDim=2;
     x_platf = zeros(2,horizonSteps);
     x_goals = zeros(2,components_amount,horizonSteps);
-    for k=1:horizonSteps
+    for k=horizonSteps:horizonSteps
         [x_platf_comp, P_platf, w] = b2xPw(b{5,1}(:,k), stDim_platf, components_amount);
 
         x_platf_weighted = zeros(2,components_amount);
@@ -547,7 +598,7 @@ function [lam_d_new,lam_up_new,lam_c_new,formation_residue,dyncouple_residue,com
         x_goals = zeros(2,components_amount,horizonSteps);
         edge_row = i-1;
         for k=1:horizonSteps
-            [x_platf_comp, P_platf, w] = b2xPw(b{i,1}(:,k), stDim_platf, components_amount);
+            [x_platf_comp, P_platf, w] = b2xPw(b{1,1}(:,k), stDim_platf, components_amount);
 
             x_platf_weighted = zeros(2,components_amount);
             for j=1:components_amount
@@ -557,8 +608,8 @@ function [lam_d_new,lam_up_new,lam_c_new,formation_residue,dyncouple_residue,com
             w1_index = 21;
             w2_index = 42;
             formation_residue(i-1,:,k) = ...
-                (b{i,i}(1:stDim,k)-x_platf(:,k)-(D.Edges.nom_formation_2(edge_row,:))')*w(2)^2 ...
-            +(b{i,i}(1:stDim,k)-x_platf(:,k)-(D.Edges.nom_formation_1(edge_row,:))')*w(1)^2;
+                (b{1,i}(1:stDim,k)-x_platf(:,k)-(D.Edges.nom_formation_2(edge_row,:))')*w(2)^2 ...
+            +(b{1,i}(1:stDim,k)-x_platf(:,k)-(D.Edges.nom_formation_1(edge_row,:))')*w(1)^2;
         end
     end
     for k=1:horizonSteps-1

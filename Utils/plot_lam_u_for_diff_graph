@@ -1,0 +1,19 @@
+figure(3)
+plot(tt,squeeze(lam.lam_up(1,1,:)),'LineWidth',2)
+hold on
+plot(tt,squeeze(lam.lam_up(1,2,:)),'LineWidth',2)
+plot(tt,squeeze(lam_unkn.lam_up(1,1,:)),'--','LineWidth',2)
+plot(tt,squeeze(lam_unkn.lam_up(1,2,:)),'--','LineWidth',2)
+legend('\lambda_{u,x} kompletter Graph','\lambda_{u,y} kompletter Graph','\lambda_{u,x} reduzierter Graph','\lambda_{u,y} reduzierter Graph')
+xlabel('t(s)')
+ylabel('\lambda_u')
+
+figure(2)
+plot(tt,agents{1, 1}.u_nom{1, 1}(5,:),'LineWidth',2)
+hold on
+plot(tt,agents{1, 1}.u_nom{1, 1}(6,:),'LineWidth',2)
+plot(tt,agents_unkn{1, 1}.u_nom{1, 1}(5,:),'--','LineWidth',2)
+plot(tt,agents_unkn{1, 1}.u_nom{1, 1}(6,:),'--','LineWidth',2)
+legend('u_x Plattform kompletter Graph','u_y Plattform kompletter Graph','u_x Plattform reduzierter Graph','u_y Plattform reduzierter Graph')
+xlabel('t(s)')
+ylabel('u(m/s)')

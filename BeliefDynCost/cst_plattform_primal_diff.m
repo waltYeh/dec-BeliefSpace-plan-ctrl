@@ -16,16 +16,23 @@ single_comp_dim = belief_dim / comp_amount;
 ctrl_dim = 2;
 stDim=2;
 n_agent = size(D.Nodes,1);
+c_ui_inc = zeros(2,horizon);
+
 for k=1:horizon-1
 %     c_bi(:,k) = c_bi(:,k) + rho(1) * (x{idx}(:,k) - );
     uj_sum = zeros(ctrl_dim,1);
     for j = 2:n_agent-1
         uj_sum = uj_sum + u{j}(:,k);
     end   
-    c_ui(5:6,k) = c_ui(5:6,k) + ...
-        rho_up * 3*(3*u{idx}(5:6,k) - uj_sum + transpose(lam_up(1,:,k)));
-    c_ui_ui(5:6,5:6,k) = c_ui_ui(5:6,5:6,k) + ...
-        rho_up * 3 * 3 * eye(ctrl_dim);
+    c_ui_inc(:,k) = rho_up * 3*(3*u{idx}(5:6,k) - uj_sum + transpose(lam_up(1,:,k)));
+end
+for k=1:horizon-1
+    c_ui(5:6,k) = c_ui(5:6,k) + c_ui_inc(:,k);
+    c_ui_ui(5:6,5:6,k) = c_ui_ui(5:6,5:6,k) + rho_up * 3 * 3 * eye(ctrl_dim);
+%     figure(122)
+%     quiver(b{idx}(1,k),b{idx}(2,k),c_ui_inc(1,k),c_ui_inc(2,k))
+%     hold on
+%     axis equal
 end
 [eid,nid] = inedges(D,idx);
 for i_comp = 1:2

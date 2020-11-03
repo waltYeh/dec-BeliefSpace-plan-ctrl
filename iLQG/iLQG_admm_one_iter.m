@@ -208,14 +208,14 @@ if backPassDone
         [xnew,unew,costnew,costnew_origin] = forward_pass(D,idx,x0 ,u, L, x, l, Ku,...
             Op.Alpha, DYNCST,DYNCST_primal,u_lims,Op.diffFn,lam);
 
-        if iter>1
+        if iter>1&&mod(iter,5)==0
             if idx<5
                 figure(4+50)
                 subplot(2,2,idx)
                 horizonSteps = size(x{idx},2);
                 plot(1:horizonSteps,squeeze(costnew_origin(:,:,:,1)),'-')
                 hold on
-        %         plot(1:horizonSteps,squeeze(costnew(:,:,:,4)))
+                plot(1:horizonSteps,squeeze(costnew(:,:,:,1)),'--')
         %         plot(1:horizonSteps,squeeze(costnew(:,:,:,8)))
 
                 % plot(1:horizonSteps-1,squeeze(l(2,:)),'r')
@@ -368,7 +368,7 @@ end
 % trace(iter).cost        = sum(cost(:));
 % trace(iter).reduc_ratio = z;
 %     stop = graphics(Op.plot,x,u,cost,L,Vx,Vxx,fx,fxx,fu,fuu,trace(1:iter),0);
-
+end
 
 
 % [x,un,cost]  = forward_pass(x0(:,1),alpha*u,[],[],[],1,DYNCST,Op.lims,[]);
@@ -549,7 +549,7 @@ cnew_origin = permute(cnew_origin, [1 2 4 3 ]);
 % hold off
 
 % put the time dimension in the columns
-
+end
 
 function [diverge, Vx, Vxx, k, K, dV, Ku] = back_pass(D,idx,c_bi,c_ui,c_bi_bi,c_bi_ui,c_ui_ui,c_ui_uj,fx,fu,fxx,fxu,fuu,lambda,regType,lims,u)
 % Perform the Ricatti-Mayne backward pass
@@ -669,7 +669,7 @@ for i = N-1:-1:1
     K(:,:,i)    = K2_i;
 %     Ku(:,:,i) = Ku_i_agent_j
 end% end of for (horizon)
-
+end
 
 
 function  stop = graphics(figures,x,u,cost,L,Vx,Vxx,fx,fxx,fu,fuu,trace,init)
@@ -837,12 +837,12 @@ elseif init == 2
 end
 
 drawnow;
-
+end
 function Kpress(src,evnt)
 if strcmp(evnt.Key,'escape')
     set(src,'user',1)
 end
-
+end
 function double_title(ax1, ax2, title1, title2)
 
 t1 = title(ax1, title1);
@@ -856,7 +856,7 @@ pos1(1)  = 0.05;
 set(t1,'pos',pos1,'HorizontalAlignment','left')
 pos2(1)  = 1-0.05;
 set(t2,'pos',pos2,'HorizontalAlignment','right')
-
+end
 % setOpts - a utility function for setting default parameters
 % ===============
 % defaults  - either a cell array or a structure of field/default-value pairs.
@@ -883,4 +883,5 @@ end
 
 for k = 1:length(user_fields)
     params.(user_fields{k}) = options.(user_fields{k});
+end
 end

@@ -40,11 +40,12 @@ function b_next = updateGMM(b, u, motionModel, obsModel)
     components_amount = 2;%length(b)/component_bDim;
     u_assist = zeros(n_assist,dim_xy);
     for i = 1:n_assist
-        u_assist(i,:) = u(end-(n_assist-i)*2-1:end-(n_assist-i)*2)';
+        u_assist(i,:) = u(end-(n_assist-i+1)*2-1:end-(n_assist-i+1)*2)';
     end
     u_all_assists = sum(u_assist,1)./3;%sum of rows, not summing x and y together, which are in cols
 %     u_man = [u(end-shared_uDim+1);u(end)];
-    
+    u_compl = zeros(1,dim_xy);
+    u_compl(1,:)=u(end-1:end);
     b_next = b;
     for i=1:components_amount
         b_component = b((i-1)*component_bDim + 1 : i*component_bDim - 1,1);
@@ -63,6 +64,9 @@ function b_next = updateGMM(b, u, motionModel, obsModel)
         b_assist_next = beliefDynamicsSimpleAgent(b_assist, u_assist(i,:)',simpleMotionModel,simpleObsModel);
         b_next(42+1+(i-1)*6:42+i*6)=b_assist_next;
     end
+    b_compl=b(61:66);
+    b_compl_next=beliefDynamicsSimpleAgent(b_compl, u_compl(1,:)',simpleMotionModel,simpleObsModel);
+    b_next(61:66)=b_compl_next;
 end
 function b_next = updateSingleComponentGMM(b, u, motionModel, obsModel)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

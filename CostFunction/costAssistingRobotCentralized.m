@@ -52,17 +52,17 @@ ctrlDim = size(u,1);
 u_plattform = u(1:4,:);
 u_assists = u(5:end);
 % Q_t = 10*eye(stDim); % penalize uncertainty
-R_t = diag([0.2, 4.0, 0.2, 0.2])*10;%,0.1,0.1]); % penalize control effort
-R_assists_t = diag([0.1, 0.1, 0.1, 0.1, 0.1, 0.1])*10;
+R_t = diag([0.2, 4.0, 0.2, 0.2])*3;%,0.1,0.1]); % penalize control effort
+R_assists_t = diag([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1])*15;
 Qerr_t = 0.0*eye(2);
-Qerr_l = 10*L*eye(2); % penalize terminal error
+Qerr_l = 5*L*eye(2); % penalize terminal error
 Q_formation = 10*eye(2);
 Qcov_t = 0*eye(4);
 Qcov_l = 1e8*eye(4); % penalize terminal covar
 Qcov_l(1,1) = 0;
 Qcov_l(2,2) = 0;
 w_cc = 1.0; % penalize collision
-
+Qcompl_err_l=2*L*eye(2);
 
 component_cost = zeros(components_amount,1);
 cost = 0;
@@ -108,6 +108,18 @@ for i_comp=1:components_amount
         xi=b(42+i*6-5:42+i*6-4);
         formation_residue = xi-x{i_comp}(3:4)-d_stpt(i,:)';
         sc=sc+formation_residue'*Q_formation*formation_residue;
+    end
+    x_compl=b(61:62);
+    if i_comp ==1
+        i_compl=2;
+    else
+        i_compl=1;
+    end
+    compl_delta_x = x{i_compl}(1:2) - x_compl;
+    if any(final)
+
+      sc = sc+compl_delta_x'*Qcompl_err_l*compl_delta_x;
+
     end
     component_cost(i_comp) = sc + ic + uc + w_cc*cc;
     % may also consider take uc out of factoring with weight

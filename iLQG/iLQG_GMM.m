@@ -359,7 +359,9 @@ for iter = 1:Op.maxIter
             if verbosity > 0
                 fprintf('\nSUCCESS: cost change < tolFun\n');
             end
-            break;
+%             if iter >10
+                break;
+%             end
         end
         
     else % no cost improvement

@@ -16,7 +16,7 @@ function [failed, b_f, x_true_final] = mpc_centralized_animateGMM(fig_xy, fig_w,
 % detected
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % larger, less overshoot; smaller, less b-noise affects assist
-P_feedback = 1;
+P_feedback = 0;
 % longer, clear wish, shorter, less overshoot
 t_human_withdraw = 0.5;
 comp_sel =1;
@@ -85,7 +85,7 @@ weight_save = cell(components_amount,1);
 x_save = [];
 x_true = [];
 [mu_platf, sig_platf, weight] = b2xPw(b0(1:42), component_stDim, components_amount);
-mu_assist = [b0(43);b0(44);b0(49);b0(50);b0(55);b0(56)];
+mu_assist = [b0(43);b0(44);b0(49);b0(50);b0(55);b0(56);b0(61);b0(62)];
 for i_comp=1:components_amount
 %     b0_comp = b0((i_comp-1)*component_bDim+1:i_comp*component_bDim);
 %     mu{i_comp} = b0_comp(1:component_stDim);
@@ -131,7 +131,7 @@ for k = 1:nSteps-1
     n_assist = 3;
     u_assist = zeros(n_assist,dim_xy);
     for i = 1:n_assist
-        u_assist(i,:) = u(end-(n_assist-i)*2-1:end-(n_assist-i)*2)';
+        u_assist(i,:) = u(end-(n_assist-i+1)*2-1:end-(n_assist-i+1)*2)';
     end
     u_all_assists = sum(u_assist,1)./3;
     u_for_true = [u((comp_sel-1)*components_amount + 1:comp_sel*components_amount);u_all_assists'];
@@ -169,7 +169,7 @@ for k = 1:nSteps-1
     simpleMotionModel=TwoDPointRobot(motionModel.dt);
     simpleObsModel=TwoDSimpleObsModel();
     x_true_assist = x_true;
-    for i=1:n_assist
+    for i=1:n_assist+1
         x_true_assist(i*2+3:i*2+4) = simpleMotionModel.evolve(x_true(i*2+3:i*2+4),u(i*2+3:i*2+4),zeros(2,1));
     end
     x_true = x_true_assist;
@@ -185,8 +185,8 @@ for k = 1:nSteps-1
         z_human_react(1:2)=[speed_man;direction_man] + chol(obsModel.R_speed)' * randn(2,1);
     end
 %     z_human_react(1:2)=[speed_man;direction_man] + chol(obsModel.R_speed)' * randn(2,1);
-    z_assists = zeros(n_assist * dim_xy,1);
-    for i=1:n_assist
+    z_assists = zeros((n_assist +1)* dim_xy,1);
+    for i=1:n_assist+1
         z_assists(i*2-1:i*2) = simpleObsModel.getObservation(x_true(i*2+3:i*2+4), 'truenoise');
     end
     %% now do the machine part
@@ -196,7 +196,7 @@ for k = 1:nSteps-1
         %u = [v_ball;v_rest;v_aid_man];
         u_assist = zeros(n_assist,dim_xy);
         for i = 1:n_assist
-            u_assist(i,:) = u(end-(n_assist-i)*2-1:end-(n_assist-i)*2)';
+            u_assist(i,:) = u(end-(n_assist-i+1)*2-1:end-(n_assist-i+1)*2)';
         end
         u_all_assists = sum(u_assist,1)./3;
         u_for_comp = [u((i_comp-1)*components_amount + 1:i_comp*components_amount);u_all_assists'];
@@ -268,7 +268,9 @@ for k = 1:nSteps-1
         ,simpleMotionModel,simpleObsModel);
     [b_assist3_next,~,~] = getNextEstimation(b_k(55:60),u(9:10),z_assists(5:6)...
         ,simpleMotionModel,simpleObsModel);
-    b_k = [b_plattform;b_assist1_next;b_assist2_next;b_assist3_next];
+    [b_assist4_next,~,~] = getNextEstimation(b_k(61:66),u(11:12),z_assists(7:8)...
+        ,simpleMotionModel,simpleObsModel);
+    b_k = [b_plattform;b_assist1_next;b_assist2_next;b_assist3_next;b_assist4_next];
 %% now for save
     for i_comp = 1 : components_amount
         mu_save{i_comp}(:,k+1) = mu_platf{i_comp};
@@ -325,7 +327,8 @@ for k = 1:nSteps-1
     plot(pointsToPlot(1,:),pointsToPlot(2,:),'k')
     pointsToPlot = drawResult([b_assist3_next(1:2); b_assist3_next(3:6)], 2);
     plot(pointsToPlot(1,:),pointsToPlot(2,:),'k')
-    
+    pointsToPlot = drawResult([b_assist4_next(1:2); b_assist4_next(3:6)], 2);
+    plot(pointsToPlot(1,:),pointsToPlot(2,:),'k')
     
 %     [x_nom, P_nom, w_nom] = b2xPw(b_nom(:,k), component_stDim, components_amount);
 %     plot(x_save(1,k),x_save(2,k),'.')

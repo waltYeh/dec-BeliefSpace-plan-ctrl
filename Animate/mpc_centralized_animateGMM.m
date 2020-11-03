@@ -16,7 +16,7 @@ function [failed, b_f, x_true_final] = mpc_centralized_animateGMM(fig_xy, fig_w,
 % detected
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % larger, less overshoot; smaller, less b-noise affects assist
-P_feedback = 0;
+P_feedback = 1;
 % longer, clear wish, shorter, less overshoot
 t_human_withdraw = 0.5;
 comp_sel =1;

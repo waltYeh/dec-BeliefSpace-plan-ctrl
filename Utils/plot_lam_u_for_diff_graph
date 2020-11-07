@@ -1,19 +1,91 @@
+dt=0.05;
 figure(3)
-plot(tt,squeeze(lam.lam_up(1,1,:)),'LineWidth',2)
+tt=0:dt:2.5;
+plot(tt(1:end-1),squeeze(lam.lam_up(1,1,:)),'LineWidth',2)
 hold on
-plot(tt,squeeze(lam.lam_up(1,2,:)),'LineWidth',2)
-plot(tt,squeeze(lam_unkn.lam_up(1,1,:)),'--','LineWidth',2)
-plot(tt,squeeze(lam_unkn.lam_up(1,2,:)),'--','LineWidth',2)
+plot(tt(1:end-1),squeeze(lam.lam_up(1,2,:)),'LineWidth',2)
+plot(tt(1:end-1),squeeze(lam_unkn.lam_up(1,1,:)),'--','LineWidth',2)
+plot(tt(1:end-1),squeeze(lam_unkn.lam_up(1,2,:)),'--','LineWidth',2)
 legend('\lambda_{u,x} kompletter Graph','\lambda_{u,y} kompletter Graph','\lambda_{u,x} reduzierter Graph','\lambda_{u,y} reduzierter Graph')
 xlabel('t(s)')
 ylabel('\lambda_u')
 
-figure(2)
-plot(tt,agents{1, 1}.u_nom{1, 1}(5,:),'LineWidth',2)
+ii=1
+figure(11+ii)
+plot(tt(1:end-1),agents{ii}.u_nom{ii}(5,:),'LineWidth',2)
 hold on
-plot(tt,agents{1, 1}.u_nom{1, 1}(6,:),'LineWidth',2)
-plot(tt,agents_unkn{1, 1}.u_nom{1, 1}(5,:),'--','LineWidth',2)
-plot(tt,agents_unkn{1, 1}.u_nom{1, 1}(6,:),'--','LineWidth',2)
-legend('u_x Plattform kompletter Graph','u_y Plattform kompletter Graph','u_x Plattform reduzierter Graph','u_y Plattform reduzierter Graph')
+plot(tt(1:end-1),agents{ii}.u_nom{ii}(6,:),'LineWidth',2)
+plot(tt(1:end-1),agents_unkn{ii}.u_nom{ii}(5,:),'--','LineWidth',2)
+plot(tt(1:end-1),agents_unkn{ii}.u_nom{ii}(6,:),'--','LineWidth',2)
+legend(strcat('u_x Agent ',num2str(ii),' kompletter Graph'),strcat('u_y Agent ',num2str(ii),' kompletter Graph'),strcat('u_x Agent ',num2str(ii),' reduzierter Graph'),strcat('u_y Agent ',num2str(ii),' reduzierter Graph'))
 xlabel('t(s)')
 ylabel('u(m/s)')
+ii=2
+figure(11+ii)
+plot(tt(1:end-1),agents{ii}.u_nom{ii}(1,:),'LineWidth',2)
+hold on
+plot(tt(1:end-1),agents{ii}.u_nom{ii}(2,:),'LineWidth',2)
+plot(tt(1:end-1),agents_unkn{ii}.u_nom{ii}(1,:),'--','LineWidth',2)
+plot(tt(1:end-1),agents_unkn{ii}.u_nom{ii}(2,:),'--','LineWidth',2)
+legend(strcat('u_x Agent ',num2str(ii),' kompletter Graph'),strcat('u_y Agent ',num2str(ii),' kompletter Graph'),strcat('u_x Agent ',num2str(ii),' reduzierter Graph'),strcat('u_y Agent ',num2str(ii),' reduzierter Graph'))
+xlabel('t(s)')
+ylabel('u(m/s)')
+
+xlabel('t(s)')
+ylabel('v(m/s)')
+legend('x','y')
+axis([0,2.5,-1.5,1.5])
+
+legend('wahre Plattform','Ziel A','Ziel B','Messung der Plattform','Belief A','Belief B')
+axis([1,11,-2,5])
+xlabel('x(m)')
+ylabel('y(m)')
+
+figure(7)
+dt=0.05;
+tt=0:dt:2.5;
+for i=1:3
+    subplot (2,2,i)
+    plot(tt,squeeze(lam.lam_d(i,1,:)),'LineWidth',2)
+    hold on
+    plot(tt,squeeze(lam.lam_d(i,2,:)),'LineWidth',2)
+    plot(tt,squeeze(lam_unkn.lam_d(i,1,:)),'--','LineWidth',2)
+    plot(tt,squeeze(lam_unkn.lam_d(i,2,:)),'--','LineWidth',2)
+    legend('\lambda_{u,x} kompletter Graph','\lambda_{u,y} kompletter Graph','\lambda_{u,x} reduzierter Graph','\lambda_{u,y} reduzierter Graph')
+    xlabel('t(s)')
+    ylabel('\lambda_u')
+end
+
+
+figure(4)
+for i=1:3
+    subplot (2,2,i)
+    plot(tt(1:end-1),agents_24{i+1}.u_nom{i+1}(1,:),'LineWidth',2)
+    hold on
+    plot(tt(1:end-1),agents_24{i+1}.u_nom{i+1}(2,:),'LineWidth',2)
+    plot(tt(1:end-1),agents_unkn_24{i+1}.u_nom{i+1}(1,:),'--','LineWidth',2)
+    plot(tt(1:end-1),agents_unkn_24{i+1}.u_nom{i+1}(2,:),'--','LineWidth',2)
+    legend(strcat('kompletter Graph'),strcat('kompletter Graph'),strcat('reduzierter Graph'),strcat('reduzierter Graph'))
+    xlabel('t(s)')
+    ylabel('u(m/s)')
+end
+figure(4)
+subplot (2,2,4)
+    plot(tt(1:end-1),agents_24{1}.u_nom{1}(5,:),'LineWidth',2)
+    hold on
+    plot(tt(1:end-1),agents_24{1}.u_nom{1}(6,:),'LineWidth',2)
+    plot(tt(1:end-1),agents_unkn_24{1}.u_nom{1}(5,:),'--','LineWidth',2)
+    plot(tt(1:end-1),agents_unkn_24{1}.u_nom{1}(6,:),'--','LineWidth',2)
+    legend(strcat('kompletter Graph'),strcat('kompletter Graph'),strcat('reduzierter Graph'),strcat('reduzierter Graph'))
+    xlabel('t(s)')
+    ylabel('u(m/s)')
+figure(8)
+subplot (2,2,4)
+    plot(tt(1:end-1),agents{1}.u_nom{1}(5,:),'LineWidth',2)
+    hold on
+    plot(tt(1:end-1),agents{1}.u_nom{1}(6,:),'LineWidth',2)
+    plot(tt(1:end-1),agents_unkn{1}.u_nom{1}(5,:),'--','LineWidth',2)
+    plot(tt(1:end-1),agents_unkn{1}.u_nom{1}(6,:),'--','LineWidth',2)
+    legend(strcat('kompletter Graph'),strcat('kompletter Graph'),strcat('reduzierter Graph'),strcat('reduzierter Graph'))
+    xlabel('t(s)')
+    ylabel('u(m/s)')

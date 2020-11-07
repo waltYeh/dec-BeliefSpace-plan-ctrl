@@ -52,7 +52,7 @@ switch show_mode
         weight_a1 = 0.05;
         weight_a2 = 0.95;
 end
-complete_graph = true;
+complete_graph = false;
 %% tuned parameters
 mu_a1 = [8.5, 0.0, 5.0, 0.0]';
 mu_a2 = [3, 0.8, 5.0, 0.0]';
@@ -273,7 +273,7 @@ for i_sim = 1:simulation_steps
     lam_up=zeros(1,Dim_lam_in_xy,horizonSteps-1);
     lam_c = zeros(1,Dim_lam_in_xy,horizonSteps);
     tic
-    max_iter = 30;
+    max_iter = 35;
     for iter = 1:max_iter
         if iter == 1
             for i = 2:size(interfDiGr.Nodes,1)
@@ -340,30 +340,58 @@ for i_sim = 1:simulation_steps
             end% if not finished
         end% for every agent
         %% 
+%         for i=1:size(interfDiGr.Nodes,1)
+%             if i==1
+%                 % all other agents should know the plattform, so they
+%                 % controls the formation or the choice of target
+%                 for j=2:size(interfDiGr.Nodes,1)
+% %                     if complete_graph
+% %                         a=0
+% %                     else
+% %                         if j~=1
+%                             u{j,1} = u{i,1};
+% %                         end
+% %                     end
+%                 end
+%             elseif i<5
+%                 %the plattform knows others because the plattform 
+%                 %is in charge of the u of assist 2,3,4
+% %                 
+%                 if complete_graph
+%                     u{1,i} = u{i,i};
+%                     u{2,i} = u{i,i};
+%                     u{3,i} = u{i,i};
+%                     u{4,i} = u{i,i};
+%                 else
+% %                     
+%                 end
+%             end
+%         end
         for i=1:size(interfDiGr.Nodes,1)
-            if i==1
+            if i==2
                 % all other agents should know the plattform, so they
                 % controls the formation or the choice of target
-                for j=2:size(interfDiGr.Nodes,1)
+                for j=1:size(interfDiGr.Nodes,1)
                     if complete_graph
 %                         a=0
 %                     else
-                        u{j,1} = u{i,1};
+                        u{j,2} = u{i,2};
                     end
                 end
             elseif i<5
                 %the plattform knows others because the plattform 
                 %is in charge of the u of assist 2,3,4
-                u{1,i} = u{i,i};
+                u{2,i} = u{i,i};
                 if complete_graph
 %                     a=0
 %                 else
-                    u{2,i} = u{i,i};
+                    u{1,i} = u{i,i};
                     u{3,i} = u{i,i};
                     u{4,i} = u{i,i};
                 end
             end
         end
+
         if mod(iter,1)==0
             last_lam_d=lam_d;
             last_lam_up=lam_up;
@@ -400,7 +428,7 @@ for i_sim = 1:simulation_steps
                 set(h155,'LineWidth',0.5)
                 set(h166,'LineWidth',0.5)
             end
-%             if iter == max_iter
+            if iter == max_iter ||iter==1||mod(iter,5)==0
             subplot(2,3,2)
             title('agent 2 residue')
             h1=plot(tt,squeeze(formation_residue(1,1,:)),'b','LineWidth',2);
@@ -485,7 +513,7 @@ for i_sim = 1:simulation_steps
             hold on
             plot([iter-1,iter],[sum(squeeze(last_lam_c(1,2,:)),'all'),sum(squeeze(lam_c(1,2,:)),'all')],'r-*')
             title('lam_w')
-%             end
+            end
         end
         
 %         lam_d(lam_d>1.0)=1.0;
@@ -613,7 +641,7 @@ function [lam_d_new,lam_up_new,lam_c_new,formation_residue,dyncouple_residue,com
         end
     end
     for k=1:horizonSteps-1
-        dyncouple_residue(1,:,k) = 3*u{1,1}(5:6,k)-u{1,2}(:,k)-u{1,3}(:,k)-u{1,4}(:,k);
+        dyncouple_residue(1,:,k) = 3*u{2,1}(5:6,k)-u{2,2}(:,k)-u{2,3}(:,k)-u{2,4}(:,k);
     end
 %     for k=1:horizonSteps
 %         

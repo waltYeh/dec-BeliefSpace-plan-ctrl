@@ -7,6 +7,7 @@ function plan_assisting_robot()
 
 addpath(genpath('./'));
 clear
+% close all
 % FigList = findall(groot, 'Type', 'figure');
 % for iFig = 1:numel(FigList)
 %     try
@@ -24,7 +25,7 @@ BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT = 6;
 REST_WISH_WITHOUT_HUMAN_INPUT = 7;
 REST_WISH_WITH_HUMAN_INPUT = 8;
 REST_WISH_WITH_OPPOSITE_HUMAN_INPUT = 9;
-show_mode = EQUAL_WEIGHT_BALANCING;
+show_mode = REST_WISH_WITHOUT_HUMAN_INPUT;
 switch show_mode
     case EQUAL_WEIGHT_BALANCING
         weight_1 = 0.5;
@@ -45,8 +46,8 @@ switch show_mode
         weight_1 = 0.95;
         weight_2 = 0.05;
     case REST_WISH_WITHOUT_HUMAN_INPUT
-        weight_1 = 0.05;
-        weight_2 = 0.95;
+        weight_1 = 0.01;
+        weight_2 = 0.99;
     case REST_WISH_WITH_HUMAN_INPUT
         weight_1 = 0.05;
         weight_2 = 0.95;
@@ -71,7 +72,7 @@ horizonSteps = length(tspan);
 
 mm = HumanMind(dt); % motion model
 
-om = HumanReactionModel(); % observation model
+om = HumanReactionModel_homo(); % observation model
 
 %% Setup start and goal/target state
 

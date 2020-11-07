@@ -80,7 +80,7 @@ for k=1:horizon-1
         ind_states=(j_comp-1)*21+1:(j_comp-1)*21+4;
         cov_belief(ind_states,ind_states,k)=P{j_comp};
     end
-    for j_assist=1:3
+    for j_assist=1:4
         ind_b=43+(j_assist-1)*6:42+(j_assist)*6;
         ind_b_start=ind_b(1);
         [x_ass, P_ass] = b2xP(b_nom(ind_b,k), 2);

@@ -16,7 +16,7 @@ function [failed, b_f] = animateGMM(fig_xy, fig_w, b0, b_nom, u_nom, L, nSteps, 
 % detected
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % larger, less overshoot; smaller, less b-noise affects assist
-P_feedback = 0.3;
+P_feedback = 1.0;
 % longer, clear wish, shorter, less overshoot
 t_human_withdraw = 0.5;
 comp_sel =1;
@@ -36,10 +36,10 @@ switch show_mode
     case EQUAL_WEIGHT_BALANCING
         t_human_withdraw = 0.0;
     case EQUAL_WEIGHT_TO_BALL_FEEDBACK
-        t_human_withdraw = 0.2;
+        t_human_withdraw = 0.4;
         comp_sel =1;
     case EQUAL_WEIGHT_TO_REST_FEEDBACK
-        t_human_withdraw = 0.2;
+        t_human_withdraw = 0.4;
         comp_sel =2;        
     case BALL_WISH_WITHOUT_HUMAN_INPUT
         t_human_withdraw = 0.0;
@@ -166,14 +166,17 @@ for k = 1:nSteps-1
     speed_man = norm(v_man);
     direction_man = atan2(v_man(2),v_man(1));
     %very problematic when human gives no more output
-    z(1:2)=[speed_man;direction_man] + chol(obsModel.R_speed)' * randn(2,1);
-    
+    if k*motionModel.dt>t_human_withdraw
+        z(1:2)=[speed_man;direction_man] ;%+ chol(obsModel.R_speed)' * randn(2,1);
+    else
+        z(1:2)=[speed_man;direction_man] + chol(obsModel.R_speed)' * randn(2,1);
+    end
     %% now do the machine part
     z_mu = cell(components_amount);
     z_sig = cell(components_amount);
     for i_comp = 1:components_amount
         %u = [v_ball;v_rest;v_aid_man];
-u_for_comp = [u((i_comp-1)*component_alone_uDim + 1:i_comp*component_alone_uDim);u(end-shared_uDim+1:end)];            % Get motion model jacobians and predict pose
+        u_for_comp = [u((i_comp-1)*component_alone_uDim + 1:i_comp*component_alone_uDim);u(end-shared_uDim+1:end)];            % Get motion model jacobians and predict pose
     %     zeroProcessNoise = motionModel.generateProcessNoise(mu{i_comp},u_for_comp); % process noise
         zeroProcessNoise = zeros(motionModel.stDim,1);
         x_prd = motionModel.evolve(mu{i_comp},u_for_comp,zeroProcessNoise); % predict robot pose
@@ -186,7 +189,7 @@ u_for_comp = [u((i_comp-1)*component_alone_uDim + 1:i_comp*component_alone_uDim)
         zerObsNoise = zeros(length(z),1);
         H = obsModel.getObservationJacobian(mu{i_comp},zerObsNoise);
         % M is eye
-        M = obsModel.getObservationNoiseJacobian(mu{i_comp},zerObsNoise,z);
+        M = obsModel.getObservationNoiseJacobian(mu{i_comp});%,zerObsNoise,z);
     %     R = obsModel.getObservationNoiseCovariance(x,z);
     %     R = obsModel.R_est;
         % update P
@@ -272,6 +275,10 @@ u_for_comp = [u((i_comp-1)*component_alone_uDim + 1:i_comp*component_alone_uDim)
     plot(pointsToPlot(1,:),pointsToPlot(2,:),'b')
     pointsToPlot = drawResultGMM([mu_save{2}(:,k); sig_save{2}(:,k)], motionModel.stDim);
     plot(pointsToPlot(1,:),pointsToPlot(2,:),'r')
+    pointsToPlot = drawResultGMM_Target([mu_save{1}(:,k); sig_save{1}(:,k)], motionModel.stDim);
+    plot(pointsToPlot(1,:),pointsToPlot(2,:),'b')
+    pointsToPlot = drawResultGMM_Target([mu_save{2}(:,k); sig_save{2}(:,k)], motionModel.stDim);
+    plot(pointsToPlot(1,:),pointsToPlot(2,:),'r')
 %     [x_nom, P_nom, w_nom] = b2xPw(b_nom(:,k), component_stDim, components_amount);
 %     plot(x_save(1,k),x_save(2,k),'.')
 %     hold on
@@ -353,7 +360,7 @@ figure(fig_xy)
 title('Bewegungen von Plattform, Ziel A und Ziel B')
 xlabel('x(m)')
 ylabel('y(m)')
-legend('wahre Ziele','Plattform','Ziel A im Filter','Ziel B im Filter')
+legend('wahre Ziele','wahre Plattform','Ziel A im Filter','Ziel B im Filter')
 hold off
 figure(fig_w)
 title('Gewicht der Wünsche')

@@ -29,7 +29,7 @@ BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT = 6;
 REST_WISH_WITHOUT_HUMAN_INPUT = 7;
 REST_WISH_WITH_HUMAN_INPUT = 8;
 REST_WISH_WITH_OPPOSITE_HUMAN_INPUT = 9;
-show_mode = EQUAL_WEIGHT_TO_BALL_FEEDBACK;
+show_mode = EQUAL_WEIGHT_TO_REST_FEEDBACK;
 switch show_mode
     case EQUAL_WEIGHT_BALANCING
         weight_1 = 0.5;
@@ -50,28 +50,36 @@ switch show_mode
         weight_1 = 0.95;
         weight_2 = 0.05;
     case REST_WISH_WITHOUT_HUMAN_INPUT
-        weight_1 = 0.05;
-        weight_2 = 0.95;
+        weight_1 = 0.001;
+        weight_2 = 0.999;
     case REST_WISH_WITH_HUMAN_INPUT
-        weight_1 = 0.05;
-        weight_2 = 0.95;
+        weight_1 = 0.01;
+        weight_2 = 0.99;
     case REST_WISH_WITH_OPPOSITE_HUMAN_INPUT
-        weight_1 = 0.05;
-        weight_2 = 0.95;
+        weight_1 = 0.01;
+        weight_2 = 0.99;
 end
 %% tuned parameters
 % mu_1 = [8.5, 0.0, 5.0, 0.0]';
 % mu_2 = [3, 1.0, 5.0, 0.0]';
 % sig_1 = diag([0.01, 0.01, 0.1, 0.1]);%sigma
 % sig_2 = diag([0.01, 0.01, 0.1, 0.1]);
-mu_a1 = [8.5, 0.0, 5.0, 0.0]';
-mu_a2 = [3, 0.8, 5.0, 0.0]';
-mu_b = [5.2, -1.3]';
-mu_c = [4.5, 1.5]';
-mu_d = [7.0, 1.5]';
+mu_a1 = [8.5, 4.0, 5.0, 0.0]';
+mu_a2 = [3, 1, 5.0, 0.0]';
 mu_e = [6.0, 4]';
-sig_a1 = diag([0.01, 0.01, 0.1, 0.1]);%sigma
-sig_a2 = diag([0.01, 0.01, 0.1, 0.1]);
+% if show_mode>=4 &&show_mode<=6
+%     
+%     mu_b = [4.3, -1.55]';
+%     mu_c = [3.6, 1.25]';
+%     mu_d = [6.1, 1.3]';
+%     
+% elseif show_mode>=7 &&show_mode<=9
+    mu_b = [5, -1]';
+    mu_c = [4, 1]';
+    mu_d = [6, 1]';
+% end
+sig_a1 = diag([0.01, 0.01, 0.01, 0.01]);%sigma
+sig_a2 = diag([0.01, 0.01, 0.01, 0.01]);
 sig_b = diag([0.02, 0.02]);%sigma
 sig_c = diag([0.02, 0.02]);
 sig_d = diag([0.02, 0.02]);
@@ -94,7 +102,7 @@ simulation_steps = simulation_time/mpc_update_period;
 
 mm = HumanMind(dt); % motion model
 
-om = HumanReactionModel(); % observation model
+om = HumanReactionModel_homo(); % observation model
 
 %% Setup start and goal/target state
 
@@ -152,9 +160,9 @@ for i_sim = 1:simulation_steps
     assignin('base', 'show_mode', show_mode)
     assignin('base', 'dt', dt)
     assignin('base', 'Op', Op)
+    assignin('base', 'mm', mm)
+    assignin('base', 'om', om)
 %     assignin('base', 'x_true', x_true)
-    mm = HumanMind(dt); % motion model
-    om = HumanReactionModel(); % observation model
     [didCollide, b0_next, x_true_final] = mpc_centralized_animateGMM(9,10,b0, b_nom, ...
         u_nom, L_opt, update_steps,time_past, mm, om,Op.lims, show_mode);
     b0_next(1:2) = x_true_final(1:2);

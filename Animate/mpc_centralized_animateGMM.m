@@ -52,7 +52,7 @@ switch show_mode
     case REST_WISH_WITHOUT_HUMAN_INPUT
         t_human_withdraw = 0.0;
     case REST_WISH_WITH_HUMAN_INPUT
-        t_human_withdraw = 0.7;
+        t_human_withdraw = 0.5;
         comp_sel =2;
     case REST_WISH_WITH_OPPOSITE_HUMAN_INPUT
         t_human_withdraw = 0.5;
@@ -169,9 +169,11 @@ for k = 1:nSteps-1
     simpleMotionModel=TwoDPointRobot(motionModel.dt);
     simpleObsModel=TwoDSimpleObsModel();
     x_true_assist = x_true;
-    for i=1:n_assist+1
-        x_true_assist(i*2+3:i*2+4) = simpleMotionModel.evolve(x_true(i*2+3:i*2+4),u(i*2+3:i*2+4),zeros(2,1));
+    for i=1:n_assist
+        x_true_assist(i*2+3:i*2+4) = simpleMotionModel.evolve(x_true(i*2+3:i*2+4),u(i*2+3:i*2+4)+v_man,zeros(2,1));
     end
+    i=n_assist+1;
+    x_true_assist(i*2+3:i*2+4) = simpleMotionModel.evolve(x_true(i*2+3:i*2+4),u(i*2+3:i*2+4),zeros(2,1));
     x_true = x_true_assist;
         % Get observation model jacobians
     z_human_react = obsModel.getObservation(x_true(1:4),'truenoise'); % true observation
@@ -236,7 +238,9 @@ for k = 1:nSteps-1
         x = x_prd + weight_adjust.*K*(z_human_react - z_prd);
         z_mu{i_comp} = z_prd;
         z_sig{i_comp} = HPH;
+        x_target=mu_platf{i_comp}(1);
         mu_platf{i_comp} = x;
+        mu_platf{i_comp}(1)=x_target;
         sig_platf{i_comp} = P;
     end
     
@@ -270,6 +274,7 @@ for k = 1:nSteps-1
         ,simpleMotionModel,simpleObsModel);
     [b_assist4_next,~,~] = getNextEstimation(b_k(61:66),u(11:12),z_assists(7:8)...
         ,simpleMotionModel,simpleObsModel);
+    last_bk=b_k;
     b_k = [b_plattform;b_assist1_next;b_assist2_next;b_assist3_next;b_assist4_next];
 %% now for save
     for i_comp = 1 : components_amount
@@ -277,6 +282,7 @@ for k = 1:nSteps-1
         sig_save{i_comp}(:,k+1) = sig_platf{i_comp}(:);
         weight_save{i_comp}(:,k+1) = weight(i_comp);
     end
+%     x_save_last=
     x_save(:,k+1) = x_true;
     x_true_final = x_true;
 %     % final belief
@@ -310,25 +316,32 @@ for k = 1:nSteps-1
 %     plot(x_save(1,k),x_save(2,k),'+')
     hold on
     axis equal
-    plot(x_save(3,k),x_save(4,k),'+')
-    hold on
-    axis equal
+    if k>1
+        plot([x_save(3,k-1),x_save(3,k)],[x_save(4,k-1),x_save(4,k)],'m-','Linewidth',2.0)
+    else
+        plot([x_save(3,k),x_save(3,k)],[x_save(4,k),x_save(4,k)],'m-','Linewidth',2.0)
+    end
 %     plot(mu_save{1}(3,k),mu_save{1}(4,k),'bo')
-    plot(mu_save{1}(1,k),mu_save{1}(2,k),'bo')
-    plot(mu_save{2}(1,k),mu_save{2}(2,k),'ro')
-    plot(z_human_react(3),z_human_react(4),'*')
+    plot(mu_save{1}(1,k),mu_save{1}(2,k),'b*')
+    plot(mu_save{2}(1,k),mu_save{2}(2,k),'r*')
+    plot(z_human_react(3),z_human_react(4),'m+')
+    plot([last_bk(43),b_k(43)],[last_bk(44),b_k(44)],'-k','Linewidth',2.0)
+    plot([last_bk(49),b_k(49)],[last_bk(50),b_k(50)],'-k','Linewidth',2.0)
+    plot([last_bk(55),b_k(55)],[last_bk(56),b_k(56)],'-k','Linewidth',2.0)
+    plot([last_bk(61),b_k(61)],[last_bk(62),b_k(62)],'-k','Linewidth',2.0)
+
     pointsToPlot = drawResultGMM([mu_save{1}(:,k); sig_save{1}(:,k)], motionModel.stDim);
     plot(pointsToPlot(1,:),pointsToPlot(2,:),'b')
     pointsToPlot = drawResultGMM([mu_save{2}(:,k); sig_save{2}(:,k)], motionModel.stDim);
     plot(pointsToPlot(1,:),pointsToPlot(2,:),'r')
-    pointsToPlot = drawResult([b_assist1_next(1:2); b_assist1_next(3:6)], 2);
-    plot(pointsToPlot(1,:),pointsToPlot(2,:),'k')
-    pointsToPlot = drawResult([b_assist2_next(1:2); b_assist2_next(3:6)], 2);
-    plot(pointsToPlot(1,:),pointsToPlot(2,:),'k')
-    pointsToPlot = drawResult([b_assist3_next(1:2); b_assist3_next(3:6)], 2);
-    plot(pointsToPlot(1,:),pointsToPlot(2,:),'k')
-    pointsToPlot = drawResult([b_assist4_next(1:2); b_assist4_next(3:6)], 2);
-    plot(pointsToPlot(1,:),pointsToPlot(2,:),'k')
+%     pointsToPlot = drawResult([b_assist1_next(1:2); b_assist1_next(3:6)], 2);
+%     plot(pointsToPlot(1,:),pointsToPlot(2,:),'k')
+%     pointsToPlot = drawResult([b_assist2_next(1:2); b_assist2_next(3:6)], 2);
+%     plot(pointsToPlot(1,:),pointsToPlot(2,:),'k')
+%     pointsToPlot = drawResult([b_assist3_next(1:2); b_assist3_next(3:6)], 2);
+%     plot(pointsToPlot(1,:),pointsToPlot(2,:),'k')
+%     pointsToPlot = drawResult([b_assist4_next(1:2); b_assist4_next(3:6)], 2);
+%     plot(pointsToPlot(1,:),pointsToPlot(2,:),'k')
     
 %     [x_nom, P_nom, w_nom] = b2xPw(b_nom(:,k), component_stDim, components_amount);
 %     plot(x_save(1,k),x_save(2,k),'.')
@@ -345,57 +358,70 @@ for k = 1:nSteps-1
 %     pointsToPlot = drawResultGMM(b_nom(22:41,k), motionModel.stDim);
 %     plot(pointsToPlot(1,:),pointsToPlot(2,:),'r')
     figure(fig_w)
-%     
-    plot([time_past + motionModel.dt*(k-1),time_past + motionModel.dt*(k)],[weight_save{1}(k),weight_save{1}(k+1)],'-ob',[time_past + motionModel.dt*(k-1),time_past + motionModel.dt*(k)],[weight_save{2}(k),weight_save{2}(k+1)],'-ok')
+    plot([motionModel.dt*(k-1),motionModel.dt*(k)],[weight_save{1}(k),weight_save{1}(k+1)],'-b','Linewidth',2.0)
     hold on
+    plot([motionModel.dt*(k-1),motionModel.dt*(k)],[weight_save{2}(k),weight_save{2}(k+1)],'-r','Linewidth',2.0)
+    
+    axis([0,3,0,1])
+%     
+%     plot([time_past + motionModel.dt*(k-1),time_past + motionModel.dt*(k)],[weight_save{1}(k),weight_save{1}(k+1)],'-ob',[time_past + motionModel.dt*(k-1),time_past + motionModel.dt*(k)],[weight_save{2}(k),weight_save{2}(k+1)],'-ok')
+%     hold on
 %     time_line = 0:motionModel.dt:motionModel.dt*(nSteps);
     figure(fig_w+1)
-    subplot(2,2,1)
-    plot(time_past + motionModel.dt*(k-1),(u(5)+u(7)+u(9))/3,'b.',time_past + motionModel.dt*(k-1),(u(6)+u(8)+u(10))/3,'r.')
+%     subplot(2,2,1)
+    plot([time_past + motionModel.dt*(k-1),time_past + motionModel.dt*(k)],[(u(5)+u(7)+u(9))/3,(u(5)+u(7)+u(9))/3],'b-','Linewidth',2.0)
+    hold on
+    plot([time_past + motionModel.dt*(k-1),time_past + motionModel.dt*(k)],[(u(6)+u(8)+u(10))/3,(u(6)+u(8)+u(10))/3],'r-','Linewidth',2.0)
     %,time_past + motionModel.dt*(k-1),u(6),'r.')
-    hold on
-    plot(time_past + motionModel.dt*(k-1),u(2),'+')
     
-    subplot(2,2,2)
-    plot(time_past + motionModel.dt*(k-1),u(5),'b.',time_past + motionModel.dt*(k-1),u(6),'r.')
+    
+    
+    figure(fig_w+2)
+    plot([time_past + motionModel.dt*(k-1),time_past + motionModel.dt*(k)],[v_man(1),v_man(1)],'b-','Linewidth',2.0)
     hold on
-    subplot(2,2,3)
-    plot(time_past + motionModel.dt*(k-1),u(7),'b.',time_past + motionModel.dt*(k-1),u(8),'r.')
+    plot([time_past + motionModel.dt*(k-1),time_past + motionModel.dt*(k)],[v_man(2),v_man(2)],'r-','Linewidth',2.0)
+    
+    figure(fig_w+3)
+    plot([time_past + motionModel.dt*(k-1),time_past + motionModel.dt*(k)],[u(2),u(2)],'r-','Linewidth',2.0)
     hold on
-    subplot(2,2,4)
-    plot(time_past + motionModel.dt*(k-1),u(9),'b.',time_past + motionModel.dt*(k-1),u(10),'r.')
-    hold on
+%     subplot(2,2,2)
+%     plot(time_past + motionModel.dt*(k-1),u(5),'b.',time_past + motionModel.dt*(k-1),u(6),'r.')
+%     hold on
+% %     subplot(2,2,3)
+%     plot(time_past + motionModel.dt*(k-1),u(7),'b.',time_past + motionModel.dt*(k-1),u(8),'r.')
+%     hold on
+% %     subplot(2,2,4)
+%     plot(time_past + motionModel.dt*(k-1),u(9),'b.',time_past + motionModel.dt*(k-1),u(10),'r.')
+%     hold on
     pause(0.02);
 end
 if time_past<0.01
     figure(fig_w+1)
-    subplot(2,2,1)
-    title('Unterstützung Plattform und Förderband')
+%     subplot(2,2,1)
+    axis([0,3,-3,3])
+    title('Unterstützung Plattform aus Summe der Assistenten')
     xlabel('t(s)')
     ylabel('vel(m/s)')
+    legend('x','y')
 %     legend('x','y','Band')
     grid
-    % hold off
-    subplot(2,2,2)
-    title('Assistent 2')
-    xlabel('t(s)')
-    ylabel('vel(m/s)')
-%     legend('x','y')
-    grid
-    % hold off
-    subplot(2,2,3)
-    title('Assistent 3')
-    xlabel('t(s)')
-    ylabel('vel(m/s)')
-%     legend('x','y')
-    grid
-    % hold off
-    subplot(2,2,4)
-    title('Assistent 4')
-    xlabel('t(s)')
-    ylabel('vel(m/s)')
-%     legend('x','y')
-    grid
+    hold off
+figure(fig_w+2)
+axis([0,3,-3,3])
+title('Mensch selbst')
+xlabel('t(s)')
+ylabel('vel(m/s)')
+legend('x','y')
+grid
+hold off
+figure(fig_w+3)
+axis([0,3,-3,3])
+title('Bewegung des Ziels A')
+xlabel('t(s)')
+ylabel('vel(m/s)')
+legend('y')
+grid
+hold off
 
     % figure(1)
     % plot(x_save(1,:),x_save(2,:),'.')
@@ -412,16 +438,19 @@ if time_past<0.01
     % drawnow;
     % failed = 0;
     figure(fig_xy)
-    title('Bewegungen von Plattform, Ziel A und Ziel B')
+%     title('Bewegungen von Plattform, Ziel A und Ziel B')
     xlabel('x(m)')
     ylabel('y(m)')
-%     legend('wahre Ziele','Plattform','Ziel A im Filter','Ziel B im Filter')
-    % hold off
+    grid on
+    axis([0,10,-2,5])
+    legend('wahre Plattform','Ziel A','Ziel B','Messung Plattform','Assistenten')
+    hold off
     figure(fig_w)
     title('Gewicht der Wünsche')
     xlabel('t(s)')
     ylabel('Gewicht')
-%     legend('A','B')
+    legend('A','B')
+    hold off
 [x_m,y_m] = meshgrid(1:0.5:10,-2:0.5:5);
 X=1:0.5:10;
 Y=-2:0.5:5;
@@ -434,7 +463,7 @@ for i=1:length(X)
     end
 end
 figure(fig_xy)
-surf(x_m,y_m,Z-max(max(Z))-0.5)
+% surf(x_m,y_m,Z-max(max(Z))-0.5)
 % legend('wahre Plattform','Ziel A','Ziel B','Messung der Plattform','Belief A','Belief B')
 end
 end

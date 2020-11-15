@@ -16,7 +16,7 @@ function [failed, b_f] = animateGMM(fig_xy, fig_w, b0, b_nom, u_nom, L, nSteps, 
 % detected
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % larger, less overshoot; smaller, less b-noise affects assist
-P_feedback = 1.0;
+P_feedback = 0.0;
 % longer, clear wish, shorter, less overshoot
 t_human_withdraw = 0.5;
 comp_sel =1;
@@ -44,7 +44,7 @@ switch show_mode
     case BALL_WISH_WITHOUT_HUMAN_INPUT
         t_human_withdraw = 0.0;
     case BALL_WISH_WITH_HUMAN_INPUT
-        t_human_withdraw = 0.2;
+        t_human_withdraw = 0.4;
         comp_sel =1;
     case BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT
         t_human_withdraw = 0.5;
@@ -263,7 +263,7 @@ for k = 1:nSteps-1
 %     drawResult(plotFn,b,motionModel.stDim);
 %     drawnow;
     figure(fig_xy)
-    plot(x_save(1,k),x_save(2,k),'.')
+%     plot(x_save(1,k),x_save(2,k),'.')
     hold on
     axis equal
     plot(x_save(3,k),x_save(4,k),'+')
@@ -295,47 +295,61 @@ for k = 1:nSteps-1
 %     plot(pointsToPlot(1,:),pointsToPlot(2,:),'r')
     figure(fig_w)
 %     
-    plot([motionModel.dt*(k-1),motionModel.dt*(k)],[weight_save{1}(k),weight_save{1}(k+1)],'-ob',[motionModel.dt*(k-1),motionModel.dt*(k)],[weight_save{2}(k),weight_save{2}(k+1)],'-ok')
+    plot([motionModel.dt*(k-1),motionModel.dt*(k)],[weight_save{1}(k),weight_save{1}(k+1)],'-b','Linewidth',2.0)
     hold on
+    plot([motionModel.dt*(k-1),motionModel.dt*(k)],[weight_save{2}(k),weight_save{2}(k+1)],'-r','Linewidth',2.0)
+    
+    axis([0,3,0,1])
 %     time_line = 0:motionModel.dt:motionModel.dt*(nSteps);
-    figure(10)
-    subplot(2,2,1)
+    figure(fig_w+1)
+%     subplot(2,2,1)
     plot(motionModel.dt*(k-1),u(5),'b.',motionModel.dt*(k-1),u(6),'r.')
     hold on
-    subplot(2,2,2)
+    figure(fig_w+2)
+%     subplot(2,2,2)
     plot(motionModel.dt*(k-1),v_man(1),'b.',motionModel.dt*(k-1),v_man(2),'r.')
     hold on
-    subplot(2,2,3)
+    figure(fig_w+3)
+%     subplot(2,2,3)
     plot(motionModel.dt*(k-1),u(1),'b.',motionModel.dt*(k-1),u(2),'r.')
     hold on
-    subplot(2,2,4)
+    figure(fig_w+4)
+%     subplot(2,2,4)
     plot(motionModel.dt*(k-1),u(3),'b.',motionModel.dt*(k-1),u(4),'r.')
     hold on
     pause(0.02);
 end
-figure(10)
-subplot(2,2,1)
+% figure(fig_w+1)
+% subplot(2,2,1)
+figure(fig_w+1)
+axis([0,3,-3,3])
 title('Unterstützung Plattform')
 xlabel('t(s)')
 ylabel('vel(m/s)')
 legend('x','y')
 grid
 hold off
-subplot(2,2,2)
+% subplot(2,2,2)
+figure(fig_w+2)
+axis([0,3,-3,3])
 title('Mensch selbst')
 xlabel('t(s)')
 ylabel('vel(m/s)')
 legend('x','y')
 grid
 hold off
-subplot(2,2,3)
+% subplot(2,2,3)
+figure(fig_w+3)
+axis([0,3,-3,3])
 title('Bewegung des Ziels A')
 xlabel('t(s)')
 ylabel('vel(m/s)')
 legend('x','y')
 grid
 hold off
-subplot(2,2,4)
+% subplot(2,2,4)
+figure(fig_w+4)
+axis([0,3,-3,3])
 title('Bewegung des Ziels B')
 xlabel('t(s)')
 ylabel('vel(m/s)')
@@ -360,7 +374,7 @@ figure(fig_xy)
 title('Bewegungen von Plattform, Ziel A und Ziel B')
 xlabel('x(m)')
 ylabel('y(m)')
-legend('wahre Ziele','wahre Plattform','Ziel A im Filter','Ziel B im Filter')
+legend('wahre Plattform','Ziel A im Filter','Ziel B im Filter')
 hold off
 figure(fig_w)
 title('Gewicht der Wünsche')

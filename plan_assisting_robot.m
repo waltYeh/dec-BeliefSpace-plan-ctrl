@@ -4,7 +4,7 @@
 % and it can sense beacons in the world.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function plan_assisting_robot()
-
+% close all
 addpath(genpath('./'));
 clear
 % close all
@@ -25,17 +25,17 @@ BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT = 6;
 REST_WISH_WITHOUT_HUMAN_INPUT = 7;
 REST_WISH_WITH_HUMAN_INPUT = 8;
 REST_WISH_WITH_OPPOSITE_HUMAN_INPUT = 9;
-show_mode = REST_WISH_WITHOUT_HUMAN_INPUT;
+show_mode = BALL_WISH_WITH_HUMAN_INPUT;
 switch show_mode
     case EQUAL_WEIGHT_BALANCING
-        weight_1 = 0.5;
-        weight_2 = 0.5;
+        weight_1 = 0.51;
+        weight_2 = 0.49;
     case EQUAL_WEIGHT_TO_BALL_FEEDBACK
-        weight_1 = 0.5;
-        weight_2 = 0.5;
+        weight_1 = 0.51;
+        weight_2 = 0.49;
     case EQUAL_WEIGHT_TO_REST_FEEDBACK
-        weight_1 = 0.5;
-        weight_2 = 0.5;        
+        weight_1 = 0.51;
+        weight_2 = 0.49;       
     case BALL_WISH_WITHOUT_HUMAN_INPUT
         weight_1 = 0.95;
         weight_2 = 0.05;
@@ -63,7 +63,7 @@ sig_2 = diag([0.01, 0.01, 0.01, 0.01]);
 % weight_1 = 0.9;
 % weight_2 = 0.1;
 dt = 0.05;
-tf = 2.0;
+tf = 2.5;
 %% 
 
 t0 = 0;
@@ -90,7 +90,7 @@ full_DDP = false;
 DYNCST  = @(b,u,i) beliefDynCost_assisting_robot(b,u,horizonSteps,full_DDP,mm,om);
 % control constraints are optional
 Op.lims  = [-0.0 0.0;
-    -4.0 4.0;
+    -2.0 2.0;
     -0.0  0.0;
     -0.0  0.0;
     -2.0 2.0;
@@ -113,7 +113,7 @@ assignin('base', 'mm', mm)
 assignin('base', 'om', om)
 assignin('base', 'lims', Op.lims)
 lims = Op.lims;
-[didCollide, b_f] = animateGMM(5,6,b0, b, u_opt, L_opt, size(b,2), mm, om,lims, show_mode);
+[didCollide, b_f] = animateGMM(30,31,b0, b, u_opt, L_opt, size(b,2), mm, om,lims, show_mode);
 
 results.collision{1} = didCollide;
 

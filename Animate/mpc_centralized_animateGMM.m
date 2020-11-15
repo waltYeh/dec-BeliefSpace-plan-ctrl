@@ -36,7 +36,7 @@ switch show_mode
     case EQUAL_WEIGHT_BALANCING
         t_human_withdraw = 0.0;
     case EQUAL_WEIGHT_TO_BALL_FEEDBACK
-        t_human_withdraw = 0.15;
+        t_human_withdraw = 0.3;
         comp_sel =1;
     case EQUAL_WEIGHT_TO_REST_FEEDBACK
         t_human_withdraw = 0.3;
@@ -44,7 +44,7 @@ switch show_mode
     case BALL_WISH_WITHOUT_HUMAN_INPUT
         t_human_withdraw = 0.0;
     case BALL_WISH_WITH_HUMAN_INPUT
-        t_human_withdraw = 0.7;
+        t_human_withdraw = 2.5;
         comp_sel =1;
     case BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT
         t_human_withdraw = 0.5;
@@ -55,7 +55,7 @@ switch show_mode
         t_human_withdraw = 0.5;
         comp_sel =2;
     case REST_WISH_WITH_OPPOSITE_HUMAN_INPUT
-        t_human_withdraw = 0.5;
+        t_human_withdraw = 1.2;
         comp_sel =1;
     case CHANGE_WISHES
         t_human_withdraw = 5;
@@ -140,7 +140,7 @@ for k = 1:nSteps-1
     good_man_for_ball_should_output = obsModel.getObservation(x_true,'nonoise');
     good_man_speed_angle=good_man_for_ball_should_output(1:2);
     v_man = [good_man_speed_angle(1)*cos(good_man_speed_angle(2));
-                good_man_speed_angle(1)*sin(good_man_speed_angle(2))];
+                good_man_speed_angle(1)*sin(good_man_speed_angle(2))]/3;
     
     if use_bad_man_speed
         if comp_sel ==1
@@ -323,7 +323,9 @@ for k = 1:nSteps-1
     end
 %     plot(mu_save{1}(3,k),mu_save{1}(4,k),'bo')
     plot(mu_save{1}(1,k),mu_save{1}(2,k),'b*')
-    plot(mu_save{2}(1,k),mu_save{2}(2,k),'r*')
+    if k==1
+        plot(mu_save{2}(1,k),mu_save{2}(2,k),'r*')
+    end
     plot(z_human_react(3),z_human_react(4),'m+')
     plot([last_bk(43),b_k(43)],[last_bk(44),b_k(44)],'-k','Linewidth',2.0)
     plot([last_bk(49),b_k(49)],[last_bk(50),b_k(50)],'-k','Linewidth',2.0)
@@ -394,11 +396,12 @@ for k = 1:nSteps-1
 %     plot(time_past + motionModel.dt*(k-1),u(9),'b.',time_past + motionModel.dt*(k-1),u(10),'r.')
 %     hold on
     pause(0.02);
+
 end
 if time_past<0.01
     figure(fig_w+1)
 %     subplot(2,2,1)
-    axis([0,3,-3,3])
+    axis([0,3,-5,5])
     title('Unterstützung Plattform aus Summe der Assistenten')
     xlabel('t(s)')
     ylabel('vel(m/s)')
@@ -442,28 +445,31 @@ hold off
     xlabel('x(m)')
     ylabel('y(m)')
     grid on
-    axis([0,10,-2,5])
+    axis([2,10,-2,5])
+    
+    [x_m,y_m] = meshgrid(1:0.5:10,-2:0.5:5);
+    X=1:0.5:10;
+    Y=-2:0.5:5;
+    Z = zeros(size(x_m,1),size(x_m,2));
+    for i=1:length(X)
+        for j=1:length(Y)
+            ZZ = obsModel.getObservationNoiseJacobian([0;0;X(i);Y(j)]);
+            Z(j,i) = ZZ(end);
+    %         1/(1/norm([X(i);Y(j)]-[7;0])^2 + 1/norm([X(i);Y(j)]-[3;1])^2 + 1);
+        end
+    end
+    figure(fig_xy)
+    surf(x_m,y_m,Z-max(max(Z))-0.5),shading flat
+    
     legend('wahre Plattform','Ziel A','Ziel B','Messung Plattform','Assistenten')
-    hold off
+%     hold off
     figure(fig_w)
     title('Gewicht der Wünsche')
     xlabel('t(s)')
     ylabel('Gewicht')
     legend('A','B')
     hold off
-[x_m,y_m] = meshgrid(1:0.5:10,-2:0.5:5);
-X=1:0.5:10;
-Y=-2:0.5:5;
-Z = zeros(size(x_m,1),size(x_m,2));
-for i=1:length(X)
-    for j=1:length(Y)
-        ZZ = obsModel.getObservationNoiseJacobian([0;0;X(i);Y(j)]);
-        Z(j,i) = ZZ(end);
-%         1/(1/norm([X(i);Y(j)]-[7;0])^2 + 1/norm([X(i);Y(j)]-[3;1])^2 + 1);
-    end
-end
-figure(fig_xy)
-% surf(x_m,y_m,Z-max(max(Z))-0.5)
+
 % legend('wahre Plattform','Ziel A','Ziel B','Messung der Plattform','Belief A','Belief B')
 end
 end

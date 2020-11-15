@@ -29,11 +29,11 @@ BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT = 6;
 REST_WISH_WITHOUT_HUMAN_INPUT = 7;
 REST_WISH_WITH_HUMAN_INPUT = 8;
 REST_WISH_WITH_OPPOSITE_HUMAN_INPUT = 9;
-show_mode = EQUAL_WEIGHT_TO_REST_FEEDBACK;
+show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
 switch show_mode
     case EQUAL_WEIGHT_BALANCING
-        weight_1 = 0.5;
-        weight_2 = 0.5;
+        weight_1 = 0.499;
+        weight_2 = 0.501;
     case EQUAL_WEIGHT_TO_BALL_FEEDBACK
         weight_1 = 0.5;
         weight_2 = 0.5;
@@ -60,11 +60,16 @@ switch show_mode
         weight_2 = 0.99;
 end
 %% tuned parameters
+knowledge_gen=true;
 % mu_1 = [8.5, 0.0, 5.0, 0.0]';
 % mu_2 = [3, 1.0, 5.0, 0.0]';
 % sig_1 = diag([0.01, 0.01, 0.1, 0.1]);%sigma
 % sig_2 = diag([0.01, 0.01, 0.1, 0.1]);
-mu_a1 = [8.5, 4.0, 5.0, 0.0]';
+if knowledge_gen
+    mu_a1 = [8.5, 0.0, 5.0, 0.0]';
+else
+    mu_a1 = [8.5, 4.0, 5.0, 0.0]';
+end
 mu_a2 = [3, 1, 5.0, 0.0]';
 mu_e = [6.0, 4]';
 % if show_mode>=4 &&show_mode<=6
@@ -101,9 +106,11 @@ update_steps = length(tspan_btw_updates);
 simulation_steps = simulation_time/mpc_update_period;
 
 mm = HumanMind(dt); % motion model
-
-om = HumanReactionModel_homo(); % observation model
-
+if knowledge_gen
+    om = HumanReactionModel(); % observation model
+else
+    om = HumanReactionModel_homo();
+end
 %% Setup start and goal/target state
 
 b0=[mu_a1;sig_a1(:);weight_1;mu_a2;sig_a2(:);weight_2;mu_b;sig_b(:);mu_c;sig_c(:);mu_d;sig_d(:);mu_e;sig_e(:)];
@@ -120,7 +127,7 @@ full_DDP = false;
 DYNCST  = @(b,u,i) beliefDynCost_assisting_robot_centralized(b,u,horizonSteps,full_DDP,mm,om);
 % control constraints are optional
 Op.lims  = [-0.0 0.0;%target A x
-    -4.0 4.0;%target A y
+    -2.0 2.0;%target A y
     -0.0  0.0;%target B x
     -0.0  0.0;%target B y
     -4.0 4.0;%assist 2 x

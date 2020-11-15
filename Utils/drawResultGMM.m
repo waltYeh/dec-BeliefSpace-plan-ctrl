@@ -15,7 +15,7 @@ x = b(1:stDim,:);
 
 pointsToPlot = [x(3,:) NaN;x(4,:) NaN];
 
-Ne = 50;% number of points in ellipse drawing
+Ne = 20;% number of points in ellipse drawing
 inc= 2*pi/Ne;
 phi= 0:inc:2*pi;
 sigmaScale = 3;

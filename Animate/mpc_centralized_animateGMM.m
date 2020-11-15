@@ -287,31 +287,7 @@ for k = 1:nSteps-1
     x_true_final = x_true;
 %     % final belief
     b_f = b_k;
-%     b_f = zeros(component_bDim*components_amount,1); % current belief
-%     for i_comp=1:components_amount
-%         b_f((i_comp-1)*component_bDim+1:(i_comp-1)*component_bDim+component_stDim)=mu_platf{i_comp};
-%         b_f((i_comp-1)*component_bDim+component_stDim+1:(i_comp-1)*component_bDim+component_stDim+component_stDim*component_stDim)=sig_platf{i_comp};
-%         b_f((i_comp)*component_bDim)=weight(i_comp);
-%     end
-    
-%     roboTraj(:,k) = x;
-%     
-%     trCov_vs_time(k+1) = trace(P);
-%     
-%     % if robot is in collision
-%     if stateValidityChecker(x) == 0
-%         figure(figh);
-%         plot(roboTraj(1,:),roboTraj(2,:),'g', 'LineWidth',2);
-%         drawnow;
-%         warning('Robot collided :( ');
-%         failed = 1;
-%         return;
-%     end
 
-%     delete(rh)
-%     rh = fill(mu{comp_sel}(3) + robotDisk(1,:),{comp_sel}(4) + robotDisk(2,:),'b');
-%     drawResult(plotFn,b,motionModel.stDim);
-%     drawnow;
     figure(fig_xy)
 %     plot(x_save(1,k),x_save(2,k),'+')
     hold on
@@ -336,29 +312,7 @@ for k = 1:nSteps-1
     plot(pointsToPlot(1,:),pointsToPlot(2,:),'b')
     pointsToPlot = drawResultGMM([mu_save{2}(:,k); sig_save{2}(:,k)], motionModel.stDim);
     plot(pointsToPlot(1,:),pointsToPlot(2,:),'r')
-%     pointsToPlot = drawResult([b_assist1_next(1:2); b_assist1_next(3:6)], 2);
-%     plot(pointsToPlot(1,:),pointsToPlot(2,:),'k')
-%     pointsToPlot = drawResult([b_assist2_next(1:2); b_assist2_next(3:6)], 2);
-%     plot(pointsToPlot(1,:),pointsToPlot(2,:),'k')
-%     pointsToPlot = drawResult([b_assist3_next(1:2); b_assist3_next(3:6)], 2);
-%     plot(pointsToPlot(1,:),pointsToPlot(2,:),'k')
-%     pointsToPlot = drawResult([b_assist4_next(1:2); b_assist4_next(3:6)], 2);
-%     plot(pointsToPlot(1,:),pointsToPlot(2,:),'k')
-    
-%     [x_nom, P_nom, w_nom] = b2xPw(b_nom(:,k), component_stDim, components_amount);
-%     plot(x_save(1,k),x_save(2,k),'.')
-%     hold on
-%     axis equal
-%     plot(x_nom{1}(3),x_nom{1}(4),'b+')
-%     plot(x_nom{2}(3),x_nom{2}(4),'r+')
-% %     plot(mu_save{1}(3,k),mu_save{1}(4,k),'bo')
-%     plot(x_nom{1}(1),x_nom{1}(2),'bo')
-%     plot(x_nom{2}(1),x_nom{2}(2),'ro')
-%     
-%     pointsToPlot = drawResultGMM(b_nom(1:20,k), motionModel.stDim);
-%     plot(pointsToPlot(1,:),pointsToPlot(2,:),'b')
-%     pointsToPlot = drawResultGMM(b_nom(22:41,k), motionModel.stDim);
-%     plot(pointsToPlot(1,:),pointsToPlot(2,:),'r')
+
     figure(fig_w)
     plot([motionModel.dt*(k-1),motionModel.dt*(k)],[weight_save{1}(k),weight_save{1}(k+1)],'-b','Linewidth',2.0)
     hold on
@@ -386,15 +340,7 @@ for k = 1:nSteps-1
     figure(fig_w+3)
     plot([time_past + motionModel.dt*(k-1),time_past + motionModel.dt*(k)],[u(2),u(2)],'r-','Linewidth',2.0)
     hold on
-%     subplot(2,2,2)
-%     plot(time_past + motionModel.dt*(k-1),u(5),'b.',time_past + motionModel.dt*(k-1),u(6),'r.')
-%     hold on
-% %     subplot(2,2,3)
-%     plot(time_past + motionModel.dt*(k-1),u(7),'b.',time_past + motionModel.dt*(k-1),u(8),'r.')
-%     hold on
-% %     subplot(2,2,4)
-%     plot(time_past + motionModel.dt*(k-1),u(9),'b.',time_past + motionModel.dt*(k-1),u(10),'r.')
-%     hold on
+
     pause(0.02);
 
 end

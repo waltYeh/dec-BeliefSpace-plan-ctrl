@@ -46,7 +46,7 @@ for reweightedstep = 1 : reweighted_Max_Iter
                     norm_Fiijj=norm_Fiijj+ norm( F( mm*(ii-1)+1 : mm*ii, ...
                     nn*(jj-1)+1 : nn*jj ,k),'fro' );
                 end
-                if ii>4&&((jj>0&&jj<=20)||(jj>21&&jj<=41))
+                if ii>4&&((jj>4&&jj<=20)||(jj>25&&jj<=41))
 %                 if ii>4&&((jj==21)||(jj==42))
                     norm_Fiijj=0;
                 end

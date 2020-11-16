@@ -29,7 +29,7 @@ BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT = 6;
 REST_WISH_WITHOUT_HUMAN_INPUT = 7;
 REST_WISH_WITH_HUMAN_INPUT = 8;
 REST_WISH_WITH_OPPOSITE_HUMAN_INPUT = 9;
-show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
+show_mode = EQUAL_WEIGHT_TO_REST_FEEDBACK;
 switch show_mode
     case EQUAL_WEIGHT_BALANCING
         weight_1 = 0.499;
@@ -170,7 +170,7 @@ for i_sim = 1:simulation_steps
     assignin('base', 'mm', mm)
     assignin('base', 'om', om)
 %     assignin('base', 'x_true', x_true)
-    [didCollide, b0_next, x_true_final] = mpc_centralized_animateGMM(9,10,b0, b_nom, ...
+    [didCollide, b0_next, x_true_final] = mpc_centralized_animateGMM(31,32,b0, b_nom, ...
         u_nom, L_opt, update_steps,time_past, mm, om,Op.lims, show_mode);
     b0_next(1:2) = x_true_final(1:2);
 end

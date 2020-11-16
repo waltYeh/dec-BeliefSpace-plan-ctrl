@@ -82,6 +82,8 @@ components_amount = 2;%length(b0)/component_bDim;
 mu_save = cell(components_amount,1);
 sig_save = cell(components_amount,1);
 weight_save = cell(components_amount,1);
+b_save=zeros(size(b_nom));
+z_save = zeros(2,nSteps-1);
 x_save = [];
 x_true = [];
 [mu_platf, sig_platf, weight] = b2xPw(b0(1:42), component_stDim, components_amount);
@@ -104,6 +106,7 @@ end
 
 failed = 0;
 b_k=b0;
+b_save(:,1)=b0;
 for k = 1:nSteps-1
 
 %     b = zeros(component_bDim*components_amount,1); % current belief
@@ -140,7 +143,7 @@ for k = 1:nSteps-1
     good_man_for_ball_should_output = obsModel.getObservation(x_true,'nonoise');
     good_man_speed_angle=good_man_for_ball_should_output(1:2);
     v_man = [good_man_speed_angle(1)*cos(good_man_speed_angle(2));
-                good_man_speed_angle(1)*sin(good_man_speed_angle(2))]/3;
+                good_man_speed_angle(1)*sin(good_man_speed_angle(2))];
     
     if use_bad_man_speed
         if comp_sel ==1
@@ -186,6 +189,7 @@ for k = 1:nSteps-1
     else
         z_human_react(1:2)=[speed_man;direction_man] + chol(obsModel.R_speed)' * randn(2,1);
     end
+    z_save(:,k)=z_human_react(3:4);
 %     z_human_react(1:2)=[speed_man;direction_man] + chol(obsModel.R_speed)' * randn(2,1);
     z_assists = zeros((n_assist +1)* dim_xy,1);
     for i=1:n_assist+1
@@ -276,6 +280,7 @@ for k = 1:nSteps-1
         ,simpleMotionModel,simpleObsModel);
     last_bk=b_k;
     b_k = [b_plattform;b_assist1_next;b_assist2_next;b_assist3_next;b_assist4_next];
+    b_save(:,k+1)=b_k;
 %% now for save
     for i_comp = 1 : components_amount
         mu_save{i_comp}(:,k+1) = mu_platf{i_comp};
@@ -288,30 +293,7 @@ for k = 1:nSteps-1
 %     % final belief
     b_f = b_k;
 
-    figure(fig_xy)
-%     plot(x_save(1,k),x_save(2,k),'+')
-    hold on
-    axis equal
-    if k>1
-        plot([x_save(3,k-1),x_save(3,k)],[x_save(4,k-1),x_save(4,k)],'m-','Linewidth',2.0)
-    else
-        plot([x_save(3,k),x_save(3,k)],[x_save(4,k),x_save(4,k)],'m-','Linewidth',2.0)
-    end
-%     plot(mu_save{1}(3,k),mu_save{1}(4,k),'bo')
-    plot(mu_save{1}(1,k),mu_save{1}(2,k),'b*')
-    if k==1
-        plot(mu_save{2}(1,k),mu_save{2}(2,k),'r*')
-    end
-    plot(z_human_react(3),z_human_react(4),'m+')
-    plot([last_bk(43),b_k(43)],[last_bk(44),b_k(44)],'-k','Linewidth',2.0)
-    plot([last_bk(49),b_k(49)],[last_bk(50),b_k(50)],'-k','Linewidth',2.0)
-    plot([last_bk(55),b_k(55)],[last_bk(56),b_k(56)],'-k','Linewidth',2.0)
-    plot([last_bk(61),b_k(61)],[last_bk(62),b_k(62)],'-k','Linewidth',2.0)
-
-    pointsToPlot = drawResultGMM([mu_save{1}(:,k); sig_save{1}(:,k)], motionModel.stDim);
-    plot(pointsToPlot(1,:),pointsToPlot(2,:),'b')
-    pointsToPlot = drawResultGMM([mu_save{2}(:,k); sig_save{2}(:,k)], motionModel.stDim);
-    plot(pointsToPlot(1,:),pointsToPlot(2,:),'r')
+    
 
     figure(fig_w)
     plot([motionModel.dt*(k-1),motionModel.dt*(k)],[weight_save{1}(k),weight_save{1}(k+1)],'-b','Linewidth',2.0)
@@ -387,6 +369,24 @@ hold off
     % drawnow;
     % failed = 0;
     figure(fig_xy)
+    hold on
+    axis equal
+    plot(x_save(3,:),x_save(4,:),'m-','Linewidth',2.0)
+%     plot(mu_save{1}(3,k),mu_save{1}(4,k),'bo')
+    plot(mu_save{1}(1,:),mu_save{1}(2,:),'b*')
+    plot(mu_save{2}(1,1),mu_save{2}(2,1),'r*')
+
+    plot(z_save(1,:),z_save(2,:),'m+')
+    plot(b_save(43,:),b_save(44,:),'-k','Linewidth',2.0)
+    plot(b_save(49,:),b_save(50,:),'-k','Linewidth',2.0)
+    plot(b_save(55,:),b_save(56,:),'-k','Linewidth',2.0)
+    plot(b_save(61,:),b_save(62,:),'-k','Linewidth',2.0)
+    for k=1:nSteps
+        pointsToPlot = drawResultGMM([mu_save{1}(:,k); sig_save{1}(:,k)], motionModel.stDim);
+        plot(pointsToPlot(1,:),pointsToPlot(2,:),'b')
+        pointsToPlot = drawResultGMM([mu_save{2}(:,k); sig_save{2}(:,k)], motionModel.stDim);
+        plot(pointsToPlot(1,:),pointsToPlot(2,:),'r')
+    end
 %     title('Bewegungen von Plattform, Ziel A und Ziel B')
     xlabel('x(m)')
     ylabel('y(m)')

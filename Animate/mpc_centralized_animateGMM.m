@@ -337,22 +337,22 @@ if time_past<0.01
 %     legend('x','y','Band')
     grid
     hold off
-figure(fig_w+2)
-axis([0,3,-3,3])
-title('Mensch selbst')
-xlabel('t(s)')
-ylabel('vel(m/s)')
-legend('x','y')
-grid
-hold off
-figure(fig_w+3)
-axis([0,3,-3,3])
-title('Bewegung des Ziels A')
-xlabel('t(s)')
-ylabel('vel(m/s)')
-legend('y')
-grid
-hold off
+    figure(fig_w+2)
+    axis([0,3,-3,3])
+    title('Mensch selbst')
+    xlabel('t(s)')
+    ylabel('vel(m/s)')
+    legend('x','y')
+    grid
+    hold off
+    figure(fig_w+3)
+    axis([0,3,-3,3])
+    title('Bewegung des Ziels A')
+    xlabel('t(s)')
+    ylabel('vel(m/s)')
+    legend('y')
+    grid
+    hold off
 
     % figure(1)
     % plot(x_save(1,:),x_save(2,:),'.')

@@ -1,7 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Demo for a 2D belief space planning scenario 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function run_admm_centralized()
+function run_centralized()
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Demo for a 2D belief space planning scenario with a
 % point robot whose body is modeled as a disk
@@ -29,7 +29,7 @@ BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT = 6;
 REST_WISH_WITHOUT_HUMAN_INPUT = 7;
 REST_WISH_WITH_HUMAN_INPUT = 8;
 REST_WISH_WITH_OPPOSITE_HUMAN_INPUT = 9;
-show_mode = EQUAL_WEIGHT_TO_REST_FEEDBACK;
+show_mode = REST_WISH_WITHOUT_HUMAN_INPUT;
 switch show_mode
     case EQUAL_WEIGHT_BALANCING
         weight_1 = 0.499;
@@ -41,8 +41,8 @@ switch show_mode
         weight_1 = 0.5;
         weight_2 = 0.5;        
     case BALL_WISH_WITHOUT_HUMAN_INPUT
-        weight_1 = 0.95;
-        weight_2 = 0.05;
+        weight_1 = 0.99;
+        weight_2 = 0.01;
     case BALL_WISH_WITH_HUMAN_INPUT
         weight_1 = 0.95;
         weight_2 = 0.05;

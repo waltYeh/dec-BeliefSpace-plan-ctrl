@@ -53,13 +53,13 @@ u_plattform = u(1:4,:);
 u_assists = u(5:end);
 knowledge_gen=true;
 if knowledge_gen
-    R_t = diag([0.2, 10.0, 0.2, 0.2]);%,0.1,0.1]); % penalize control effort
+    R_t = diag([0.2, 4.0, 0.2, 0.2])*10;%,0.1,0.1]); % penalize control effort
     R_assists_t = diag([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.02, 0.02]);
     Qerr_t = 0.0*eye(2);
-    Qerr_l = 25*L*eye(2); %25 penalize terminal error
+    Qerr_l = 100*L*eye(2); %25 penalize terminal error
     Q_formation = 0*eye(2);
     Qcov_t = 0*eye(4);
-    Qcov_l = 5e8*eye(4); % penalize terminal covar
+    Qcov_l = 10e8*eye(4); % penalize terminal covar
     Qcov_l(1,1) = 0;
     Qcov_l(2,2) = 0;
     w_cc = 1.0; % penalize collision

@@ -210,17 +210,16 @@ if backPassDone
 
         if iter>1&&mod(iter,5)==0
             if idx<5
-                figure(4+50)
-                subplot(2,2,idx)
-                horizonSteps = size(x{idx},2);
-                plot(1:horizonSteps,squeeze(costnew_origin(:,:,:,1)),'-')
-                hold on
-                plot(1:horizonSteps,squeeze(costnew(:,:,:,1)),'--')
-        %         plot(1:horizonSteps,squeeze(costnew(:,:,:,8)))
-
-                % plot(1:horizonSteps-1,squeeze(l(2,:)),'r')
-                % hold on
-                title(strcat('cost of agent ',num2str(idx)))
+%                 figure(4+50)
+%                 subplot(2,2,idx)
+%                 horizonSteps = size(x{idx},2);
+%                 plot(1:horizonSteps,squeeze(costnew_origin(:,:,:,1)),'-')
+%                 hold on
+%                 plot(1:horizonSteps,squeeze(costnew(:,:,:,1)),'--')
+% 
+%                 % plot(1:horizonSteps-1,squeeze(l(2,:)),'r')
+%                 % hold on
+%                 title(strcat('cost of agent ',num2str(idx)))
             end
         end
 % figure(2+100)
@@ -344,10 +343,10 @@ else % no cost improvement
     end
 end
 if idx<5
-    figure(31)
-    subplot(2,2,idx)
-    plot(iter,sum(cost(:)),'.')
-    hold on
+%     figure(31)
+%     subplot(2,2,idx)
+%     plot(iter,sum(cost(:)),'.')
+%     hold on
 end
 
 % if ~isempty(lambda_last)

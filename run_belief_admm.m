@@ -37,8 +37,8 @@ switch show_mode
         weight_a1 = 0.99;
         weight_a2 = 0.01;
     case BALL_WISH_WITH_HUMAN_INPUT
-        weight_a1 = 0.95;
-        weight_a2 = 0.05;
+        weight_a1 = 0.99;
+        weight_a2 = 0.01;
     case BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT
         weight_a1 = 0.95;
         weight_a2 = 0.05;
@@ -46,16 +46,16 @@ switch show_mode
         weight_a1 = 0.01;
         weight_a2 = 0.99;
     case REST_WISH_WITH_HUMAN_INPUT
-        weight_a1 = 0.05;
-        weight_a2 = 0.95;
+        weight_a1 = 0.001;
+        weight_a2 = 0.999;
     case REST_WISH_WITH_OPPOSITE_HUMAN_INPUT
         weight_a1 = 0.05;
         weight_a2 = 0.95;
 end
-complete_graph = false;
+complete_graph = true;
 %% tuned parameters
 mu_a1 = [8.5, 0.0, 5.0, 0.0]';
-mu_a2 = [3, 0.8, 5.0, 0.0]';
+mu_a2 = [3, 1, 5.0, 0.0]';
 % mu_b = [4, -1.0]';
 % mu_c = [4., 1.0]';
 % mu_d = [6.0, 1.0]';
@@ -63,8 +63,8 @@ mu_b = [5.2, -1.3]';
 mu_c = [4.5, 1.5]';
 mu_d = [7.0, 1.5]';
 mu_e = [6.0, 4]';
-sig_a1 = diag([0.01, 0.01, 0.1, 0.1]);%sigma
-sig_a2 = diag([0.01, 0.01, 0.1, 0.1]);
+sig_a1 = diag([0.01, 0.01, 0.08, 0.08]);%sigma
+sig_a2 = diag([0.01, 0.01, 0.08, 0.08]);
 sig_b = diag([0.02, 0.02]);%sigma
 sig_c = diag([0.02, 0.02]);
 sig_d = diag([0.02, 0.02]);
@@ -272,8 +272,8 @@ for i_sim = 1:simulation_steps
     lam_d = zeros(size(interfDiGr.Nodes,1)-2,Dim_lam_in_xy,horizonSteps);
     lam_up=zeros(1,Dim_lam_in_xy,horizonSteps-1);
     lam_c = zeros(1,Dim_lam_in_xy,horizonSteps);
-    tic
-    max_iter = 35;
+    total_t = 0;
+    max_iter = 15;
     for iter = 1:max_iter
         if iter == 1
             for i = 2:size(interfDiGr.Nodes,1)
@@ -282,13 +282,13 @@ for i_sim = 1:simulation_steps
                     b{i,j} = [];
                 end
                 cost{i} = [];
-                agents{i}.rho.rho_d = 0.0;
+                agents{i}.rho.rho_d = 0.1;
                 agents{i}.rho.rho_up = 0.05;
-                agents{i}.rho.rho_c = 0;
+                agents{i}.rho.rho_c = 50;
             end
-            agents{1}.rho.rho_d = 0.0;
+            agents{1}.rho.rho_d = 0.1;
             agents{1}.rho.rho_up =0.05;
-            agents{1}.rho.rho_c = 0;
+            agents{1}.rho.rho_c = 50;
 %         elseif iter <= 3
 %             for i = 1:size(interfDiGr.Nodes,1)
 %                 agents{i}.rho_d = 0;
@@ -301,19 +301,22 @@ for i_sim = 1:simulation_steps
 %             end
         else
             for i = 2:size(interfDiGr.Nodes,1)
-                agents{i}.rho.rho_d = 0.0;
+                agents{i}.rho.rho_d = 0.1;
                 agents{i}.rho.rho_up = 0.05;
-                agents{i}.rho.rho_c = 0;
+                agents{i}.rho.rho_c = 50;
             end
-            agents{1}.rho.rho_d = 0.0;
+            agents{1}.rho.rho_d = 0.1;
             agents{1}.rho.rho_up =0.05;
-            agents{1}.rho.rho_c = 0;
+            agents{1}.rho.rho_c = 50;
         end
         
         for i = 1:size(interfDiGr.Nodes,1)
             if 1%finished{i}~=true
                 if i==1
                     Op.tolFun = 0.1;
+                    tic
+                elseif i==2
+                    total_t = total_t+toc;
                 else
                     Op.tolFun = 0.1;
                 end
@@ -368,24 +371,24 @@ for i_sim = 1:simulation_steps
 %             end
 %         end
         for i=1:size(interfDiGr.Nodes,1)
-            if i==2
+            if i==1
                 % all other agents should know the plattform, so they
                 % controls the formation or the choice of target
                 for j=1:size(interfDiGr.Nodes,1)
                     if complete_graph
 %                         a=0
 %                     else
-                        u{j,2} = u{i,2};
+                        u{j,1} = u{i,1};
                     end
                 end
             elseif i<5
                 %the plattform knows others because the plattform 
                 %is in charge of the u of assist 2,3,4
-                u{2,i} = u{i,i};
+                u{1,i} = u{i,i};
                 if complete_graph
 %                     a=0
 %                 else
-                    u{1,i} = u{i,i};
+                    u{2,i} = u{i,i};
                     u{3,i} = u{i,i};
                     u{4,i} = u{i,i};
                 end
@@ -545,7 +548,7 @@ for i_sim = 1:simulation_steps
 %         [~, ~, ~] = animateAdmm(interfDiGr,agents, b0, x_true,update_steps,time_past, show_mode,false);
 
     end%iLQG iter
-    total_t = toc;
+    
     fprintf(['\n'...
         'iterations:   %-3d\n'...
         'time / iter:  %-5.0f ms\n'...
@@ -584,7 +587,7 @@ for i_sim = 1:simulation_steps
     for i = 1:size(interfDiGr.Nodes,1)
         agents{i}.ctrl_ptr = 1;
     end
-    [~, b0_next, x_true_next] = animateBeliefAdmm(109,110,interfDiGr,agents, b0, x_true,update_steps,time_past, show_mode,true);
+    [~, b0_next, x_true_next] = animateBeliefAdmm(209,210,interfDiGr,agents, b0, x_true,update_steps,time_past, show_mode,true);
 %     b0{1}(1:2) = x_true_final(1:2);
     b0 = b0_next;
     x_true = x_true_next;
@@ -626,7 +629,7 @@ function [lam_d_new,lam_up_new,lam_c_new,formation_residue,dyncouple_residue,com
         x_goals = zeros(2,components_amount,horizonSteps);
         edge_row = i-1;
         for k=1:horizonSteps
-            [x_platf_comp, P_platf, w] = b2xPw(b{1,1}(:,k), stDim_platf, components_amount);
+            [x_platf_comp, P_platf, w] = b2xPw(b{i,1}(:,k), stDim_platf, components_amount);
 
             x_platf_weighted = zeros(2,components_amount);
             for j=1:components_amount
@@ -636,12 +639,12 @@ function [lam_d_new,lam_up_new,lam_c_new,formation_residue,dyncouple_residue,com
             w1_index = 21;
             w2_index = 42;
             formation_residue(i-1,:,k) = ...
-                (b{1,i}(1:stDim,k)-x_platf(:,k)-(D.Edges.nom_formation_2(edge_row,:))')*w(2)^2 ...
-            +(b{1,i}(1:stDim,k)-x_platf(:,k)-(D.Edges.nom_formation_1(edge_row,:))')*w(1)^2;
+                (b{i,i}(1:stDim,k)-x_platf(:,k)-(D.Edges.nom_formation_2(edge_row,:))')*w(2)^2 ...
+            +(b{i,i}(1:stDim,k)-x_platf(:,k)-(D.Edges.nom_formation_1(edge_row,:))')*w(1)^2;
         end
     end
     for k=1:horizonSteps-1
-        dyncouple_residue(1,:,k) = 3*u{2,1}(5:6,k)-u{2,2}(:,k)-u{2,3}(:,k)-u{2,4}(:,k);
+        dyncouple_residue(1,:,k) = 3*u{1,1}(5:6,k)-u{1,2}(:,k)-u{1,3}(:,k)-u{1,4}(:,k);
     end
 %     for k=1:horizonSteps
 %         

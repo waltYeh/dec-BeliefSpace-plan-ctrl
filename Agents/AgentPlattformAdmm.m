@@ -198,6 +198,9 @@ classdef AgentPlattformAdmm < AgentBase
             if abs(z(1))<0.25
                 weight = last_w;
             end
+            if abs(z(2))==0
+                weight = last_w;
+            end
             b_next = xPw2b(mu, sig, weight, obj.component_stDim, obj.components_amount);
         end
     end

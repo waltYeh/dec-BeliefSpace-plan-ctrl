@@ -1,5 +1,5 @@
-figure(209)
-matlab2tikz('./alle.tex', 'width', '0.9\textwidth', 'height', '');
+figure(4)
+matlab2tikz('./game_ball_half_xy.tex', 'width', '0.9\textwidth', 'height', '');
 figure(210)
 matlab2tikz('./admm_rest_half_w.tex', 'width', '0.9\textwidth', 'height', '');
 figure(211)

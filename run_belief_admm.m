@@ -56,15 +56,15 @@ complete_graph = true;
 %% tuned parameters
 mu_a1 = [8.5, 0.0, 5.0, 0.0]';
 mu_a2 = [3, 1, 5.0, 0.0]';
-% mu_b = [4, -1.0]';
-% mu_c = [4., 1.0]';
-% mu_d = [6.0, 1.0]';
-mu_b = [5.2, -1.3]';
-mu_c = [4.5, 1.5]';
-mu_d = [7.0, 1.5]';
+mu_b = [5, -1.0]';
+mu_c = [4., 1.0]';
+mu_d = [6.0, 1.0]';
+% mu_b = [5.2, -1.3]';
+% mu_c = [4.5, 1.5]';
+% mu_d = [7.0, 1.5]';
 mu_e = [6.0, 4]';
-sig_a1 = diag([0.01, 0.01, 0.08, 0.08]);%sigma
-sig_a2 = diag([0.01, 0.01, 0.08, 0.08]);
+sig_a1 = diag([0.01, 0.01, 0.05, 0.05]);%sigma
+sig_a2 = diag([0.01, 0.01, 0.05, 0.05]);
 sig_b = diag([0.02, 0.02]);%sigma
 sig_c = diag([0.02, 0.02]);
 sig_d = diag([0.02, 0.02]);
@@ -273,7 +273,7 @@ for i_sim = 1:simulation_steps
     lam_up=zeros(1,Dim_lam_in_xy,horizonSteps-1);
     lam_c = zeros(1,Dim_lam_in_xy,horizonSteps);
     total_t = 0;
-    max_iter = 15;
+    max_iter = 34;
     for iter = 1:max_iter
         if iter == 1
             for i = 2:size(interfDiGr.Nodes,1)
@@ -282,13 +282,13 @@ for i_sim = 1:simulation_steps
                     b{i,j} = [];
                 end
                 cost{i} = [];
-                agents{i}.rho.rho_d = 0.1;
-                agents{i}.rho.rho_up = 0.05;
-                agents{i}.rho.rho_c = 50;
+                agents{i}.rho.rho_d = 0.0;
+                agents{i}.rho.rho_up = 0.03;
+                agents{i}.rho.rho_c = 30;
             end
-            agents{1}.rho.rho_d = 0.1;
-            agents{1}.rho.rho_up =0.05;
-            agents{1}.rho.rho_c = 50;
+            agents{1}.rho.rho_d = 0.0;
+            agents{1}.rho.rho_up =0.03;
+            agents{1}.rho.rho_c = 30;
 %         elseif iter <= 3
 %             for i = 1:size(interfDiGr.Nodes,1)
 %                 agents{i}.rho_d = 0;
@@ -301,15 +301,19 @@ for i_sim = 1:simulation_steps
 %             end
         else
             for i = 2:size(interfDiGr.Nodes,1)
-                agents{i}.rho.rho_d = 0.1;
-                agents{i}.rho.rho_up = 0.05;
-                agents{i}.rho.rho_c = 50;
+                agents{i}.rho.rho_d = 0.0;
+                agents{i}.rho.rho_up = 0.03;
+                agents{i}.rho.rho_c = 30;
             end
-            agents{1}.rho.rho_d = 0.1;
-            agents{1}.rho.rho_up =0.05;
-            agents{1}.rho.rho_c = 50;
+            agents{1}.rho.rho_d = 0.0;
+            agents{1}.rho.rho_up =0.03;
+            agents{1}.rho.rho_c = 30;
         end
-        
+%         if iter==1
+%             go_all_agent=size(interfDiGr.Nodes,1);
+%         else
+%             go_all_agent=1;
+%         end
         for i = 1:size(interfDiGr.Nodes,1)
             if 1%finished{i}~=true
                 if i==1
@@ -587,7 +591,7 @@ for i_sim = 1:simulation_steps
     for i = 1:size(interfDiGr.Nodes,1)
         agents{i}.ctrl_ptr = 1;
     end
-    [~, b0_next, x_true_next] = animateBeliefAdmm(209,210,interfDiGr,agents, b0, x_true,update_steps,time_past, show_mode,true);
+    [~, b0_next, x_true_next] = animateBeliefAdmm(209,210,interfDiGr,agents, b0_admm, x_true,update_steps,time_past, show_mode,true);
 %     b0{1}(1:2) = x_true_final(1:2);
     b0 = b0_next;
     x_true = x_true_next;

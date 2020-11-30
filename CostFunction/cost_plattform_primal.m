@@ -107,7 +107,7 @@ for i_comp=1:components_amount
         ic = trace(P_idx{i_comp}*Qcov_l*P_idx{i_comp});
     else
         uc = u{idx}'*R_t*u{idx};
-        sc = delta_x'*Qerr_t*delta_x;
+%         sc = delta_x'*Qerr_t*delta_x;
     end
     component_cost(i_comp) = sc + ic + uc + w_cc*cc;
     

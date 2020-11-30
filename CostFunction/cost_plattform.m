@@ -71,8 +71,8 @@ stDim = 4;
 
 % u{idx}(:,final)  = 0;
 R_t = diag([0.2, 4.0, 0.2, 0.2,0.1,0.1])*10;
+% R_t = diag([0.2, 4.0, 0.2, 0.2,0,0])*10;
 Qerr_l = 100*L*eye(2);
-Qerr_t = 0.0*eye(2);
 Qcov_l = 10e8*eye(4); % penalize terminal covar
 Qcov_l(1,1) = 0;
 Qcov_l(2,2) = 0;
@@ -81,8 +81,7 @@ cost = 0;
 for i_comp=1:components_amount
     delta_x = x_idx{i_comp}(1:2)-x_idx{i_comp}(3:4);
     % collision Cost
-    cc = 0;
-    w_cc = 1.0;
+   
     % State Cost
     sc = 0;
     % information cost
@@ -94,9 +93,9 @@ for i_comp=1:components_amount
         ic = trace(P_idx{i_comp}*Qcov_l*P_idx{i_comp});
     else
         uc = u'*R_t*u;
-        sc = delta_x'*Qerr_t*delta_x;
+%         sc = delta_x'*Qerr_t*delta_x;
     end
-    component_cost(i_comp) = sc + ic + uc + w_cc*cc;
+    component_cost(i_comp) = sc + ic + uc ;
     
     cost = cost + component_cost(i_comp) * w(i_comp)^2;
 end

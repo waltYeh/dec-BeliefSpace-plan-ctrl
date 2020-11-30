@@ -107,7 +107,7 @@ ic = 0;
 % control cost
 uc = 0;
 
-rii_control = 0.1;
+rii_control = 1;
 if any(final)
     
 else

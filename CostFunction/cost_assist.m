@@ -78,8 +78,7 @@ for d = 1:stDim
 end
 % u{idx}(:,final)  = 0;
 % ctrlDim = size(u{idx},1);
-% collision cost
-cc = 0;
+
 
 % State Cost
 sc = 0;
@@ -92,55 +91,12 @@ uc = 0;
 [eid,nid] = inedges(D,idx);
 rij_control = 0.0;
 % q_formation = 2;
-rii_control = 0.1;
+rii_control = 1;
 if any(final)
-    
-%     for j_nid = 1:length(nid)
-%         j = nid(j_nid);
-%         edge_row = eid(j_nid);
-%         x = transpose(b(j,1:stDim,1));
-%         P = zeros(stDim, stDim); % covariance matrix
-%     % Extract columns of principal sqrt of covariance matrix
-%     % right now we are not exploiting symmetry
-%         for d = 1:stDim
-%             P(:,d) = b(j,d*stDim+1:(d+1)*stDim, 1);
-%         end
-% %         RowIdx = ismember(D.Edges.EndNodes, [j,idx],'rows');
-% %         formation_error = x_idx-x-(D.Edges.nom_formation_2(edge_row,:))';
-% %         sc = sc + L*0.5*q_formation*(formation_error'*formation_error);
-%     end
-%   
+
 else
-%     for j_nid = 1:length(nid)
-%         j = nid(j_nid);
-%         edge_row = eid(j_nid);
-%         x = transpose(b(j,1:stDim,1));
-%         P = zeros(stDim, stDim); % covariance matrix
-%         for d = 1:stDim
-%             P(:,d) = b(j,d*stDim+1:(d+1)*stDim, 1);
-%         end
-%         uc = uc + 0.5*rij_control*(transpose(u(j,:))'*transpose(u(j,:)));
-%         formation_error = x_idx-x-(D.Edges.nom_formation_2(edge_row,:))';
-% %         sc = sc + 0.1*q_formation*(formation_error'*formation_error);
-%         
-%         
-% 
-%         %sigmaToCollide(b,stDim,stateValidityChecker);
-%         
-%     end
-%     nSigma = sigmaToCollide_multiagent_D(D,idx,b,2,stateValidityChecker);
-%     for j=incoming_nbrs_idces
-%         cc = cc-log(chi2cdf(nSigma(j)^2, stDim));
-%     end
     uc = uc + rii_control*(transpose(u(idx,:))'*transpose(u(idx,:)));
 end
-edge_row = idx-1;
-% formation_error = (x_idx-x_plattform-(formation_table1(edge_row,:))');%*w(2)^2 ...
-
-%+(x_idx-x_platf-(D.Edges.nom_formation_1(edge_row,:))')*w(1)^2;
-Q_form=1*eye(2);
-% sc=sc+formation_error'*Q_form*formation_error;
-w_cc = 1.0;
-cost = sc + ic + uc + w_cc*cc;
+cost = sc + ic + uc;
 
 end

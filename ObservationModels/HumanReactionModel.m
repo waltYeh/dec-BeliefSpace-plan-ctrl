@@ -142,7 +142,7 @@ classdef HumanReactionModel < ObservationModelBase
 
         function M = getObservationNoiseJacobian(obj,x)%,v,z)
             n = 4;%length(z);
-            M = 8/(1/(norm(x(4)-[1.5])^2+0.05) + 1/norm(x(3)-[1])^2 + 1) * eye(n);
+            M = 8/(1/(norm(x(4)-1.5)^2+0.05) + 1/norm(x(3)-1)^2 + 1) * eye(n);
 %             M(1,1) = 1;
 %             M(2,2) = 1;
         end

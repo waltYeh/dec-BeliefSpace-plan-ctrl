@@ -29,7 +29,7 @@ BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT = 6;
 REST_WISH_WITHOUT_HUMAN_INPUT = 7;
 REST_WISH_WITH_HUMAN_INPUT = 8;
 REST_WISH_WITH_OPPOSITE_HUMAN_INPUT = 9;
-show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
+show_mode = REST_WISH_WITHOUT_HUMAN_INPUT;
 switch show_mode
     case EQUAL_WEIGHT_BALANCING
         weight_1 = 0.499;
@@ -50,8 +50,8 @@ switch show_mode
         weight_1 = 0.95;
         weight_2 = 0.05;
     case REST_WISH_WITHOUT_HUMAN_INPUT
-        weight_1 = 0.001;
-        weight_2 = 0.999;
+        weight_1 = 0.01;
+        weight_2 = 0.99;
     case REST_WISH_WITH_HUMAN_INPUT
         weight_1 = 0.01;
         weight_2 = 0.99;

@@ -22,7 +22,7 @@ BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT = 6;
 REST_WISH_WITHOUT_HUMAN_INPUT = 7;
 REST_WISH_WITH_HUMAN_INPUT = 8;
 REST_WISH_WITH_OPPOSITE_HUMAN_INPUT = 9;
-show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
+show_mode = BALL_WISH_WITH_HUMAN_INPUT;
 switch show_mode
     case EQUAL_WEIGHT_BALANCING
         weight_a1 = 0.5;
@@ -283,12 +283,12 @@ for i_sim = 1:simulation_steps
                 end
                 cost{i} = [];
                 agents{i}.rho.rho_d = 0.0;
-                agents{i}.rho.rho_up = 0.03;
-                agents{i}.rho.rho_c = 30;
+                agents{i}.rho.rho_up = 0.05;
+                agents{i}.rho.rho_c = 0;
             end
             agents{1}.rho.rho_d = 0.0;
-            agents{1}.rho.rho_up =0.03;
-            agents{1}.rho.rho_c = 30;
+            agents{1}.rho.rho_up =0.05;
+            agents{1}.rho.rho_c = 0;
 %         elseif iter <= 3
 %             for i = 1:size(interfDiGr.Nodes,1)
 %                 agents{i}.rho_d = 0;
@@ -302,12 +302,12 @@ for i_sim = 1:simulation_steps
         else
             for i = 2:size(interfDiGr.Nodes,1)
                 agents{i}.rho.rho_d = 0.0;
-                agents{i}.rho.rho_up = 0.03;
-                agents{i}.rho.rho_c = 30;
+                agents{i}.rho.rho_up = 0.05;
+                agents{i}.rho.rho_c = 0;
             end
             agents{1}.rho.rho_d = 0.0;
-            agents{1}.rho.rho_up =0.03;
-            agents{1}.rho.rho_c = 30;
+            agents{1}.rho.rho_up =0.05;
+            agents{1}.rho.rho_c = 0;
         end
 %         if iter==1
 %             go_all_agent=size(interfDiGr.Nodes,1);

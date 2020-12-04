@@ -14,9 +14,9 @@ defaults = {'lims',           [],...            control limits
             'lambda',         1,...             initial value for lambda
             'dlambda',        1,...             initial value for dlambda
             'rho',            [1,1],...        %too large, converge slow,  rho_x and rho_u
-            'lambdaFactor',   1.4,...           lambda scaling factor
+            'lambdaFactor',   1.35,...           lambda scaling factor
             'lambdaMax',      1e10,...          lambda maximum value
-            'lambdaMin',      1e-2,...          below this value lambda = 0
+            'lambdaMin',      0.1,...          below this value lambda = 0
             'regType',        1,...             regularization type 1: q_uu+lambda*eye(); 2: V_xx+lambda*eye()
             'zMin',           0,...             minimal accepted reduction ratio
             'diffFn',         [],...            user-defined diff for sub-space optimization

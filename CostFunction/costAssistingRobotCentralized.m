@@ -54,7 +54,7 @@ u_assists = u(5:end);
 knowledge_gen=true;
 if knowledge_gen
     R_t = diag([0.2, 4.0, 0.2, 0.2])*10;%,0.1,0.1]); % penalize control effort
-    R_assists_t = diag([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.01, 0.01])*10;
+    R_assists_t = diag([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]);%*10;
     Qerr_t = 0.0*eye(2);
     Qerr_l = 100*L*eye(2); %25 penalize terminal error
     Q_formation = 0*eye(2);

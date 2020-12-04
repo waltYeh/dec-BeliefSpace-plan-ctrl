@@ -1,6 +1,13 @@
 figure(31)
-matlab2tikz('./balance_xy.tex', 'width', '0.9\textwidth', 'height', '');
-
+matlab2tikz('./cent_xy.tex', 'width', '0.9\textwidth', 'height', '');
+figure(101)
+matlab2tikz('./Lopt_xy.tex', 'width', '0.9\textwidth', 'height', '');
+figure(33)
+matlab2tikz('./plattf_cent.tex', 'width', '0.9\textwidth', 'height', '');
+figure(104)
+matlab2tikz('./mensch.tex', 'width', '0.9\textwidth', 'height', '');
+figure(99)
+matlab2tikz('./sparse_wunsch_A.tex', 'width', '0.9\textwidth', 'height', '');
 
 figure(210)
 matlab2tikz('./admm_rest_half_w.tex', 'width', '0.9\textwidth', 'height', '');

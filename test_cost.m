@@ -1,6 +1,6 @@
 % R_assists_t = diag([0.1, 0.1, 0.1, 0.1, 0.1, 0.1])/3;
 % Qerr_t = 0.0*eye(2);
-% Qerr_l = 10*L*eye(2); % penalize terminal error
+% Qerr_l 5394= 10*L*eye(2); % penalize terminal error
 % Q_formation = 0*eye(2);
 
 mm = HumanMind(dt); % motion model

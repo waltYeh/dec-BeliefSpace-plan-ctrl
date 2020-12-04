@@ -29,7 +29,7 @@ BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT = 6;
 REST_WISH_WITHOUT_HUMAN_INPUT = 7;
 REST_WISH_WITH_HUMAN_INPUT = 8;
 REST_WISH_WITH_OPPOSITE_HUMAN_INPUT = 9;
-show_mode = REST_WISH_WITHOUT_HUMAN_INPUT;
+show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
 switch show_mode
     case EQUAL_WEIGHT_BALANCING
         weight_1 = 0.499;
@@ -117,8 +117,8 @@ b0=[mu_a1;sig_a1(:);weight_1;mu_a2;sig_a2(:);weight_2;mu_b;sig_b(:);mu_c;sig_c(:
 
 u_guess = zeros(12,horizonSteps-1);
 % initial guess, less iterations needed if given well
-u_guess(1,:)=-3.3;
-u_guess(2,:)=-1.3;
+u_guess(1,:)=0;
+u_guess(2,:)=0;
 
 full_DDP = false;
 

@@ -91,7 +91,7 @@ uc = 0;
 [eid,nid] = inedges(D,idx);
 rij_control = 0.0;
 % q_formation = 2;
-rii_control = 1;
+rii_control = 0.1;
 if any(final)
 
 else

@@ -31,7 +31,7 @@ REST_WISH_WITHOUT_HUMAN_INPUT = 7;
 REST_WISH_WITH_HUMAN_INPUT = 8;
 REST_WISH_WITH_OPPOSITE_HUMAN_INPUT = 9;
 CHANGE_WISHES = 10;
-% show_mode = EQUAL_WEIGHT_BALANCING;
+% show_mode = BALL_WISH_WITH_HUMAN_INPUT;
 switch show_mode
     case EQUAL_WEIGHT_BALANCING
         t_human_withdraw = 0.0;
@@ -44,7 +44,7 @@ switch show_mode
     case BALL_WISH_WITHOUT_HUMAN_INPUT
         t_human_withdraw = 0.0;
     case BALL_WISH_WITH_HUMAN_INPUT
-        t_human_withdraw = 2.5;
+        t_human_withdraw = 1.5;
         comp_sel =1;
     case BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT
         t_human_withdraw = 0.5;
@@ -143,7 +143,7 @@ for k = 1:nSteps-1
     good_man_for_ball_should_output = obsModel.getObservation(x_true,'nonoise');
     good_man_speed_angle=good_man_for_ball_should_output(1:2);
     v_man = [good_man_speed_angle(1)*cos(good_man_speed_angle(2));
-                good_man_speed_angle(1)*sin(good_man_speed_angle(2))];
+                good_man_speed_angle(1)*sin(good_man_speed_angle(2))]/2;
     
     if use_bad_man_speed
         if comp_sel ==1

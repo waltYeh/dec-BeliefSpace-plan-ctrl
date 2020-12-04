@@ -70,8 +70,8 @@ stDim = 4;
 [x_idx, P_idx, w] = b2xPw(b(:,1), stDim, components_amount);
 
 % u{idx}(:,final)  = 0;
-R_t = diag([0.2, 4.0, 0.2, 0.2,0.1,0.1])*10;
-% R_t = diag([0.2, 4.0, 0.2, 0.2,0,0])*10;
+R_t = diag([0.2, 4.0, 0.2, 0.2,0.01,0.01])*10;
+R_t = diag([0.2, 4.0, 0.2, 0.2,0,0])*10;
 Qerr_l = 100*L*eye(2);
 Qcov_l = 10e8*eye(4); % penalize terminal covar
 Qcov_l(1,1) = 0;

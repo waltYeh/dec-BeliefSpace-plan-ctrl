@@ -161,18 +161,18 @@ for k = 1:nSteps-1
 %             weight{i}(i_comp)=weight_i(i_comp);
         end
     end
-    for i = 1:size(D.Nodes,1)
-        [eid,nid] = inedges(D,i);
-        for j_nid = 1:length(nid)
-            j = nid(j_nid);
-            % I close up the estimation exchange between agents!
-            % but it can be reopened
-            b{i,j} = b{j,j};
-            %if you dont exchange this, MPC will always start from the very
-            %beginning state
-%             u{i}(j,:) = u{j}(j,:);
-        end
-    end
+%     for i = 1:size(D.Nodes,1)
+%         [eid,nid] = inedges(D,i);
+%         for j_nid = 1:length(nid)
+%             j = nid(j_nid);
+%             % I close up the estimation exchange between agents!
+%             % but it can be reopened
+%             b{i,j} = b{j,j};
+%             %if you dont exchange this, MPC will always start from the very
+%             %beginning state
+% %             u{i}(j,:) = u{j}(j,:);
+%         end
+%     end
     %% now for save
     for i = 1:size(D.Nodes,1)%agents_amount
         for i_comp = 1 : agents{i}.components_amount

@@ -50,8 +50,20 @@ for reweightedstep = 1 : reweighted_Max_Iter
 %                 if ii>4&&((jj==21)||(jj==42))
                     norm_Fiijj=0;
                 end
-                Wnew(ii,jj) = 1 / ( norm_Fiijj + eps );% only using first time step of F
-                
+                self_weight = eps*0.01;
+                if jj<=42&&ii<=4
+                    Wnew(ii,jj) = self_weight;
+                elseif jj>=43&&jj<=48&&ii>=5&&ii<=6
+                    Wnew(ii,jj) = self_weight;
+                elseif jj>=49&&jj<=54&&ii>=7&&ii<=8
+                    Wnew(ii,jj) = self_weight;
+                elseif jj>=55&&jj<=60&&ii>=9&&ii<=10
+                    Wnew(ii,jj) = self_weight;
+                elseif jj>=61&&jj<=66&&ii>=11&&ii<=12
+                    Wnew(ii,jj) = self_weight;
+                else
+                    Wnew(ii,jj) = 1 / ( norm_Fiijj + eps );% only using first time step of F
+                end
             end
         end 
         W=Wnew;

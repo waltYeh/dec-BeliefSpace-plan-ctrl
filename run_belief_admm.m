@@ -22,7 +22,7 @@ BALL_WISH_WITH_OPPOSITE_HUMAN_INPUT = 6;
 REST_WISH_WITHOUT_HUMAN_INPUT = 7;
 REST_WISH_WITH_HUMAN_INPUT = 8;
 REST_WISH_WITH_OPPOSITE_HUMAN_INPUT = 9;
-show_mode = BALL_WISH_WITHOUT_HUMAN_INPUT;
+show_mode = REST_WISH_WITH_HUMAN_INPUT;
 switch show_mode
     case EQUAL_WEIGHT_BALANCING
         weight_a1 = 0.5;
@@ -56,12 +56,12 @@ complete_graph = true;
 %% tuned parameters
 mu_a1 = [8.5, 0.0, 5.0, 0.0]';
 mu_a2 = [3, 1, 5.0, 0.0]';
-mu_b = [5, -1.0]';
-mu_c = [4., 1.0]';
-mu_d = [6.0, 1.0]';
-% mu_b = [5.2, -1.3]';
-% mu_c = [4.5, 1.5]';
-% mu_d = [7.0, 1.5]';
+% mu_b = [5, -1.0]';
+% mu_c = [4., 1.0]';
+% mu_d = [6.0, 1.0]';
+mu_b = [5.2, -1.3]';
+mu_c = [4.5, 1.5]';
+mu_d = [7.0, 1.5]';
 mu_e = [6.0, 4]';
 sig_a1 = diag([0.01, 0.01, 0.05, 0.05]);%sigma
 sig_a2 = diag([0.01, 0.01, 0.05, 0.05]);
@@ -273,7 +273,7 @@ for i_sim = 1:simulation_steps
     lam_up=zeros(1,Dim_lam_in_xy,horizonSteps-1);
     lam_c = zeros(1,Dim_lam_in_xy,horizonSteps);
     total_t = 0;
-    max_iter = 36;
+    max_iter = 20;
     for iter = 1:max_iter
         if iter == 1
             for i = 2:size(interfDiGr.Nodes,1)
@@ -282,13 +282,13 @@ for i_sim = 1:simulation_steps
                     b{i,j} = [];
                 end
                 cost{i} = [];
-                agents{i}.rho.rho_d = 0.0;
-                agents{i}.rho.rho_up = 0.065;
-                agents{i}.rho.rho_c = 0;
+                agents{i}.rho.rho_d = 0.5;
+                agents{i}.rho.rho_up = 0.05;
+                agents{i}.rho.rho_c = 50;
             end
-            agents{1}.rho.rho_d = 0.0;
-            agents{1}.rho.rho_up =0.065;
-            agents{1}.rho.rho_c = 0;
+            agents{1}.rho.rho_d = 0.5;
+            agents{1}.rho.rho_up =0.05;
+            agents{1}.rho.rho_c = 50;
 %         elseif iter <= 3
 %             for i = 1:size(interfDiGr.Nodes,1)
 %                 agents{i}.rho_d = 0;
@@ -301,13 +301,13 @@ for i_sim = 1:simulation_steps
 %             end
         else
             for i = 2:size(interfDiGr.Nodes,1)
-                agents{i}.rho.rho_d = 0.0;
-                agents{i}.rho.rho_up = 0.065;
-                agents{i}.rho.rho_c = 0;
+                agents{i}.rho.rho_d = 0.5;
+                agents{i}.rho.rho_up = 0.05;
+                agents{i}.rho.rho_c = 50;
             end
-            agents{1}.rho.rho_d = 0.0;
-            agents{1}.rho.rho_up =0.065;
-            agents{1}.rho.rho_c = 0;
+            agents{1}.rho.rho_d = 0.5;
+            agents{1}.rho.rho_up =0.05;
+            agents{1}.rho.rho_c = 50;
         end
 %         if iter==1
 %             go_all_agent=size(interfDiGr.Nodes,1);

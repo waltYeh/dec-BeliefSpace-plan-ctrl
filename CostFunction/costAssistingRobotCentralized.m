@@ -63,7 +63,7 @@ if knowledge_gen
     Qcov_l(1,1) = 0;
     Qcov_l(2,2) = 0;
     
-    Qcompl_err_l=L*eye(2)*0;
+    Qcompl_err_l=L*eye(2);
 %     Qcompl_err_l=0*eye(2);
 else
     % Q_t = 10*eye(stDim); % penalize uncertainty

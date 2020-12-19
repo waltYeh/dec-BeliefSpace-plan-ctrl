@@ -35,7 +35,7 @@ switch show_mode
     case REST_WISH_WITHOUT_HUMAN_INPUT
         t_human_withdraw = 0.0;
     case REST_WISH_WITH_HUMAN_INPUT
-        t_human_withdraw = 1.0;
+        t_human_withdraw = 0.0;
         comp_sel =2;
     case REST_WISH_WITH_OPPOSITE_HUMAN_INPUT
         t_human_withdraw = 0.5;
@@ -464,6 +464,6 @@ surf(x_m,y_m,Z-max(max(Z))-0.5),shading flat
     xlabel('x(m)')
     ylabel('y(m)')
     grid on
-    axis([3,11,-2,5])
+    axis([2,10,-2,5])
 legend('wahre Plattform','Ziel A','Ziel B','Messung Plattform','Assistenten')
 end

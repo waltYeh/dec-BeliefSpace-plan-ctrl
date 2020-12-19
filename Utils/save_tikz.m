@@ -1,11 +1,16 @@
+figure(99)
+matlab2tikz('./sparse_equal_weight.tex', 'width', '0.9\textwidth', 'height', '');
+
+figure(100)
+matlab2tikz('./cost_centr_dec_zoom.tex', 'width', '0.9\textwidth', 'height', '');
+
+
 figure(31)
-matlab2tikz('./cent_xy.tex', 'width', '0.9\textwidth', 'height', '');
-figure(101)
-matlab2tikz('./Lopt_xy.tex', 'width', '0.9\textwidth', 'height', '');
-figure(33)
-matlab2tikz('./plattf_cent.tex', 'width', '0.9\textwidth', 'height', '');
-figure(104)
-matlab2tikz('./mensch.tex', 'width', '0.9\textwidth', 'height', '');
+matlab2tikz('./gegenstoss_xy.tex', 'width', '0.9\textwidth', 'height', '');
+figure(32)
+matlab2tikz('./gegenstoss_w.tex', 'width', '0.9\textwidth', 'height', '');
+figure(34)
+matlab2tikz('./gegenstoss_mensch.tex', 'width', '0.9\textwidth', 'height', '');
 figure(99)
 matlab2tikz('./sparse_wunsch_A.tex', 'width', '0.9\textwidth', 'height', '');
 

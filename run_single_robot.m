@@ -3,10 +3,9 @@
 % point robot whose body is modeled as a disk
 % and it can sense beacons in the world.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function plan_assisting_robot()
+function run_single_robot()
 % close all
 addpath(genpath('./'));
-clear
 % close all
 % FigList = findall(groot, 'Type', 'figure');
 % for iFig = 1:numel(FigList)

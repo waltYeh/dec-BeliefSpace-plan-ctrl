@@ -9,16 +9,28 @@ Modified for the thesis Decentralized Planning and Control in Belief Space for t
 Xin Ye, Dec., 2020
 
 ## How To
-For decentralized planning, run:
+For single robot planning without variable measurement quality, run:
+```bash
+run_single_robot.m
 ```
+For decentralized planning, run:
+```bash
 run_belief_admm.m 
 ```
-run_centralized.m for centralized planning
-run_sparse_feedback.m for decentralization of control, only after centralized planning
-test_cost
+For centralized planning, run:
+```bash
+run_centralized.m 
+```
+For decentralized control, run the following only after centralized planning is finished, when the variables of centralized planning are already stored in base-workspace:
+```bash
+run_sparse_feedback.m 
+```
+The costs of nominal trajectories of centralized and decentralized planning can be computed by running the following when the variables of both plannings are already stored in base-workspace:
+```bash
+test_cost.m
+```
 
-License
-=============
+## License
 
 Copyright (c) 2017, Saurav Agarwal
 All rights reserved.

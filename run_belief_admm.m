@@ -3,7 +3,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function run_belief_admm()
 addpath(genpath('./'));
-clear
 close all
 % FigList = findall(groot, 'Type', 'figure');
 % for iFig = 1:numel(FigList)

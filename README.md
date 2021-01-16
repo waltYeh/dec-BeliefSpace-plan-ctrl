@@ -1,6 +1,6 @@
-bsp-ilqg
-=============
+# bsp-ilqg
 
+## Introduction
 Belief Space Motion Planning Using iLQG. Built on top of iLQG Matlab implementation by Yuval Tassa and
 the paper "Motion Planning under Uncertainty using Iterative Local Optimization in Belief Space", Van den berg et al., 
 International Journal of Robotics Research, 2012
@@ -8,13 +8,14 @@ International Journal of Robotics Research, 2012
 Modified for the thesis Decentralized Planning and Control in Belief Space for the Human-Machine Interaction in Multi-Robot Scenarios
 Xin Ye, Dec., 2020
 
-How To
-=============
-Run 
-run_belief_admm.m for decentralized planning
+## How To
+For decentralized planning, run:
+```
+run_belief_admm.m 
+```
 run_centralized.m for centralized planning
 run_sparse_feedback.m for decentralization of control, only after centralized planning
-
+test_cost
 
 License
 =============
